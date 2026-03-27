@@ -1,0 +1,68 @@
+const CARDAPIO = [
+  {
+    id: 1,
+    nome: 'Cafe Espresso',
+    preco: 5.0,
+    descricao: 'Cafe forte e encorpado',
+    emoji: '\u2615',
+    categoria: 'Bebidas',
+  },
+  {
+    id: 2,
+    nome: 'Cappuccino',
+    preco: 8.0,
+    descricao: 'Com espuma cremosa',
+    emoji: '\u2615',
+    categoria: 'Bebidas',
+  },
+  {
+    id: 3,
+    nome: 'Suco Natural',
+    preco: 7.0,
+    descricao: 'Laranja, limao ou maracuja',
+    emoji: '\uD83E\uDDC3',
+    categoria: 'Bebidas',
+  },
+  {
+    id: 4,
+    nome: 'Pao de Queijo',
+    preco: 4.5,
+    descricao: 'Quentinho e crocante',
+    emoji: '\uD83E\uDDC0',
+    categoria: 'Lanches',
+  },
+  {
+    id: 5,
+    nome: 'Coxinha',
+    preco: 6.0,
+    descricao: 'Frango com catupiry',
+    emoji: '\uD83C\uDF57',
+    categoria: 'Lanches',
+  },
+  {
+    id: 6,
+    nome: 'X-Burger',
+    preco: 12.0,
+    descricao: 'Hamburguer artesanal completo',
+    emoji: '\uD83C\uDF54',
+    categoria: 'Lanches',
+  },
+  {
+    id: 7,
+    nome: 'Misto Quente',
+    preco: 8.5,
+    descricao: 'Presunto e queijo na chapa',
+    emoji: '\uD83E\uDD6A',
+    categoria: 'Lanches',
+  },
+  {
+    id: 8,
+    nome: 'Acai Bowl',
+    preco: 15.0,
+    descricao: 'Com granola e banana',
+    emoji: '\uD83C\uDF47',
+    categoria: 'Sobremesas',
+  },
+];
+
+export default CARDAPIO;
