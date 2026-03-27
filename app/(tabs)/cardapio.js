@@ -62,7 +62,7 @@ export default function Cardapio() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.titulo}>CARDAPIO</Text>
+        <Text style={styles.titulo}>CARDÁPIO</Text>
         <Text style={styles.subtitulo}>ESCOLHA SEUS ITENS</Text>
       </View>
 

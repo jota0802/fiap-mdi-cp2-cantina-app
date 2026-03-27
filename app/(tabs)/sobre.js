@@ -1,4 +1,4 @@
-import { View, Text, Image, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import FiapLogo from '../../components/FiapLogo';
 
 export default function Sobre() {
@@ -19,8 +19,8 @@ export default function Sobre() {
         <View style={styles.card}>
           <Text style={styles.cardTitulo}>SOBRE O PROJETO</Text>
           <Text style={styles.cardTexto}>
-            Aplicativo mobile para pedidos na cantina da FIAP. Faca seu pedido
-            pelo celular e receba uma senha para retirar no balcao, eliminando
+            Aplicativo mobile para pedidos na cantina da FIAP. Faça seu pedido
+            pelo celular e receba uma senha para retirar no balcão, eliminando
             filas e tempo de espera.
           </Text>
         </View>
@@ -35,11 +35,11 @@ export default function Sobre() {
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.cardTitulo}>SOLUCAO</Text>
+          <Text style={styles.cardTitulo}>SOLUÇÃO</Text>
           <View style={styles.listaItem}>
             <View style={styles.bullet} />
             <Text style={styles.listaTexto}>
-              Cardapio digital com precos atualizados
+              Cardápio digital com preços atualizados
             </Text>
           </View>
           <View style={styles.listaItem}>
@@ -65,12 +65,41 @@ export default function Sobre() {
         <View style={styles.card}>
           <Text style={styles.cardTitulo}>INTEGRANTES</Text>
           <View style={styles.integranteRow}>
-            <Image
-              source={{ uri: 'https://picsum.photos/seed/jvf-dev/100/100' }}
-              style={styles.integranteAvatar}
-            />
+            <View style={styles.integranteAvatarPlaceholder}>
+              <Text style={styles.integranteInicial}>LB</Text>
+            </View>
             <View style={styles.integranteInfo}>
-              <Text style={styles.integranteNome}>JOAO VICTOR FRANCO</Text>
+              <Text style={styles.integranteNome}>LUCCA BORGES</Text>
+              <Text style={styles.integranteRM}>RM 554608</Text>
+            </View>
+          </View>
+          <View style={styles.integranteDivisor} />
+          <View style={styles.integranteRow}>
+            <View style={styles.integranteAvatarPlaceholder}>
+              <Text style={styles.integranteInicial}>RM</Text>
+            </View>
+            <View style={styles.integranteInfo}>
+              <Text style={styles.integranteNome}>RUAN MELO</Text>
+              <Text style={styles.integranteRM}>RM 557599</Text>
+            </View>
+          </View>
+          <View style={styles.integranteDivisor} />
+          <View style={styles.integranteRow}>
+            <View style={styles.integranteAvatarPlaceholder}>
+              <Text style={styles.integranteInicial}>RJ</Text>
+            </View>
+            <View style={styles.integranteInfo}>
+              <Text style={styles.integranteNome}>RODRIGO JIMENEZ</Text>
+              <Text style={styles.integranteRM}>RM 558148</Text>
+            </View>
+          </View>
+          <View style={styles.integranteDivisor} />
+          <View style={styles.integranteRow}>
+            <View style={styles.integranteAvatarPlaceholder}>
+              <Text style={styles.integranteInicial}>JV</Text>
+            </View>
+            <View style={styles.integranteInfo}>
+              <Text style={styles.integranteNome}>JOÃO VICTOR FRANCO</Text>
               <Text style={styles.integranteRM}>RM 556790</Text>
             </View>
           </View>
@@ -95,11 +124,11 @@ export default function Sobre() {
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.cardTitulo}>DECISOES TECNICAS</Text>
+          <Text style={styles.cardTitulo}>DECISÕES TÉCNICAS</Text>
           <View style={styles.listaItem}>
             <View style={styles.bullet} />
             <Text style={styles.listaTexto}>
-              Expo Router com Tabs + Stack para navegacao hibrida
+              Expo Router com Tabs + Stack para navegação híbrida
             </Text>
           </View>
           <View style={styles.listaItem}>
@@ -111,20 +140,20 @@ export default function Sobre() {
           <View style={styles.listaItem}>
             <View style={styles.bullet} />
             <Text style={styles.listaTexto}>
-              useEffect para gerar a senha na confirmacao
+              useEffect para gerar a senha na confirmação
             </Text>
           </View>
           <View style={styles.listaItem}>
             <View style={styles.bullet} />
             <Text style={styles.listaTexto}>
-              Componentes reutilizaveis (ItemCardapio, FiapLogo)
+              Componentes reutilizáveis (ItemCardapio, FiapLogo)
             </Text>
           </View>
         </View>
 
         <View style={styles.footer}>
           <Text style={styles.footerTexto}>
-            FIAP — ENGENHARIA DE SOFTWARE — 3o ANO
+            FIAP — ENGENHARIA DE SOFTWARE — 3º ANO
           </Text>
           <Text style={styles.footerTexto}>MOBILE DEVELOPMENT & IOT — 2026</Text>
         </View>
@@ -212,10 +241,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 14,
   },
-  integranteAvatar: {
+  integranteAvatarPlaceholder: {
     width: 48,
     height: 48,
     borderRadius: 24,
+    backgroundColor: '#1A1A1A',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  integranteInicial: {
+    fontFamily: 'Manrope_700Bold',
+    fontSize: 14,
+    color: '#ED145B',
+    letterSpacing: 1,
+  },
+  integranteDivisor: {
+    height: 1,
+    backgroundColor: '#1A1A1A',
+    marginVertical: 12,
   },
   integranteInfo: {
     flex: 1,

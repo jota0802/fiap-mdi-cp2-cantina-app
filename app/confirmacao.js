@@ -41,7 +41,7 @@ export default function Confirmacao() {
         </View>
 
         <Text style={styles.senhaInstrucao}>
-          APRESENTE ESTE NUMERO NO BALCAO
+          APRESENTE ESTE NÚMERO NO BALCÃO
         </Text>
 
         <View style={styles.resumoCard}>
@@ -64,7 +64,7 @@ export default function Confirmacao() {
 
         <View style={styles.avisoContainer}>
           <Text style={styles.avisoTexto}>
-            AGUARDE SEU NUMERO NO PAINEL DA CANTINA
+            AGUARDE SEU NÚMERO NO PAINEL DA CANTINA
           </Text>
         </View>
 
@@ -72,7 +72,7 @@ export default function Confirmacao() {
           style={styles.botaoPrimario}
           onPress={() => router.replace('/')}
         >
-          <Text style={styles.botaoPrimarioTexto}>VOLTAR AO INICIO</Text>
+          <Text style={styles.botaoPrimarioTexto}>VOLTAR AO INÍCIO</Text>
         </TouchableOpacity>
 
         <TouchableOpacity

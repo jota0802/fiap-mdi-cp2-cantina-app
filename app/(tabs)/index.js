@@ -22,15 +22,15 @@ export default function Home() {
 
         <View style={styles.heroCard}>
           <Text style={styles.heroEmoji}>{'\uD83C\uDF54'}</Text>
-          <Text style={styles.heroTitulo}>FACA SEU PEDIDO</Text>
+          <Text style={styles.heroTitulo}>FAÇA SEU PEDIDO</Text>
           <Text style={styles.heroDescricao}>
-            Escolha seus itens, confirme e retire no balcao com sua senha.
+            Escolha seus itens, confirme e retire no balcão com sua senha.
           </Text>
           <TouchableOpacity
             style={styles.heroBotao}
             onPress={() => router.push('/cardapio')}
           >
-            <Text style={styles.heroBotaoTexto}>VER CARDAPIO</Text>
+            <Text style={styles.heroBotaoTexto}>VER CARDÁPIO</Text>
           </TouchableOpacity>
         </View>
 
@@ -46,7 +46,7 @@ export default function Home() {
           </View>
           <View style={styles.passo}>
             <Text style={styles.passoNumero}>03</Text>
-            <Text style={styles.passoTexto}>RETIRE NO{'\n'}BALCAO</Text>
+            <Text style={styles.passoTexto}>RETIRE NO{'\n'}BALCÃO</Text>
           </View>
         </View>
 
