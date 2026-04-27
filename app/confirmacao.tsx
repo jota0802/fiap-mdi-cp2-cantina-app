@@ -2,11 +2,17 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useState, useEffect } from 'react';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 
+type ConfirmacaoParams = {
+  total?: string;
+  itens?: string;
+  resumo?: string;
+};
+
 export default function Confirmacao() {
   const router = useRouter();
-  const { total, itens, resumo } = useLocalSearchParams();
-  const [senha, setSenha] = useState(null);
-  const [carregando, setCarregando] = useState(true);
+  const { total, itens, resumo } = useLocalSearchParams<ConfirmacaoParams>();
+  const [senha, setSenha] = useState<number | null>(null);
+  const [carregando, setCarregando] = useState<boolean>(true);
 
   useEffect(() => {
     const timer = setTimeout(() => {

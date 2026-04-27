@@ -1,4 +1,6 @@
-const CARDAPIO = [
+import type { ItemCardapio } from '@/types';
+
+const CARDAPIO: ItemCardapio[] = [
   {
     id: 1,
     nome: 'Café Espresso',

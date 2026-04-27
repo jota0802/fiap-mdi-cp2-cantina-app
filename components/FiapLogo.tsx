@@ -1,6 +1,12 @@
 import Svg, { Path } from 'react-native-svg';
 
-export default function FiapLogo({ width = 139, height = 37, color = '#FFFFFF' }) {
+type FiapLogoProps = {
+  width?: number;
+  height?: number;
+  color?: string;
+};
+
+export default function FiapLogo({ width = 139, height = 37, color = '#FFFFFF' }: FiapLogoProps) {
   const scale = width / 139;
   const scaledHeight = 37 * scale;
 

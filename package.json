@@ -1,15 +1,18 @@
 {
-  "name": "fiap-mdi-cp1-cantina-app",
-  "version": "1.0.0",
+  "name": "app-cantina",
+  "version": "2.0.0",
   "main": "expo-router/entry",
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@expo-google-fonts/manrope": "^0.4.2",
+    "@expo/vector-icons": "^15.0.2",
+    "@react-native-async-storage/async-storage": "^2.2.0",
     "expo": "~55.0.8",
     "expo-font": "~55.0.4",
     "expo-linking": "~55.0.8",
@@ -22,6 +25,10 @@
     "react-native-screens": "~4.23.0",
     "react-native-svg": "15.15.3",
     "react-native-web": "^0.21.0"
+  },
+  "devDependencies": {
+    "@types/react": "~19.2.0",
+    "typescript": "~5.9.2"
   },
   "private": true
 }

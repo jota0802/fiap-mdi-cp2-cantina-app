@@ -1,6 +1,14 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import type { ItemCardapio as ItemCardapioModel } from '@/types';
 
-export default function ItemCardapio({ item, quantidade, onAdicionar, onRemover }) {
+type Props = {
+  item: ItemCardapioModel;
+  quantidade: number;
+  onAdicionar: (id: number) => void;
+  onRemover: (id: number) => void;
+};
+
+export default function ItemCardapio({ item, quantidade, onAdicionar, onRemover }: Props) {
   return (
     <View style={styles.container}>
       <View style={styles.emojiContainer}>

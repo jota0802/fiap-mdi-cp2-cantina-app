@@ -1,23 +1,26 @@
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { useState } from 'react';
 import { useRouter } from 'expo-router';
-import CARDAPIO from '../../data/cardapio';
-import ItemCardapio from '../../components/ItemCardapio';
+import CARDAPIO from '@/data/cardapio';
+import ItemCardapio from '@/components/ItemCardapio';
+import type { Categoria } from '@/types';
+
+type Quantidades = Record<number, number>;
 
 export default function Cardapio() {
   const router = useRouter();
-  const [quantidades, setQuantidades] = useState({});
+  const [quantidades, setQuantidades] = useState<Quantidades>({});
 
-  const adicionarItem = (id) => {
+  const adicionarItem = (id: number) => {
     setQuantidades((prev) => ({
       ...prev,
-      [id]: (prev[id] || 0) + 1,
+      [id]: (prev[id] ?? 0) + 1,
     }));
   };
 
-  const removerItem = (id) => {
+  const removerItem = (id: number) => {
     setQuantidades((prev) => {
-      const novaQtd = (prev[id] || 0) - 1;
+      const novaQtd = (prev[id] ?? 0) - 1;
       if (novaQtd <= 0) {
         const novo = { ...prev };
         delete novo[id];
@@ -27,25 +30,27 @@ export default function Cardapio() {
     });
   };
 
-  const totalItens = Object.values(quantidades).reduce(
+  const totalItens = Object.values(quantidades).reduce<number>(
     (acc, qty) => acc + qty,
     0
   );
 
-  const totalPreco = Object.entries(quantidades).reduce((acc, [id, qty]) => {
-    const item = CARDAPIO.find((i) => i.id === parseInt(id));
-    return acc + item.preco * qty;
+  const totalPreco = Object.entries(quantidades).reduce<number>((acc, [id, qty]) => {
+    const item = CARDAPIO.find((i) => i.id === Number(id));
+    return acc + (item?.preco ?? 0) * qty;
   }, 0);
 
-  const categorias = [...new Set(CARDAPIO.map((item) => item.categoria))];
+  const categorias: Categoria[] = Array.from(
+    new Set(CARDAPIO.map((item) => item.categoria))
+  );
 
   const confirmarPedido = () => {
     if (totalItens === 0) return;
 
     const itensResumo = Object.entries(quantidades)
       .map(([id, qty]) => {
-        const item = CARDAPIO.find((i) => i.id === parseInt(id));
-        return `${qty}x ${item.nome}`;
+        const item = CARDAPIO.find((i) => i.id === Number(id));
+        return `${qty}x ${item?.nome ?? ''}`;
       })
       .join(', ');
 
@@ -53,7 +58,7 @@ export default function Cardapio() {
       pathname: '/confirmacao',
       params: {
         total: totalPreco.toFixed(2),
-        itens: totalItens,
+        itens: String(totalItens),
         resumo: itensResumo,
       },
     });
@@ -78,7 +83,7 @@ export default function Cardapio() {
                 <ItemCardapio
                   key={item.id}
                   item={item}
-                  quantidade={quantidades[item.id] || 0}
+                  quantidade={quantidades[item.id] ?? 0}
                   onAdicionar={adicionarItem}
                   onRemover={removerItem}
                 />

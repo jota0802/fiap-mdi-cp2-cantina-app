@@ -28,7 +28,7 @@ export default function TabsLayout() {
         name="index"
         options={{
           title: 'INÍCIO',
-          tabBarIcon: ({ color, size }) => (
+          tabBarIcon: ({ color }: { color: string }) => (
             <Ionicons name="home-outline" size={22} color={color} />
           ),
         }}
@@ -37,7 +37,7 @@ export default function TabsLayout() {
         name="cardapio"
         options={{
           title: 'CARDÁPIO',
-          tabBarIcon: ({ color, size }) => (
+          tabBarIcon: ({ color }: { color: string }) => (
             <Ionicons name="restaurant-outline" size={22} color={color} />
           ),
         }}
@@ -46,7 +46,7 @@ export default function TabsLayout() {
         name="sobre"
         options={{
           title: 'SOBRE',
-          tabBarIcon: ({ color, size }) => (
+          tabBarIcon: ({ color }: { color: string }) => (
             <Ionicons name="information-circle-outline" size={22} color={color} />
           ),
         }}
