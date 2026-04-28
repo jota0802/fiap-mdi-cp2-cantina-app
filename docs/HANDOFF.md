@@ -74,7 +74,7 @@ git config user.name "roji-menez" && git config user.email "rodrigocsjimenez2005
 git config user.name "jota0802" && git config user.email "jvfranco08@gmail.com"
 ```
 
-**Distribuição atual (pós-redesign 28/04/2026):** jota0802=14 · roji-menez=14 · DevRuanVieira=13 · lucksza=13. Bem balanceado. Ao adicionar novas features, distribuir por afinidade (UI/visual → Ruan; auth/segurança → Rodrigo; persistência/dados → Lucca; navegação/docs → João).
+**Distribuição atual (pós-top 8 + redesign 28/04/2026):** lucksza=16 · DevRuanVieira=15 · jota0802=15 · roji-menez=15. Bem balanceado. Ao adicionar novas features, distribuir por afinidade (UI/visual → Ruan; auth/segurança → Rodrigo; persistência/dados → Lucca; navegação/docs → João).
 
 ## ✅ O que já está pronto (CP2 atende totalmente)
 
@@ -149,20 +149,20 @@ c60b129 feat(orders): cria OrdersContext com persistencia por usuario
 
 ## 🛣️ Próximos passos
 
-**Top 8 — status pós-redesign (28/04/2026):**
+**Top 8 — TODOS CONCLUÍDOS ✅** (28/04/2026)
 
-| # | Feature | Status |
+| # | Feature | Implementação |
 |---|---|---|
-| 1 | Tela de Carrinho dedicada | ✅ **PRONTO** (incluindo wire pelo cardápio) |
-| 2 | Saudação + card pedido ativo na Home | ✅ **PRONTO** (com bento grid) |
-| 3 | "Pedir de novo" no histórico | ⏳ |
-| 4 | Onboarding 3 slides | ⏳ |
-| 5 | Imagens reais (`expo-image`) | ⏳ |
-| 6 | Filtro de categoria horizontal (chips) | ✅ **PRONTO** (com ícones Ionicons) |
-| 7 | Editar perfil (nome/email) | ⏳ |
-| 8 | QR Code da senha (`react-native-qrcode-svg`) | ⏳ |
+| 1 | Tela de Carrinho dedicada | `app/carrinho.tsx` + wire pelo cardápio |
+| 2 | Saudação + pedido ativo na Home | `app/(tabs)/index.tsx` com bento grid |
+| 3 | "Pedir de novo" no histórico | `app/(tabs)/pedidos.tsx` |
+| 4 | Onboarding 3 slides | `components/Onboarding.tsx` + gate em `_layout.tsx` |
+| 5 | Imagens reais via expo-image | `components/ItemThumbnail.tsx` + URLs Unsplash em `data/cardapio.ts` |
+| 6 | Filtro chips de categoria | `app/(tabs)/cardapio.tsx` |
+| 7 | Editar perfil | `app/perfil-editar.tsx` + validação email único em `AuthContext.updateUser` |
+| 8 | QR Code da senha | `app/confirmacao.tsx` + `react-native-qrcode-svg` |
 
-**Sequência sugerida (4 restantes):** 7 → 8 → 3 → 5 → 4
+**Próximo backlog (categorias B/C/D/E do `docs/ROADMAP.md`):** Glassmorphism nas barras (#9), Reanimated 3 (#13), Lottie checkmark (#15), Favoritos (#21), Biometria (#24), Acessibilidade completa (#26), Microcopy humanizado (#30) — escolher conforme tempo restante.
 
 ## 🎨 Design system consolidado (28/04/2026)
 

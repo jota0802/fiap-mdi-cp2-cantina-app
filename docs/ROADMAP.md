@@ -3,18 +3,18 @@
 > Backlog priorizado de UX/UI/funcionalidades para evoluir o CP2.
 > Notação: 💎 alto impacto · 🔥 médio · ✨ refinamento · 🟢 fácil · 🟡 médio · 🔴 trabalhoso
 
-## 🥇 Top 8 — status atual
+## 🥇 Top 8 — TODOS CONCLUÍDOS ✅
 
-| # | Item | Esforço | Arquivo principal | Status |
-|---|---|---|---|---|
-| 1 | **Tela de Carrinho dedicada** | 🟡 ~1h | `app/carrinho.tsx` | ✅ **PRONTO** — Stack screen com edição de quantidade, totais, aviso de retirada, integrado ao cardápio (botão "Revisar pedido") |
-| 2 | **Saudação + card pedido ativo na Home** | 🟢 30min | `app/(tabs)/index.tsx` | ✅ **PRONTO** — Saudação dinâmica por hora ("Bom dia/tarde/noite"); bento grid com pedido ativo, quick actions e destaques |
-| 3 | **"Pedir de novo" no histórico** | 🟡 30min | `app/(tabs)/pedidos.tsx` + `CartContext` | ⏳ Botão em cada pedido `retirado` chama `cart.clear()` + popula com `order.items` + navega pra `/carrinho` |
-| 4 | **Onboarding 3 slides** | 🟡 45min | `app/onboarding.tsx` (novo) + `AsyncStorage` flag | ⏳ Primeira abertura mostra 3 slides; salva `@cantina:onboarded=true` |
-| 5 | **Imagens reais nos itens** | 🟡 30min | `data/cardapio.ts` + `expo-image` | ⏳ Campo `imagem` (URL Unsplash); `<expo-image/>` no `ItemCardapio` com blur placeholder |
-| 6 | **Filtro de categoria horizontal (chips)** | 🟢 30min | `app/(tabs)/cardapio.tsx` | ✅ **PRONTO** — ScrollView horizontal com chips `Todas/Bebidas/Lanches/Sobremesas`, ícones Ionicons, combina com busca em tempo real |
-| 7 | **Editar perfil (nome/email)** | 🟢 30min | `app/perfil-editar.tsx` (novo) | ⏳ Stack screen com form chamando `updateUser`; toast de sucesso |
-| 8 | **QR Code da senha** | 🟢 20min | `app/confirmacao.tsx` | ⏳ Instalar `react-native-qrcode-svg`; renderizar QR abaixo do número |
+| # | Item | Status |
+|---|---|---|
+| 1 | **Tela de Carrinho dedicada** | ✅ Stack screen com edição de quantidade, totais, integração com cardápio ("Revisar pedido") |
+| 2 | **Saudação + card pedido ativo na Home** | ✅ Saudação dinâmica por hora; bento grid com pedido ativo, quick actions e destaques |
+| 3 | **"Pedir de novo" no histórico** | ✅ Botão em pedidos `retirado` recria o cart e navega pra /carrinho |
+| 4 | **Onboarding 3 slides** | ✅ Primeira abertura mostra 3 slides (Pedir / Confirmar / Retirar); flag `@cantina:onboarded` |
+| 5 | **Imagens reais nos itens** | ✅ Campo `imagem` (URLs Unsplash) renderizado via `expo-image` em `ItemThumbnail`, com fallback emoji |
+| 6 | **Filtro de categoria horizontal (chips)** | ✅ ScrollView horizontal com chips `Todas/Bebidas/Lanches/Sobremesas` + ícones Ionicons |
+| 7 | **Editar perfil (nome/email)** | ✅ Stack screen `perfil-editar` com validação inline e checagem de email único |
+| 8 | **QR Code da senha** | ✅ QR de 92px no hero card primary com `react-native-qrcode-svg`; payload `cantina:senha:{n}:order:{id}` |
 
 ## 🎨 Design System aplicado (28/04/2026)
 
