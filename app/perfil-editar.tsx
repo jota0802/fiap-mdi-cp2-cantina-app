@@ -108,6 +108,8 @@ export default function PerfilEditarScreen() {
           onPress={handleVoltar}
           hitSlop={12}
           style={({ pressed }) => [styles.iconButton, pressed && styles.pressedSoft]}
+          accessibilityRole="button"
+          accessibilityLabel="Voltar"
         >
           <Ionicons name="chevron-back" size={20} color={colors.text} />
         </Pressable>

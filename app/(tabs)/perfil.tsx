@@ -37,6 +37,10 @@ function formatarDataMembro(iso: string): string {
   }
 }
 
+function primeiroNome(nome: string): string {
+  return nome.trim().split(' ')[0] ?? nome;
+}
+
 export default function PerfilScreen() {
   const router = useRouter();
   const { colors, mode, toggleTheme } = useTheme();
@@ -117,14 +121,29 @@ export default function PerfilScreen() {
         contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + spacing.lg }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header compacto */}
+        {/* Header com subtítulo */}
         <View style={styles.header}>
           <Text style={styles.tituloPagina}>Perfil</Text>
+          <Text style={styles.subtitulo}>
+            Olá, {primeiroNome(user.nome)} · membro desde{' '}
+            {formatarDataMembro(user.criadoEm)}
+          </Text>
         </View>
 
-        {/* Card hero do usuário */}
+        {/* Card hero do usuário com foto editável */}
         <View style={styles.userCard}>
-          <ProfileAvatar uri={user.fotoUri} nome={user.nome} size={64} />
+          <Pressable
+            onPress={handlePickFromLibrary}
+            disabled={updatingPhoto}
+            style={({ pressed }) => [styles.avatarPressable, pressed && styles.pressedSoft]}
+            accessibilityRole="button"
+            accessibilityLabel="Trocar foto de perfil"
+          >
+            <ProfileAvatar uri={user.fotoUri} nome={user.nome} size={64} />
+            <View style={styles.avatarBadge}>
+              <Ionicons name="camera" size={12} color={colors.primaryText} />
+            </View>
+          </Pressable>
           <View style={styles.userInfo}>
             <Text style={styles.userNome} numberOfLines={1}>
               {user.nome}
@@ -161,13 +180,15 @@ export default function PerfilScreen() {
           />
         </View>
 
-        {/* Foto de perfil */}
+        {/* Foto de perfil — apenas botões secundários */}
         <Text style={styles.sectionTitle}>Foto de perfil</Text>
         <View style={styles.fotoBento}>
           <Pressable
             style={({ pressed }) => [styles.fotoBotao, pressed && styles.pressedSoft]}
             onPress={handlePickFromCamera}
             disabled={updatingPhoto}
+            accessibilityRole="button"
+            accessibilityLabel="Tirar foto com a câmera"
           >
             <View style={styles.fotoIconWrap}>
               <Ionicons name="camera-outline" size={18} color={colors.primary} />
@@ -179,6 +200,8 @@ export default function PerfilScreen() {
             style={({ pressed }) => [styles.fotoBotao, pressed && styles.pressedSoft]}
             onPress={handlePickFromLibrary}
             disabled={updatingPhoto}
+            accessibilityRole="button"
+            accessibilityLabel="Escolher foto da galeria"
           >
             <View style={styles.fotoIconWrap}>
               <Ionicons name="images-outline" size={18} color={colors.primary} />
@@ -191,6 +214,8 @@ export default function PerfilScreen() {
               style={({ pressed }) => [styles.fotoBotao, pressed && styles.pressedSoft]}
               onPress={handleRemoveFoto}
               disabled={updatingPhoto}
+              accessibilityRole="button"
+              accessibilityLabel="Remover foto de perfil"
             >
               <View style={[styles.fotoIconWrap, { backgroundColor: 'rgba(248, 113, 113, 0.14)' }]}>
                 <Ionicons name="trash-outline" size={18} color={colors.error} />
@@ -237,6 +262,8 @@ export default function PerfilScreen() {
           <Pressable
             style={({ pressed }) => [styles.linhaAcao, pressed && styles.pressedSoft]}
             onPress={() => router.push('/perfil-editar')}
+            accessibilityRole="button"
+            accessibilityLabel="Editar dados do perfil"
           >
             <View style={styles.linhaAcaoEsquerda}>
               <View style={[styles.linhaAcaoIconWrap, { backgroundColor: colors.primarySoft }]}>
@@ -255,6 +282,8 @@ export default function PerfilScreen() {
           <Pressable
             style={({ pressed }) => [styles.linhaAcao, pressed && styles.pressedSoft]}
             onPress={() => router.push('/sobre')}
+            accessibilityRole="button"
+            accessibilityLabel="Sobre o projeto"
           >
             <View style={styles.linhaAcaoEsquerda}>
               <View style={styles.linhaAcaoIconWrap}>
@@ -273,6 +302,8 @@ export default function PerfilScreen() {
           <Pressable
             style={({ pressed }) => [styles.linhaAcao, pressed && styles.pressedSoft]}
             onPress={handleLogout}
+            accessibilityRole="button"
+            accessibilityLabel="Sair da conta"
           >
             <View style={styles.linhaAcaoEsquerda}>
               <View style={[styles.linhaAcaoIconWrap, { backgroundColor: 'rgba(248, 113, 113, 0.14)' }]}>
@@ -288,7 +319,7 @@ export default function PerfilScreen() {
         </View>
 
         <Text style={styles.footerHint}>
-          Membro desde {formatarDataMembro(user.criadoEm)} · credenciais protegidas no dispositivo
+          Suas credenciais ficam protegidas no dispositivo
         </Text>
       </ScrollView>
 
@@ -344,6 +375,12 @@ const createStyles = (c: ThemeColors) =>
       fontSize: fontSize['3xl'],
       color: c.text,
     },
+    subtitulo: {
+      fontFamily: fontFamily.medium,
+      fontSize: fontSize.md,
+      color: c.textMuted,
+      marginTop: spacing.xs,
+    },
 
     /* User card */
     userCard: {
@@ -357,6 +394,22 @@ const createStyles = (c: ThemeColors) =>
       padding: spacing.lg,
       borderWidth: 1,
       borderColor: c.border,
+    },
+    avatarPressable: {
+      position: 'relative',
+    },
+    avatarBadge: {
+      position: 'absolute',
+      bottom: -2,
+      right: -2,
+      width: 22,
+      height: 22,
+      borderRadius: 11,
+      backgroundColor: c.primary,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 2,
+      borderColor: c.surface,
     },
     userInfo: { flex: 1 },
     userNome: {
