@@ -379,79 +379,54 @@ type ComboCardProps = {
 
 function ComboCard({ combo, items, preco, colors, styles, onAdicionar }: ComboCardProps) {
   const personalizado = combo.fonte === 'historico';
-  const eyebrow = personalizado ? 'PERSONALIZADO PRA VOCÊ' : 'SUGESTÃO PRO HORÁRIO';
+  const accent = personalizado ? colors.primary : '#F59E0B';
+  const accentBg = personalizado ? colors.primarySoft : 'rgba(245, 158, 11, 0.14)';
+  const eyebrow = personalizado ? 'PERSONALIZADO' : 'SUGESTÃO';
 
   return (
-    <View style={styles.comboCard}>
-      <View style={styles.comboHeader}>
-        <View
-          style={[
-            styles.comboIconWrap,
-            { backgroundColor: personalizado ? colors.primarySoft : 'rgba(245, 158, 11, 0.14)' },
-          ]}
-        >
+    <Pressable
+      style={({ pressed }) => [styles.comboCard, pressed && styles.pressedSoft]}
+      onPress={onAdicionar}
+      accessibilityRole="button"
+      accessibilityLabel={`Adicionar combo ${combo.titulo} ao carrinho por R$ ${preco.toFixed(2)}`}
+    >
+      <View style={styles.comboHeaderRow}>
+        <View style={[styles.comboChip, { backgroundColor: accentBg }]}>
           <Ionicons
             name={personalizado ? 'heart' : 'sparkles'}
-            size={14}
-            color={personalizado ? colors.primary : '#F59E0B'}
+            size={11}
+            color={accent}
           />
+          <Text style={[styles.comboChipTexto, { color: accent }]}>{eyebrow}</Text>
         </View>
-        <Text
-          style={[
-            styles.comboEyebrow,
-            { color: personalizado ? colors.primary : '#F59E0B' },
-          ]}
-        >
-          {eyebrow}
-        </Text>
+        <Text style={styles.comboPrecoTotal}>R$ {preco.toFixed(2)}</Text>
       </View>
 
       <Text style={styles.comboTitulo}>{combo.titulo}</Text>
-      <Text style={styles.comboSubtitulo}>{combo.subtitulo}</Text>
 
-      <View style={styles.comboItensRow}>
+      <View style={styles.comboItensInline}>
         {items.map((item, idx) => (
-          <View key={item.id} style={styles.comboItemWrap}>
-            <View style={styles.comboItemCard}>
-              <ItemThumbnail
-                emoji={item.emoji}
-                imagem={item.imagem}
-                size={56}
-                borderRadius={radius.md}
-                bgColor={colors.bg}
-              />
-              <Text style={styles.comboItemNome} numberOfLines={2}>
-                {item.nome}
-              </Text>
-              <Text style={styles.comboItemPreco}>R$ {item.preco.toFixed(2)}</Text>
-            </View>
-            {idx === 0 && items.length > 1 ? (
-              <View style={styles.comboPlusBadge}>
-                <Ionicons name="add" size={12} color={colors.textSubtle} />
-              </View>
-            ) : null}
+          <View key={item.id} style={styles.comboItemInline}>
+            {idx > 0 ? <Text style={styles.comboPlusInline}>+</Text> : null}
+            <ItemThumbnail
+              emoji={item.emoji}
+              imagem={item.imagem}
+              size={28}
+              borderRadius={8}
+              bgColor={colors.bg}
+            />
+            <Text style={styles.comboItemNomeInline} numberOfLines={1}>
+              {item.nome}
+            </Text>
           </View>
         ))}
       </View>
 
-      <View style={styles.comboDivisor} />
-
-      <View style={styles.comboFooter}>
-        <View>
-          <Text style={styles.comboPrecoLabel}>Total do combo</Text>
-          <Text style={styles.comboPrecoValor}>R$ {preco.toFixed(2)}</Text>
-        </View>
-        <Pressable
-          style={({ pressed }) => [styles.comboBotao, pressed && styles.pressedSoft]}
-          onPress={onAdicionar}
-          accessibilityRole="button"
-          accessibilityLabel={`Adicionar combo ${combo.titulo} ao carrinho por R$ ${preco.toFixed(2)}`}
-        >
-          <Ionicons name="add" size={18} color={colors.primaryText} />
-          <Text style={styles.comboBotaoTexto}>Adicionar combo</Text>
-        </Pressable>
+      <View style={styles.comboCta}>
+        <Text style={styles.comboCtaTexto}>Adicionar ao carrinho</Text>
+        <Ionicons name="arrow-forward" size={14} color={colors.primary} />
       </View>
-    </View>
+    </Pressable>
   );
 }
 
@@ -758,129 +733,83 @@ const createStyles = (c: ThemeColors) =>
       marginTop: 2,
     },
 
-    /* Combo card */
+    /* Combo card minimalista */
     comboCard: {
       marginHorizontal: spacing.xl,
       marginBottom: spacing.xl,
       backgroundColor: c.surface,
-      borderRadius: radius.xl,
-      padding: spacing.lg,
+      borderRadius: radius.lg,
+      padding: spacing.md,
       borderWidth: 1,
       borderColor: c.border,
-      ...shadow.md,
+      gap: spacing.sm,
     },
-    comboHeader: {
+    comboHeaderRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    comboChip: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: spacing.sm,
-      marginBottom: spacing.md,
+      gap: 4,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 3,
+      borderRadius: radius.full,
     },
-    comboEyebrow: {
+    comboChipTexto: {
       fontFamily: fontFamily.bold,
       fontSize: fontSize.xs,
       letterSpacing: letterSpacing.widest,
     },
+    comboPrecoTotal: {
+      fontFamily: fontFamily.extrabold,
+      fontSize: fontSize.lg,
+      color: c.text,
+    },
     comboTitulo: {
-      fontFamily: fontFamily.extrabold,
-      fontSize: fontSize['2xl'],
-      color: c.text,
-      lineHeight: fontSize['2xl'] * 1.1,
-    },
-    comboSubtitulo: {
-      fontFamily: fontFamily.medium,
-      fontSize: fontSize.md,
-      color: c.textMuted,
-      marginTop: spacing.xs,
-      marginBottom: spacing.lg,
-    },
-    comboIconWrap: {
-      width: 28,
-      height: 28,
-      borderRadius: 14,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    comboItensRow: {
-      flexDirection: 'row',
-      gap: spacing.sm,
-      alignItems: 'stretch',
-    },
-    comboItemWrap: {
-      flex: 1,
-      position: 'relative',
-    },
-    comboItemCard: {
-      flex: 1,
-      backgroundColor: c.bg,
-      borderRadius: radius.md,
-      padding: spacing.md,
-      alignItems: 'flex-start',
-      gap: spacing.sm,
-      borderWidth: 1,
-      borderColor: c.border,
-    },
-    comboItemNome: {
-      fontFamily: fontFamily.semibold,
-      fontSize: fontSize.md,
-      color: c.text,
-      lineHeight: fontSize.md * 1.3,
-    },
-    comboItemPreco: {
       fontFamily: fontFamily.bold,
-      fontSize: fontSize.md,
+      fontSize: fontSize.base,
       color: c.text,
     },
-    comboPlusBadge: {
-      position: 'absolute',
-      right: -spacing.sm - 2,
-      top: '50%',
-      width: 22,
-      height: 22,
-      borderRadius: 11,
-      backgroundColor: c.surface,
-      borderWidth: 1,
-      borderColor: c.borderStrong,
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: 2,
-      marginTop: -11,
-    },
-    comboDivisor: {
-      height: 1,
-      backgroundColor: c.separator,
-      marginVertical: spacing.md,
-    },
-    comboFooter: {
+    comboItensInline: {
       flexDirection: 'row',
-      justifyContent: 'space-between',
       alignItems: 'center',
-      gap: spacing.md,
+      gap: spacing.xs,
+      flexWrap: 'wrap',
     },
-    comboPrecoLabel: {
-      fontFamily: fontFamily.medium,
-      fontSize: fontSize.md,
-      color: c.textMuted,
-    },
-    comboPrecoValor: {
-      fontFamily: fontFamily.extrabold,
-      fontSize: fontSize.xl,
-      color: c.text,
-      marginTop: 2,
-    },
-    comboBotao: {
+    comboItemInline: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: spacing.xs + 2,
-      backgroundColor: c.primary,
-      paddingHorizontal: spacing.lg,
-      paddingVertical: spacing.md,
-      borderRadius: radius.full,
-      ...shadow.primary,
     },
-    comboBotaoTexto: {
+    comboPlusInline: {
       fontFamily: fontFamily.bold,
       fontSize: fontSize.md,
-      color: c.primaryText,
+      color: c.textSubtle,
+      marginHorizontal: 2,
+    },
+    comboItemNomeInline: {
+      fontFamily: fontFamily.medium,
+      fontSize: fontSize.md,
+      color: c.textMuted,
+      maxWidth: 110,
+    },
+    comboCta: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.xs + 2,
+      paddingTop: spacing.xs,
+      borderTopWidth: 1,
+      borderTopColor: c.separator,
+      marginTop: spacing.xs,
+      paddingVertical: spacing.sm,
+    },
+    comboCtaTexto: {
+      fontFamily: fontFamily.semibold,
+      fontSize: fontSize.md,
+      color: c.primary,
     },
 
     /* Últimos pedidos */
