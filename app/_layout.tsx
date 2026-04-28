@@ -13,6 +13,7 @@ import {
 
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { CartProvider } from '@/context/CartContext';
+import { FavoritesProvider } from '@/context/FavoritesContext';
 import { OrdersProvider } from '@/context/OrdersContext';
 import { ThemeProvider, useTheme } from '@/context/ThemeContext';
 import LoadingScreen from '@/components/LoadingScreen';
@@ -107,7 +108,9 @@ export default function RootLayout() {
       <AuthProvider>
         <CartProvider>
           <OrdersProvider>
-            {fontsLoaded ? <RootStack /> : <ThemedSplash />}
+            <FavoritesProvider>
+              {fontsLoaded ? <RootStack /> : <ThemedSplash />}
+            </FavoritesProvider>
           </OrdersProvider>
         </CartProvider>
       </AuthProvider>

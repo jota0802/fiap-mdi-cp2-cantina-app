@@ -15,6 +15,7 @@ import CARDAPIO from '@/data/cardapio';
 import ItemThumbnail from '@/components/ItemThumbnail';
 import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
+import { useFavorites } from '@/context/FavoritesContext';
 import { useOrders } from '@/context/OrdersContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useFadeIn } from '@/hooks/useFadeIn';
@@ -70,6 +71,15 @@ export default function Home() {
   const { user } = useAuth();
   const { orders } = useOrders();
   const { totalItens, addItem } = useCart();
+  const { favoritos } = useFavorites();
+
+  const itensFavoritos = useMemo(
+    () =>
+      favoritos
+        .map((id) => CARDAPIO.find((i) => i.id === id))
+        .filter((x): x is ItemCardapio => !!x),
+    [favoritos],
+  );
 
   const pedidoAtivo: Order | undefined = useMemo(
     () => orders.find((o) => o.status === 'pendente' || o.status === 'pronto'),
@@ -141,6 +151,8 @@ export default function Home() {
           <Pressable
             style={({ pressed }) => [styles.bentoBig, pressed && styles.pressedSoft]}
             onPress={() => router.push('/cardapio')}
+            accessibilityRole="button"
+            accessibilityLabel="Ver cardápio completo"
           >
             <View style={styles.bentoBigBackdrop}>
               <Text style={styles.bentoBigEmoji}>🍔</Text>
@@ -160,6 +172,12 @@ export default function Home() {
             <Pressable
               style={({ pressed }) => [styles.bentoSmall, pressed && styles.pressedSoft]}
               onPress={() => router.push('/carrinho')}
+              accessibilityRole="button"
+              accessibilityLabel={
+                totalItens > 0
+                  ? `Abrir carrinho com ${totalItens} ${totalItens === 1 ? 'item' : 'itens'}`
+                  : 'Abrir carrinho vazio'
+              }
             >
               <View style={styles.bentoSmallTopo}>
                 <View style={[styles.bentoIconWrap, { backgroundColor: colors.primarySoft }]}>
@@ -184,6 +202,8 @@ export default function Home() {
             <Pressable
               style={({ pressed }) => [styles.bentoSmall, pressed && styles.pressedSoft]}
               onPress={() => router.push('/pedidos')}
+              accessibilityRole="button"
+              accessibilityLabel="Ver histórico de pedidos"
             >
               <View style={styles.bentoSmallTopo}>
                 <View style={[styles.bentoIconWrap, { backgroundColor: colors.surfaceElevated }]}>
@@ -214,28 +234,51 @@ export default function Home() {
           />
         ) : null}
 
-        {/* Últimos pedidos */}
-        {ultimosPedidos.length > 0 ? (
+        {/* Seus favoritos */}
+        {itensFavoritos.length > 0 ? (
           <>
             <View style={styles.secaoHeader}>
-              <Text style={styles.secaoTitulo}>Últimos pedidos</Text>
-              <Pressable hitSlop={10} onPress={() => router.push('/pedidos')}>
+              <View style={styles.secaoHeaderEsquerda}>
+                <Ionicons name="heart" size={16} color={colors.error} />
+                <Text style={styles.secaoTitulo}>Seus favoritos</Text>
+              </View>
+              <Pressable
+                hitSlop={10}
+                onPress={() => router.push('/cardapio')}
+                accessibilityRole="link"
+                accessibilityLabel="Ver todos os favoritos no cardápio"
+              >
                 <Text style={styles.secaoLink}>Ver tudo</Text>
               </Pressable>
             </View>
+
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.ultimosScroll}
+              contentContainerStyle={styles.destaquesScroll}
             >
-              {ultimosPedidos.map((order) => (
-                <UltimoPedidoCard
-                  key={order.id}
-                  order={order}
-                  styles={styles}
-                  colors={colors}
-                  onPress={() => router.push('/pedidos')}
-                />
+              {itensFavoritos.map((item) => (
+                <Pressable
+                  key={item.id}
+                  style={({ pressed }) => [styles.destaqueCard, pressed && styles.pressedSoft]}
+                  onPress={() => router.push('/cardapio')}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Favorito: ${item.nome}, R$ ${item.preco.toFixed(2)}. Tocar abre o cardápio`}
+                >
+                  <View style={styles.destaqueImagemWrap}>
+                    <ItemThumbnail
+                      emoji={item.emoji}
+                      imagem={item.imagem}
+                      size={108}
+                      borderRadius={radius.md}
+                      bgColor={colors.surfaceElevated}
+                    />
+                  </View>
+                  <Text style={styles.destaqueNome} numberOfLines={1}>
+                    {item.nome}
+                  </Text>
+                  <Text style={styles.destaquePreco}>R$ {item.preco.toFixed(2)}</Text>
+                </Pressable>
               ))}
             </ScrollView>
           </>
@@ -244,7 +287,12 @@ export default function Home() {
         {/* Destaques */}
         <View style={styles.secaoHeader}>
           <Text style={styles.secaoTitulo}>Destaques</Text>
-          <Pressable hitSlop={10} onPress={() => router.push('/cardapio')}>
+          <Pressable
+            hitSlop={10}
+            onPress={() => router.push('/cardapio')}
+            accessibilityRole="link"
+            accessibilityLabel="Ver todos os destaques no cardápio"
+          >
             <Text style={styles.secaoLink}>Ver tudo</Text>
           </Pressable>
         </View>
@@ -259,6 +307,8 @@ export default function Home() {
               key={item.id}
               style={({ pressed }) => [styles.destaqueCard, pressed && styles.pressedSoft]}
               onPress={() => router.push('/cardapio')}
+              accessibilityRole="button"
+              accessibilityLabel={`Destaque: ${item.nome}, R$ ${item.preco.toFixed(2)}. Tocar abre o cardápio`}
             >
               <View style={styles.destaqueImagemWrap}>
                 <ItemThumbnail
@@ -276,6 +326,38 @@ export default function Home() {
             </Pressable>
           ))}
         </ScrollView>
+
+        {/* Últimos pedidos */}
+        {ultimosPedidos.length > 0 ? (
+          <>
+            <View style={styles.secaoHeader}>
+              <Text style={styles.secaoTitulo}>Últimos pedidos</Text>
+              <Pressable
+                hitSlop={10}
+                onPress={() => router.push('/pedidos')}
+                accessibilityRole="link"
+                accessibilityLabel="Ver todos os pedidos"
+              >
+                <Text style={styles.secaoLink}>Ver tudo</Text>
+              </Pressable>
+            </View>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.ultimosScroll}
+            >
+              {ultimosPedidos.map((order) => (
+                <UltimoPedidoCard
+                  key={order.id}
+                  order={order}
+                  styles={styles}
+                  colors={colors}
+                  onPress={() => router.push(`/pedido/${order.id}`)}
+                />
+              ))}
+            </ScrollView>
+          </>
+        ) : null}
       </ScrollView>
     </View>
   );
@@ -342,6 +424,8 @@ function ComboCard({ combo, items, preco, colors, styles, onAdicionar }: ComboCa
         <Pressable
           style={({ pressed }) => [styles.comboBotao, pressed && styles.pressedSoft]}
           onPress={onAdicionar}
+          accessibilityRole="button"
+          accessibilityLabel={`Adicionar combo ${combo.titulo} ao carrinho por R$ ${preco.toFixed(2)}`}
         >
           <Ionicons name="add" size={16} color={colors.primaryText} />
           <Text style={styles.comboBotaoTexto}>Adicionar</Text>
@@ -365,6 +449,8 @@ function UltimoPedidoCard({ order, styles, colors, onPress }: UltimoPedidoCardPr
     <Pressable
       style={({ pressed }) => [styles.ultimoCard, pressed && styles.pressedSoft]}
       onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={`Pedido senha ${order.senha}, ${palette.label}, total R$ ${order.total.toFixed(2)}`}
     >
       <View
         style={[
@@ -407,6 +493,8 @@ function PedidoAtivoCard({ order, colors, styles, onPress }: PedidoAtivoCardProp
     <Pressable
       style={({ pressed }) => [styles.pedidoAtivoCard, pressed && styles.pressedSoft]}
       onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={`Acompanhar pedido ativo, senha ${order.senha}, ${palette.label}`}
     >
       <View style={styles.pedidoAtivoTopo}>
         <View
@@ -833,6 +921,11 @@ const createStyles = (c: ThemeColors) =>
       alignItems: 'center',
       paddingHorizontal: spacing.xl,
       marginBottom: spacing.md,
+    },
+    secaoHeaderEsquerda: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs + 2,
     },
     secaoTitulo: {
       fontFamily: fontFamily.bold,
