@@ -6,45 +6,77 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Redirect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import LoadingScreen from '@/components/LoadingScreen';
+import { useCart } from '@/context/CartContext';
+import { useOrders } from '@/context/OrdersContext';
 import { useTheme } from '@/context/ThemeContext';
+import { notifyImmediate, scheduleNotification } from '@/lib/notifications';
 import { fontFamily, fontSize, letterSpacing, radius, spacing } from '@/constants/theme';
-import type { ThemeColors } from '@/types';
+import type { Order, ThemeColors } from '@/types';
 
-type ConfirmacaoParams = {
-  total?: string;
-  itens?: string;
-  resumo?: string;
-};
+const PREP_SECONDS = 180;
 
 export default function Confirmacao() {
   const router = useRouter();
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
-  const { total, itens, resumo } = useLocalSearchParams<ConfirmacaoParams>();
-  const [senha, setSenha] = useState<number | null>(null);
-  const [carregando, setCarregando] = useState<boolean>(true);
+  const { items, totalItens, totalPreco, buildResumo, clear } = useCart();
+  const { addOrder } = useOrders();
+
+  const [order, setOrder] = useState<Order | null>(null);
 
   const senhaScale = useRef(new Animated.Value(0)).current;
   const senhaOpacity = useRef(new Animated.Value(0)).current;
   const checkScale = useRef(new Animated.Value(0)).current;
+  const hasCreatedRef = useRef(false);
 
+  // Cria pedido (uma única vez)
   useEffect(() => {
-    const timer = setTimeout(() => {
-      const novaSenha = Math.floor(Math.random() * 900) + 100;
-      setSenha(novaSenha);
-      setCarregando(false);
-    }, 1500);
+    if (hasCreatedRef.current) return;
+    if (totalItens === 0) return;
+    hasCreatedRef.current = true;
 
-    return () => clearTimeout(timer);
-  }, []);
+    const senha = Math.floor(Math.random() * 900) + 100;
+    const itemsSnapshot = [...items];
+    const totalSnapshot = totalPreco;
+    const resumoSnapshot = buildResumo();
 
+    (async () => {
+      try {
+        const novo = await addOrder({
+          senha,
+          items: itemsSnapshot,
+          total: totalSnapshot,
+          resumo: resumoSnapshot,
+        });
+        setOrder(novo);
+
+        notifyImmediate(
+          `Pedido confirmado · senha ${senha}`,
+          `Acompanhe seu pedido pela aba Pedidos. Total: R$ ${totalSnapshot.toFixed(2)}`,
+        );
+
+        scheduleNotification(
+          `Senha ${senha} pronta para retirada`,
+          'Apresente sua senha no balcão da cantina.',
+          PREP_SECONDS,
+        );
+
+        clear();
+      } catch (e) {
+        // se algo falhar, tenta de novo na próxima entrada
+        hasCreatedRef.current = false;
+      }
+    })();
+  }, [totalItens, items, totalPreco, buildResumo, addOrder, clear]);
+
+  // Animações ao receber a senha
   useEffect(() => {
-    if (senha === null) return;
+    if (!order) return;
     Animated.sequence([
       Animated.spring(checkScale, {
         toValue: 1,
@@ -66,10 +98,15 @@ export default function Confirmacao() {
         }),
       ]),
     ]).start();
-  }, [senha, senhaScale, senhaOpacity, checkScale]);
+  }, [order, senhaScale, senhaOpacity, checkScale]);
 
-  if (carregando) {
-    return <LoadingScreen label="PROCESSANDO" subtitle="AGUARDE UM MOMENTO" />;
+  // Sem itens e sem pedido criado: redireciona pro cardápio
+  if (!order && totalItens === 0) {
+    return <Redirect href="/cardapio" />;
+  }
+
+  if (!order) {
+    return <LoadingScreen label="PROCESSANDO" subtitle="GERANDO SUA SENHA" />;
   }
 
   return (
@@ -91,7 +128,7 @@ export default function Confirmacao() {
           ]}
         >
           <Text style={styles.senhaLabel}>SUA SENHA</Text>
-          <Text style={styles.senhaNumero}>{senha}</Text>
+          <Text style={styles.senhaNumero}>{order.senha}</Text>
         </Animated.View>
 
         <Text style={styles.senhaInstrucao}>APRESENTE ESTE NÚMERO NO BALCÃO</Text>
@@ -99,31 +136,36 @@ export default function Confirmacao() {
         <View style={styles.resumoCard}>
           <View style={styles.resumoLinha}>
             <Text style={styles.resumoLabel}>ITENS</Text>
-            <Text style={styles.resumoValor}>{itens}</Text>
+            <Text style={styles.resumoValor}>
+              {order.items.reduce((acc, ci) => acc + ci.quantidade, 0)}
+            </Text>
           </View>
 
           <View style={styles.divisor} />
 
-          <Text style={styles.resumoDetalhe}>{resumo}</Text>
+          <Text style={styles.resumoDetalhe}>{order.resumo}</Text>
 
           <View style={styles.divisor} />
 
           <View style={styles.resumoLinha}>
             <Text style={styles.totalLabel}>TOTAL</Text>
-            <Text style={styles.totalValor}>R$ {total}</Text>
+            <Text style={styles.totalValor}>R$ {order.total.toFixed(2)}</Text>
           </View>
         </View>
 
         <View style={styles.avisoContainer}>
-          <Text style={styles.avisoTexto}>AGUARDE SEU NÚMERO NO PAINEL DA CANTINA</Text>
+          <Ionicons name="notifications-outline" size={16} color={colors.primary} />
+          <Text style={styles.avisoTexto}>
+            VOCÊ SERÁ NOTIFICADO QUANDO O PEDIDO ESTIVER PRONTO
+          </Text>
         </View>
 
         <TouchableOpacity
           style={styles.botaoPrimario}
-          onPress={() => router.replace('/')}
+          onPress={() => router.replace('/pedidos')}
           activeOpacity={0.85}
         >
-          <Text style={styles.botaoPrimarioTexto}>VOLTAR AO INÍCIO</Text>
+          <Text style={styles.botaoPrimarioTexto}>VER MEUS PEDIDOS</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -250,8 +292,12 @@ const createStyles = (c: ThemeColors) =>
       borderLeftColor: c.primary,
       borderWidth: 1,
       borderColor: c.border,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm + 2,
     },
     avisoTexto: {
+      flex: 1,
       fontFamily: fontFamily.semibold,
       fontSize: fontSize.xs,
       color: c.textMuted,
