@@ -1,5 +1,7 @@
+import { useCallback, useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   useFonts,
   Manrope_400Regular,
@@ -14,13 +16,46 @@ import { CartProvider } from '@/context/CartContext';
 import { OrdersProvider } from '@/context/OrdersContext';
 import { ThemeProvider, useTheme } from '@/context/ThemeContext';
 import LoadingScreen from '@/components/LoadingScreen';
+import Onboarding from '@/components/Onboarding';
+import { STORAGE_KEYS } from '@/constants/storage-keys';
+
+function useOnboarded() {
+  const [onboarded, setOnboarded] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    AsyncStorage.getItem(STORAGE_KEYS.ONBOARDED)
+      .then((v) => setOnboarded(v === 'true'))
+      .catch(() => setOnboarded(true));
+  }, []);
+
+  const markOnboarded = useCallback(async () => {
+    setOnboarded(true);
+    try {
+      await AsyncStorage.setItem(STORAGE_KEYS.ONBOARDED, 'true');
+    } catch {
+      // armazenamento falha silenciosamente — não bloqueia o app
+    }
+  }, []);
+
+  return { onboarded, markOnboarded };
+}
 
 function RootStack() {
   const { mode } = useTheme();
   const { isHydrating } = useAuth();
+  const { onboarded, markOnboarded } = useOnboarded();
 
-  if (isHydrating) {
+  if (isHydrating || onboarded === null) {
     return <LoadingScreen label="APP CANTINA" subtitle="VERIFICANDO SESSÃO" />;
+  }
+
+  if (!onboarded) {
+    return (
+      <>
+        <StatusBar style={mode === 'dark' ? 'light' : 'dark'} />
+        <Onboarding onComplete={markOnboarded} />
+      </>
+    );
   }
 
   return (

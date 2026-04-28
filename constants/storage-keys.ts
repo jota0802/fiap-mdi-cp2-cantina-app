@@ -5,6 +5,7 @@ export const STORAGE_KEYS = {
   CART: '@cantina:cart',
   THEME: '@cantina:theme',
   PROFILE_PHOTO: '@cantina:profile_photo',
+  ONBOARDED: '@cantina:onboarded',
 } as const;
 
 export const SECURE_KEYS = {
