@@ -5,7 +5,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -19,8 +18,29 @@ import ItemCardapio from '@/components/ItemCardapio';
 import { useCart } from '@/context/CartContext';
 import { useTheme } from '@/context/ThemeContext';
 import { haptic } from '@/lib/haptics';
-import { fontFamily, fontSize, letterSpacing, radius, spacing } from '@/constants/theme';
+import {
+  fontFamily,
+  fontSize,
+  letterSpacing,
+  radius,
+  shadow,
+  spacing,
+} from '@/constants/theme';
 import type { Categoria, ThemeColors } from '@/types';
+
+const CATEGORIAS_ORDEM: ('Todas' | Categoria)[] = [
+  'Todas',
+  'Bebidas',
+  'Lanches',
+  'Sobremesas',
+];
+
+const CATEGORIA_ICONE: Record<Categoria | 'Todas', keyof typeof Ionicons.glyphMap> = {
+  Todas: 'apps-outline',
+  Bebidas: 'cafe-outline',
+  Lanches: 'fast-food-outline',
+  Sobremesas: 'ice-cream-outline',
+};
 
 export default function Cardapio() {
   const router = useRouter();
@@ -34,21 +54,23 @@ export default function Cardapio() {
     getQuantidade,
     totalItens,
     totalPreco,
-    buildResumo,
   } = useCart();
 
   const [busca, setBusca] = useState('');
+  const [categoriaAtiva, setCategoriaAtiva] = useState<'Todas' | Categoria>('Todas');
 
   const itensFiltrados = useMemo(() => {
     const termo = busca.trim().toLowerCase();
-    if (!termo) return CARDAPIO;
-    return CARDAPIO.filter(
-      (i) =>
+    return CARDAPIO.filter((i) => {
+      if (categoriaAtiva !== 'Todas' && i.categoria !== categoriaAtiva) return false;
+      if (!termo) return true;
+      return (
         i.nome.toLowerCase().includes(termo) ||
         i.descricao.toLowerCase().includes(termo) ||
-        i.categoria.toLowerCase().includes(termo),
-    );
-  }, [busca]);
+        i.categoria.toLowerCase().includes(termo)
+      );
+    });
+  }, [busca, categoriaAtiva]);
 
   const categoriasVisiveis: Categoria[] = useMemo(
     () => Array.from(new Set(itensFiltrados.map((i) => i.categoria))),
@@ -69,41 +91,38 @@ export default function Cardapio() {
     ]).start();
   }, [totalItens, badgeScale]);
 
-  const confirmarPedido = () => {
+  const irParaCarrinho = () => {
     if (totalItens === 0) return;
-    haptic.success();
-    router.push({
-      pathname: '/confirmacao',
-      params: {
-        total: totalPreco.toFixed(2),
-        itens: String(totalItens),
-        resumo: buildResumo(),
-      },
-    });
+    haptic.light();
+    router.push('/carrinho');
   };
 
   return (
     <View style={styles.container}>
-      <View style={[styles.header, { paddingTop: insets.top + spacing.lg }]}>
+      <View style={[styles.header, { paddingTop: insets.top + spacing.md }]}>
         <View style={styles.tituloRow}>
           <View style={styles.tituloCol}>
-            <Text style={styles.titulo}>CARDÁPIO</Text>
-            <Text style={styles.subtitulo}>ESCOLHA SEUS ITENS</Text>
+            <Text style={styles.eyebrow}>O QUE VAMOS PEDIR HOJE</Text>
+            <Text style={styles.titulo}>Cardápio</Text>
           </View>
 
           {totalItens > 0 ? (
-            <Animated.View
-              style={[styles.badge, { transform: [{ scale: badgeScale }] }]}
-            >
-              <Ionicons name="cart" size={16} color={colors.primaryText} />
-              <Text style={styles.badgeText}>{totalItens}</Text>
+            <Animated.View style={{ transform: [{ scale: badgeScale }] }}>
+              <Pressable
+                onPress={irParaCarrinho}
+                style={({ pressed }) => [styles.badge, pressed && styles.pressedSoft]}
+                hitSlop={8}
+              >
+                <Ionicons name="bag-handle" size={14} color={colors.primaryText} />
+                <Text style={styles.badgeText}>{totalItens}</Text>
+              </Pressable>
             </Animated.View>
           ) : null}
         </View>
 
         <View style={styles.searchWrapper}>
           <Input
-            placeholder="Buscar item, descrição ou categoria..."
+            placeholder="Buscar item, descrição ou categoria"
             icon="search-outline"
             value={busca}
             onChangeText={setBusca}
@@ -123,6 +142,39 @@ export default function Cardapio() {
             }
           />
         </View>
+
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.chipsRow}
+        >
+          {CATEGORIAS_ORDEM.map((cat) => {
+            const ativo = cat === categoriaAtiva;
+            return (
+              <Pressable
+                key={cat}
+                onPress={() => {
+                  haptic.light();
+                  setCategoriaAtiva(cat);
+                }}
+                style={({ pressed }) => [
+                  styles.chip,
+                  ativo && styles.chipAtivo,
+                  pressed && styles.pressedSoft,
+                ]}
+              >
+                <Ionicons
+                  name={CATEGORIA_ICONE[cat]}
+                  size={14}
+                  color={ativo ? colors.primaryText : colors.textMuted}
+                />
+                <Text style={[styles.chipTexto, ativo && styles.chipTextoAtivo]}>
+                  {cat}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
       </View>
 
       <ScrollView
@@ -134,13 +186,20 @@ export default function Cardapio() {
           <EmptyState
             emoji="🔎"
             title="Nada encontrado"
-            subtitle={`Nenhum item corresponde a "${busca.trim()}"`}
+            subtitle={
+              busca.trim()
+                ? `Nenhum item corresponde a "${busca.trim()}"`
+                : 'Nenhum item nessa categoria por enquanto'
+            }
           />
         ) : (
           <>
             {categoriasVisiveis.map((categoria) => (
               <View key={categoria} style={styles.categoriaSection}>
-                <Text style={styles.categoriaTitulo}>{categoria.toUpperCase()}</Text>
+                <View style={styles.categoriaHeader}>
+                  <Text style={styles.categoriaTitulo}>{categoria}</Text>
+                  <View style={styles.categoriaLinha} />
+                </View>
                 {itensFiltrados
                   .filter((item) => item.categoria === categoria)
                   .map((item) => (
@@ -158,8 +217,8 @@ export default function Cardapio() {
             {totalItens === 0 ? (
               <EmptyState
                 emoji="👇"
-                title="Toque no + para adicionar itens"
-                subtitle="Monte seu pedido para liberar a confirmação"
+                title="Toque no + para adicionar"
+                subtitle="Monte seu pedido para liberar a revisão"
               />
             ) : null}
           </>
@@ -169,20 +228,20 @@ export default function Cardapio() {
       </ScrollView>
 
       {totalItens > 0 ? (
-        <View style={styles.barraInferior}>
+        <View style={[styles.barraInferior, { paddingBottom: insets.bottom + spacing.md }]}>
           <View style={styles.resumo}>
             <Text style={styles.resumoItens}>
-              {totalItens} {totalItens === 1 ? 'ITEM' : 'ITENS'}
+              {totalItens} {totalItens === 1 ? 'item selecionado' : 'itens selecionados'}
             </Text>
             <Text style={styles.resumoTotal}>R$ {totalPreco.toFixed(2)}</Text>
           </View>
-          <TouchableOpacity
-            style={styles.botaoConfirmar}
-            onPress={confirmarPedido}
-            activeOpacity={0.85}
+          <Pressable
+            style={({ pressed }) => [styles.botaoConfirmar, pressed && styles.pressedSoft]}
+            onPress={irParaCarrinho}
           >
-            <Text style={styles.botaoConfirmarTexto}>CONFIRMAR</Text>
-          </TouchableOpacity>
+            <Text style={styles.botaoConfirmarTexto}>Revisar pedido</Text>
+            <Ionicons name="arrow-forward" size={16} color={colors.primaryText} />
+          </Pressable>
         </View>
       ) : null}
     </View>
@@ -199,21 +258,20 @@ const createStyles = (c: ThemeColors) =>
     tituloRow: {
       flexDirection: 'row',
       justifyContent: 'space-between',
-      alignItems: 'center',
+      alignItems: 'flex-end',
       marginBottom: spacing.lg,
     },
     tituloCol: { flex: 1 },
+    eyebrow: {
+      fontFamily: fontFamily.semibold,
+      fontSize: fontSize.xs,
+      color: c.textSubtle,
+      letterSpacing: letterSpacing.widest,
+    },
     titulo: {
       fontFamily: fontFamily.extrabold,
       fontSize: fontSize['3xl'],
       color: c.text,
-      letterSpacing: letterSpacing.ultra,
-    },
-    subtitulo: {
-      fontFamily: fontFamily.medium,
-      fontSize: fontSize.sm,
-      color: c.textSubtle,
-      letterSpacing: letterSpacing.wider,
       marginTop: spacing.xs,
     },
     badge: {
@@ -224,65 +282,109 @@ const createStyles = (c: ThemeColors) =>
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.sm,
       borderRadius: radius.full,
+      ...shadow.primary,
     },
     badgeText: {
       fontFamily: fontFamily.bold,
       fontSize: fontSize.md,
       color: c.primaryText,
-      letterSpacing: letterSpacing.normal,
     },
-    searchWrapper: { marginTop: 0 },
+    searchWrapper: { marginBottom: spacing.md },
+    chipsRow: {
+      gap: spacing.sm,
+      paddingRight: spacing.lg,
+    },
+    chip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs + 2,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      borderRadius: radius.full,
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    chipAtivo: {
+      backgroundColor: c.primary,
+      borderColor: c.primary,
+    },
+    chipTexto: {
+      fontFamily: fontFamily.semibold,
+      fontSize: fontSize.md,
+      color: c.textMuted,
+    },
+    chipTextoAtivo: {
+      color: c.primaryText,
+    },
     scrollContent: {
       paddingHorizontal: spacing.xl,
+      paddingTop: spacing.lg,
       paddingBottom: spacing.xl,
     },
-    categoriaSection: { marginBottom: spacing.md },
-    categoriaTitulo: {
-      fontFamily: fontFamily.extrabold,
-      fontSize: fontSize.sm,
-      color: c.primary,
-      letterSpacing: letterSpacing.wider,
+    categoriaSection: { marginBottom: spacing.lg },
+    categoriaHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
       marginBottom: spacing.md,
-      marginTop: spacing.sm,
     },
-    espacoFinal: { height: 100 },
+    categoriaTitulo: {
+      fontFamily: fontFamily.bold,
+      fontSize: fontSize.md,
+      color: c.text,
+      letterSpacing: letterSpacing.normal,
+    },
+    categoriaLinha: {
+      flex: 1,
+      height: 1,
+      backgroundColor: c.separator,
+    },
+    espacoFinal: { height: 120 },
     barraInferior: {
       position: 'absolute',
       bottom: 0,
       left: 0,
       right: 0,
-      backgroundColor: c.card,
+      backgroundColor: c.bg,
       borderTopWidth: 1,
       borderTopColor: c.border,
       paddingHorizontal: spacing.xl,
-      paddingVertical: spacing.lg,
+      paddingTop: spacing.md,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
+      gap: spacing.md,
     },
     resumo: { flex: 1 },
     resumoItens: {
-      fontFamily: fontFamily.semibold,
-      fontSize: fontSize.xs,
-      color: c.textSubtle,
-      letterSpacing: letterSpacing.wide,
+      fontFamily: fontFamily.medium,
+      fontSize: fontSize.md,
+      color: c.textMuted,
     },
     resumoTotal: {
       fontFamily: fontFamily.extrabold,
-      fontSize: fontSize['2xl'],
+      fontSize: fontSize.xl,
       color: c.text,
       marginTop: 2,
     },
     botaoConfirmar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
       backgroundColor: c.primary,
-      paddingHorizontal: spacing['2xl'] + 4,
-      paddingVertical: spacing.md + 2,
+      paddingHorizontal: spacing.xl,
+      paddingVertical: spacing.md,
       borderRadius: radius.full,
+      ...shadow.primary,
     },
     botaoConfirmarTexto: {
       fontFamily: fontFamily.bold,
       color: c.primaryText,
-      fontSize: fontSize.md,
-      letterSpacing: letterSpacing.wide,
+      fontSize: fontSize.base,
+    },
+    pressedSoft: {
+      opacity: 0.85,
+      transform: [{ scale: 0.98 }],
     },
   });

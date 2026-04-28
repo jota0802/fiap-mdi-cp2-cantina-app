@@ -3,7 +3,7 @@ import { View, Text, Pressable, StyleSheet, Animated } from 'react-native';
 
 import { useTheme } from '@/context/ThemeContext';
 import { haptic } from '@/lib/haptics';
-import { fontFamily, fontSize, letterSpacing, radius, spacing } from '@/constants/theme';
+import { fontFamily, fontSize, radius, spacing } from '@/constants/theme';
 import type { ItemCardapio as ItemCardapioModel, ThemeColors } from '@/types';
 
 type Props = {
@@ -16,6 +16,7 @@ type Props = {
 export default function ItemCardapio({ item, quantidade, onAdicionar, onRemover }: Props) {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
+  const ativo = quantidade > 0;
 
   const scale = useRef(new Animated.Value(1)).current;
   const animatePop = () => {
@@ -26,19 +27,23 @@ export default function ItemCardapio({ item, quantidade, onAdicionar, onRemover 
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, ativo && styles.containerAtivo]}>
       <View style={styles.emojiContainer}>
         <Text style={styles.emoji}>{item.emoji}</Text>
       </View>
 
       <View style={styles.info}>
-        <Text style={styles.nome}>{item.nome.toUpperCase()}</Text>
-        <Text style={styles.descricao}>{item.descricao}</Text>
+        <Text style={styles.nome} numberOfLines={1}>
+          {item.nome}
+        </Text>
+        <Text style={styles.descricao} numberOfLines={2}>
+          {item.descricao}
+        </Text>
         <Text style={styles.preco}>R$ {item.preco.toFixed(2)}</Text>
       </View>
 
       <View style={styles.controles}>
-        {quantidade > 0 ? (
+        {ativo ? (
           <Pressable
             style={({ pressed }) => [styles.botaoMenos, pressed && styles.pressed]}
             onPress={() => {
@@ -52,7 +57,7 @@ export default function ItemCardapio({ item, quantidade, onAdicionar, onRemover 
           </Pressable>
         ) : null}
 
-        {quantidade > 0 ? (
+        {ativo ? (
           <Animated.Text style={[styles.quantidade, { transform: [{ scale }] }]}>
             {quantidade}
           </Animated.Text>
@@ -79,48 +84,52 @@ const createStyles = (c: ThemeColors) =>
     container: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: c.card,
+      backgroundColor: c.surface,
       borderRadius: radius.lg,
-      padding: spacing.md + 2,
+      padding: spacing.md,
       marginBottom: spacing.sm,
       borderWidth: 1,
       borderColor: c.border,
+      gap: spacing.md,
+    },
+    containerAtivo: {
+      borderColor: c.primary,
+      backgroundColor: c.primarySoft,
     },
     emojiContainer: {
-      width: 48,
-      height: 48,
+      width: 52,
+      height: 52,
       borderRadius: radius.md,
-      backgroundColor: c.cardElevated,
+      backgroundColor: c.surfaceElevated,
       alignItems: 'center',
       justifyContent: 'center',
     },
-    emoji: { fontSize: 24 },
+    emoji: { fontSize: 26 },
     info: {
       flex: 1,
-      marginLeft: spacing.md + 2,
     },
     nome: {
-      fontFamily: fontFamily.bold,
-      fontSize: fontSize.md - 1,
+      fontFamily: fontFamily.semibold,
+      fontSize: fontSize.base,
       color: c.text,
-      letterSpacing: letterSpacing.normal,
     },
     descricao: {
       fontFamily: fontFamily.regular,
-      fontSize: fontSize.md - 1,
-      color: c.textSubtle,
+      fontSize: fontSize.md,
+      color: c.textMuted,
       marginTop: 2,
+      lineHeight: 17,
     },
     preco: {
       fontFamily: fontFamily.bold,
       fontSize: fontSize.base,
-      color: c.primary,
+      color: c.text,
       marginTop: spacing.xs,
     },
     controles: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: spacing.sm + 2,
+      gap: spacing.sm,
     },
     botaoMais: {
       width: 36,
@@ -131,10 +140,10 @@ const createStyles = (c: ThemeColors) =>
       justifyContent: 'center',
     },
     botaoMenos: {
-      width: 36,
-      height: 36,
-      borderRadius: 18,
-      backgroundColor: c.cardElevated,
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      backgroundColor: c.surfaceElevated,
       alignItems: 'center',
       justifyContent: 'center',
       borderWidth: 1,
