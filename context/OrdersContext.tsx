@@ -12,9 +12,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { useAuth } from '@/context/AuthContext';
 import { STORAGE_KEYS } from '@/constants/storage-keys';
+import { calcularPrazoSegundos } from '@/lib/estimativa';
 import type { CartItem, Order } from '@/types';
 
-const PREP_TIME_MS = 3 * 60 * 1000;
+const PREP_TIME_FALLBACK_MS = 3 * 60 * 1000;
 
 type NewOrderInput = {
   senha: number;
@@ -29,6 +30,7 @@ type OrdersContextValue = {
   addOrder: (input: NewOrderInput) => Promise<Order>;
   markPronto: (orderId: string) => Promise<void>;
   markRetirado: (orderId: string) => Promise<void>;
+  markCancelado: (orderId: string) => Promise<void>;
   refresh: () => Promise<void>;
   getOrder: (orderId: string) => Order | undefined;
 };
@@ -103,11 +105,12 @@ export function OrdersProvider({ children }: ProviderProps) {
       if (order.status !== 'pendente') return;
       if (timeoutsRef.current.has(order.id)) return;
 
-      const elapsed = Date.now() - new Date(order.criadoEm).getTime();
-      const remaining = PREP_TIME_MS - elapsed;
+      const prontoEmMs = order.prontoEm
+        ? new Date(order.prontoEm).getTime()
+        : new Date(order.criadoEm).getTime() + PREP_TIME_FALLBACK_MS;
+      const remaining = prontoEmMs - Date.now();
 
       if (remaining <= 0) {
-        // já passou do tempo — promove no próximo tick
         const id = setTimeout(() => promoteToPronto(order.id), 0);
         timeoutsRef.current.set(order.id, id);
         return;
@@ -162,6 +165,11 @@ export function OrdersProvider({ children }: ProviderProps) {
       if (!user) {
         throw new Error('Sem usuário logado para criar pedido');
       }
+      const pedidosPendentes = orders.filter((o) => o.status === 'pendente').length;
+      const prazoSegundos = calcularPrazoSegundos(pedidosPendentes);
+      const agora = new Date();
+      const prontoEm = new Date(agora.getTime() + prazoSegundos * 1000);
+
       const novo: Order = {
         id: makeOrderId(),
         userId: user.id,
@@ -169,7 +177,8 @@ export function OrdersProvider({ children }: ProviderProps) {
         items: input.items,
         total: input.total,
         resumo: input.resumo,
-        criadoEm: new Date().toISOString(),
+        criadoEm: agora.toISOString(),
+        prontoEm: prontoEm.toISOString(),
         status: 'pendente',
       };
       const next = [novo, ...orders];
@@ -186,8 +195,8 @@ export function OrdersProvider({ children }: ProviderProps) {
       const next = orders.map((o) => (o.id === orderId ? { ...o, status } : o));
       setOrders(next);
       await persist(next);
-      // se foi marcado como retirado, cancela qualquer auto-promote pendente
-      if (status === 'retirado') {
+      // se foi marcado como terminal (retirado/cancelado), cancela auto-promote pendente
+      if (status === 'retirado' || status === 'cancelado') {
         const t = timeoutsRef.current.get(orderId);
         if (t) {
           clearTimeout(t);
@@ -208,6 +217,11 @@ export function OrdersProvider({ children }: ProviderProps) {
     [updateStatus],
   );
 
+  const markCancelado = useCallback(
+    (orderId: string) => updateStatus(orderId, 'cancelado'),
+    [updateStatus],
+  );
+
   const refresh = useCallback(async () => {
     if (!user) return;
     const stored = await loadOrdersFromStorage(user.id);
@@ -221,8 +235,26 @@ export function OrdersProvider({ children }: ProviderProps) {
   );
 
   const value = useMemo<OrdersContextValue>(
-    () => ({ orders, isHydrated, addOrder, markPronto, markRetirado, refresh, getOrder }),
-    [orders, isHydrated, addOrder, markPronto, markRetirado, refresh, getOrder],
+    () => ({
+      orders,
+      isHydrated,
+      addOrder,
+      markPronto,
+      markRetirado,
+      markCancelado,
+      refresh,
+      getOrder,
+    }),
+    [
+      orders,
+      isHydrated,
+      addOrder,
+      markPronto,
+      markRetirado,
+      markCancelado,
+      refresh,
+      getOrder,
+    ],
   );
 
   return <OrdersContext.Provider value={value}>{children}</OrdersContext.Provider>;
