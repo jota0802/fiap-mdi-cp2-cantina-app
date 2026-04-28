@@ -1,4 +1,5 @@
 import { Stack } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import {
   useFonts,
   Manrope_400Regular,
@@ -7,24 +8,28 @@ import {
   Manrope_700Bold,
   Manrope_800ExtraBold,
 } from '@expo-google-fonts/manrope';
-import { StatusBar } from 'expo-status-bar';
 
+import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { ThemeProvider, useTheme } from '@/context/ThemeContext';
 import LoadingScreen from '@/components/LoadingScreen';
 
 function RootStack() {
   const { mode } = useTheme();
+  const { isHydrating } = useAuth();
+
+  if (isHydrating) {
+    return <LoadingScreen label="APP CANTINA" subtitle="VERIFICANDO SESSÃO" />;
+  }
 
   return (
     <>
       <StatusBar style={mode === 'dark' ? 'light' : 'dark'} />
       <Stack screenOptions={{ headerShown: false, animation: 'fade' }}>
+        <Stack.Screen name="(auth)" />
         <Stack.Screen name="(tabs)" />
         <Stack.Screen
           name="confirmacao"
-          options={{
-            animation: 'slide_from_bottom',
-          }}
+          options={{ animation: 'slide_from_bottom' }}
         />
       </Stack>
     </>
@@ -46,7 +51,9 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider>
-      {fontsLoaded ? <RootStack /> : <ThemedSplash />}
+      <AuthProvider>
+        {fontsLoaded ? <RootStack /> : <ThemedSplash />}
+      </AuthProvider>
     </ThemeProvider>
   );
 }
