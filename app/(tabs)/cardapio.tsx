@@ -1,75 +1,79 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  View,
+  Animated,
+  Pressable,
+  ScrollView,
+  StyleSheet,
   Text,
   TouchableOpacity,
-  StyleSheet,
-  ScrollView,
+  View,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 
 import CARDAPIO from '@/data/cardapio';
-import ItemCardapio from '@/components/ItemCardapio';
 import EmptyState from '@/components/EmptyState';
+import Input from '@/components/Input';
+import ItemCardapio from '@/components/ItemCardapio';
+import { useCart } from '@/context/CartContext';
 import { useTheme } from '@/context/ThemeContext';
 import { fontFamily, fontSize, letterSpacing, radius, spacing } from '@/constants/theme';
 import type { Categoria, ThemeColors } from '@/types';
-
-type Quantidades = Record<number, number>;
 
 export default function Cardapio() {
   const router = useRouter();
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
-  const [quantidades, setQuantidades] = useState<Quantidades>({});
+  const {
+    addItem,
+    removeItem,
+    getQuantidade,
+    totalItens,
+    totalPreco,
+    buildResumo,
+  } = useCart();
 
-  const adicionarItem = (id: number) => {
-    setQuantidades((prev) => ({
-      ...prev,
-      [id]: (prev[id] ?? 0) + 1,
-    }));
-  };
+  const [busca, setBusca] = useState('');
 
-  const removerItem = (id: number) => {
-    setQuantidades((prev) => {
-      const novaQtd = (prev[id] ?? 0) - 1;
-      if (novaQtd <= 0) {
-        const novo = { ...prev };
-        delete novo[id];
-        return novo;
-      }
-      return { ...prev, [id]: novaQtd };
-    });
-  };
+  const itensFiltrados = useMemo(() => {
+    const termo = busca.trim().toLowerCase();
+    if (!termo) return CARDAPIO;
+    return CARDAPIO.filter(
+      (i) =>
+        i.nome.toLowerCase().includes(termo) ||
+        i.descricao.toLowerCase().includes(termo) ||
+        i.categoria.toLowerCase().includes(termo),
+    );
+  }, [busca]);
 
-  const totalItens = Object.values(quantidades).reduce<number>((acc, qty) => acc + qty, 0);
-
-  const totalPreco = Object.entries(quantidades).reduce<number>((acc, [id, qty]) => {
-    const item = CARDAPIO.find((i) => i.id === Number(id));
-    return acc + (item?.preco ?? 0) * qty;
-  }, 0);
-
-  const categorias: Categoria[] = Array.from(
-    new Set(CARDAPIO.map((item) => item.categoria)),
+  const categoriasVisiveis: Categoria[] = useMemo(
+    () => Array.from(new Set(itensFiltrados.map((i) => i.categoria))),
+    [itensFiltrados],
   );
+
+  // Badge do carrinho com pulse quando o total muda
+  const badgeScale = useRef(new Animated.Value(1)).current;
+  const isFirstRender = useRef(true);
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    Animated.sequence([
+      Animated.timing(badgeScale, { toValue: 1.4, duration: 120, useNativeDriver: true }),
+      Animated.spring(badgeScale, { toValue: 1, useNativeDriver: true, speed: 30, bounciness: 12 }),
+    ]).start();
+  }, [totalItens, badgeScale]);
 
   const confirmarPedido = () => {
     if (totalItens === 0) return;
-
-    const itensResumo = Object.entries(quantidades)
-      .map(([id, qty]) => {
-        const item = CARDAPIO.find((i) => i.id === Number(id));
-        return `${qty}x ${item?.nome ?? ''}`;
-      })
-      .join(', ');
-
     router.push({
       pathname: '/confirmacao',
       params: {
         total: totalPreco.toFixed(2),
         itens: String(totalItens),
-        resumo: itensResumo,
+        resumo: buildResumo(),
       },
     });
   };
@@ -77,36 +81,85 @@ export default function Cardapio() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.titulo}>CARDÁPIO</Text>
-        <Text style={styles.subtitulo}>ESCOLHA SEUS ITENS</Text>
+        <View style={styles.tituloRow}>
+          <View style={styles.tituloCol}>
+            <Text style={styles.titulo}>CARDÁPIO</Text>
+            <Text style={styles.subtitulo}>ESCOLHA SEUS ITENS</Text>
+          </View>
+
+          {totalItens > 0 ? (
+            <Animated.View
+              style={[styles.badge, { transform: [{ scale: badgeScale }] }]}
+            >
+              <Ionicons name="cart" size={16} color={colors.primaryText} />
+              <Text style={styles.badgeText}>{totalItens}</Text>
+            </Animated.View>
+          ) : null}
+        </View>
+
+        <View style={styles.searchWrapper}>
+          <Input
+            placeholder="Buscar item, descrição ou categoria..."
+            icon="search-outline"
+            value={busca}
+            onChangeText={setBusca}
+            autoCapitalize="none"
+            autoCorrect={false}
+            returnKeyType="search"
+            rightSlot={
+              busca.length > 0 ? (
+                <Pressable onPress={() => setBusca('')} hitSlop={12}>
+                  <Ionicons
+                    name="close-circle"
+                    size={18}
+                    color={colors.textSubtle}
+                  />
+                </Pressable>
+              ) : null
+            }
+          />
+        </View>
       </View>
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
-        {categorias.map((categoria) => (
-          <View key={categoria} style={styles.categoriaSection}>
-            <Text style={styles.categoriaTitulo}>{categoria.toUpperCase()}</Text>
-            {CARDAPIO.filter((item) => item.categoria === categoria).map((item) => (
-              <ItemCardapio
-                key={item.id}
-                item={item}
-                quantidade={quantidades[item.id] ?? 0}
-                onAdicionar={adicionarItem}
-                onRemover={removerItem}
-              />
-            ))}
-          </View>
-        ))}
-
-        {totalItens === 0 ? (
+        {itensFiltrados.length === 0 ? (
           <EmptyState
-            emoji={'👇'}
-            title="Toque no + para adicionar itens"
-            subtitle="Monte seu pedido para liberar a confirmação"
+            emoji="🔎"
+            title="Nada encontrado"
+            subtitle={`Nenhum item corresponde a "${busca.trim()}"`}
           />
-        ) : null}
+        ) : (
+          <>
+            {categoriasVisiveis.map((categoria) => (
+              <View key={categoria} style={styles.categoriaSection}>
+                <Text style={styles.categoriaTitulo}>{categoria.toUpperCase()}</Text>
+                {itensFiltrados
+                  .filter((item) => item.categoria === categoria)
+                  .map((item) => (
+                    <ItemCardapio
+                      key={item.id}
+                      item={item}
+                      quantidade={getQuantidade(item.id)}
+                      onAdicionar={addItem}
+                      onRemover={removeItem}
+                    />
+                  ))}
+              </View>
+            ))}
+
+            {totalItens === 0 ? (
+              <EmptyState
+                emoji="👇"
+                title="Toque no + para adicionar itens"
+                subtitle="Monte seu pedido para liberar a confirmação"
+              />
+            ) : null}
+          </>
+        )}
 
         <View style={styles.espacoFinal} />
       </ScrollView>
@@ -138,8 +191,15 @@ const createStyles = (c: ThemeColors) =>
     header: {
       paddingTop: 60,
       paddingHorizontal: spacing.xl,
-      paddingBottom: spacing.xl,
+      paddingBottom: spacing.md,
     },
+    tituloRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: spacing.lg,
+    },
+    tituloCol: { flex: 1 },
     titulo: {
       fontFamily: fontFamily.extrabold,
       fontSize: fontSize['3xl'],
@@ -153,6 +213,22 @@ const createStyles = (c: ThemeColors) =>
       letterSpacing: letterSpacing.wider,
       marginTop: spacing.xs,
     },
+    badge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs + 2,
+      backgroundColor: c.primary,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      borderRadius: radius.full,
+    },
+    badgeText: {
+      fontFamily: fontFamily.bold,
+      fontSize: fontSize.md,
+      color: c.primaryText,
+      letterSpacing: letterSpacing.normal,
+    },
+    searchWrapper: { marginTop: 0 },
     scrollContent: {
       paddingHorizontal: spacing.xl,
       paddingBottom: spacing.xl,
