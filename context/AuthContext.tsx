@@ -27,6 +27,11 @@ type SignInData = {
 
 export type AuthResult = { success: true } | { success: false; error: string };
 
+type ResetSenhaData = {
+  email: string;
+  novaSenha: string;
+};
+
 type AuthContextValue = {
   user: User | null;
   isHydrating: boolean;
@@ -34,6 +39,7 @@ type AuthContextValue = {
   signIn: (data: SignInData) => Promise<AuthResult>;
   signOut: () => Promise<void>;
   updateUser: (patch: Partial<User>) => Promise<void>;
+  resetSenha: (data: ResetSenhaData) => Promise<AuthResult>;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -169,9 +175,26 @@ export function AuthProvider({ children }: ProviderProps) {
     [user],
   );
 
+  const resetSenha = useCallback<AuthContextValue['resetSenha']>(
+    async ({ email, novaSenha }) => {
+      const trimmedEmail = email.trim().toLowerCase();
+      const users = await loadUsers();
+      const found = users.find((u) => u.email === trimmedEmail);
+
+      if (!found) {
+        return { success: false, error: 'Não encontramos uma conta com esse e-mail' };
+      }
+
+      const hash = await hashSenha(novaSenha);
+      await setSecureItem(passwordKey(found.id), hash);
+      return { success: true };
+    },
+    [],
+  );
+
   const value = useMemo<AuthContextValue>(
-    () => ({ user, isHydrating, signUp, signIn, signOut, updateUser }),
-    [user, isHydrating, signUp, signIn, signOut, updateUser],
+    () => ({ user, isHydrating, signUp, signIn, signOut, updateUser, resetSenha }),
+    [user, isHydrating, signUp, signIn, signOut, updateUser, resetSenha],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

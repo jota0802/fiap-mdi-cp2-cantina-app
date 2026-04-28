@@ -187,7 +187,11 @@ export default function CadastroScreen() {
           <View style={styles.linkRow}>
             <Text style={styles.linkText}>Já tem conta?</Text>
             <Link href="/login" asChild>
-              <Pressable hitSlop={8}>
+              <Pressable
+                hitSlop={8}
+                accessibilityRole="link"
+                accessibilityLabel="Ir para a tela de login"
+              >
                 <Text style={styles.linkAccent}>Fazer login</Text>
               </Pressable>
             </Link>

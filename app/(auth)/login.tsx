@@ -141,10 +141,25 @@ export default function LoginScreen() {
             style={styles.botaoSubmit}
           />
 
+          <Link href="/recover-senha" asChild>
+            <Pressable
+              hitSlop={8}
+              style={styles.esqueceuRow}
+              accessibilityRole="link"
+              accessibilityLabel="Recuperar senha"
+            >
+              <Text style={styles.esqueceuTexto}>Esqueceu sua senha?</Text>
+            </Pressable>
+          </Link>
+
           <View style={styles.linkRow}>
             <Text style={styles.linkText}>Ainda não tem conta?</Text>
             <Link href="/cadastro" asChild>
-              <Pressable hitSlop={8}>
+              <Pressable
+                hitSlop={8}
+                accessibilityRole="link"
+                accessibilityLabel="Ir para a tela de cadastro"
+              >
                 <Text style={styles.linkAccent}>Cadastre-se</Text>
               </Pressable>
             </Link>
@@ -199,6 +214,16 @@ const createStyles = (c: ThemeColors) =>
     },
     botaoSubmit: {
       marginTop: spacing.md,
+    },
+    esqueceuRow: {
+      alignItems: 'center',
+      paddingVertical: spacing.md,
+      marginTop: spacing.sm,
+    },
+    esqueceuTexto: {
+      fontFamily: fontFamily.semibold,
+      fontSize: fontSize.md,
+      color: c.textMuted,
     },
     linkRow: {
       flexDirection: 'row',
