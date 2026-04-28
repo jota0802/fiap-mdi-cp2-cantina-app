@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react';
@@ -12,6 +13,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '@/context/AuthContext';
 import { STORAGE_KEYS } from '@/constants/storage-keys';
 import type { CartItem, Order } from '@/types';
+
+const PREP_TIME_MS = 3 * 60 * 1000;
 
 type NewOrderInput = {
   senha: number;
@@ -62,10 +65,65 @@ export function OrdersProvider({ children }: ProviderProps) {
   const { user } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [isHydrated, setIsHydrated] = useState(false);
+  const userIdRef = useRef<string | null>(null);
+  const timeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
+  // Mantém o user atual em ref para callbacks de timeout
+  useEffect(() => {
+    userIdRef.current = user?.id ?? null;
+  }, [user]);
+
+  const clearAllTimeouts = useCallback(() => {
+    timeoutsRef.current.forEach((timeoutId) => clearTimeout(timeoutId));
+    timeoutsRef.current.clear();
+  }, []);
+
+  const promoteToPronto = useCallback((orderId: string) => {
+    setOrders((prev) => {
+      const next = prev.map((o) =>
+        o.id === orderId && o.status === 'pendente'
+          ? { ...o, status: 'pronto' as const }
+          : o,
+      );
+      const sameRef = next.every((o, i) => o === prev[i]);
+      if (sameRef) return prev;
+      const uid = userIdRef.current;
+      if (uid) {
+        saveOrdersToStorage(uid, next).catch(() => {
+          // persistência opcional — não bloqueia UX
+        });
+      }
+      return next;
+    });
+    timeoutsRef.current.delete(orderId);
+  }, []);
+
+  const schedulePromote = useCallback(
+    (order: Order) => {
+      if (order.status !== 'pendente') return;
+      if (timeoutsRef.current.has(order.id)) return;
+
+      const elapsed = Date.now() - new Date(order.criadoEm).getTime();
+      const remaining = PREP_TIME_MS - elapsed;
+
+      if (remaining <= 0) {
+        // já passou do tempo — promove no próximo tick
+        const id = setTimeout(() => promoteToPronto(order.id), 0);
+        timeoutsRef.current.set(order.id, id);
+        return;
+      }
+
+      const id = setTimeout(() => promoteToPronto(order.id), remaining);
+      timeoutsRef.current.set(order.id, id);
+    },
+    [promoteToPronto],
+  );
+
+  // Hidrata orders do usuário e agenda promoções pendentes
   useEffect(() => {
     let cancelled = false;
     setIsHydrated(false);
+    clearAllTimeouts();
 
     if (!user) {
       setOrders([]);
@@ -77,7 +135,9 @@ export function OrdersProvider({ children }: ProviderProps) {
 
     loadOrdersFromStorage(user.id)
       .then((stored) => {
-        if (!cancelled) setOrders(stored);
+        if (cancelled) return;
+        setOrders(stored);
+        stored.forEach((o) => schedulePromote(o));
       })
       .finally(() => {
         if (!cancelled) setIsHydrated(true);
@@ -85,8 +145,9 @@ export function OrdersProvider({ children }: ProviderProps) {
 
     return () => {
       cancelled = true;
+      clearAllTimeouts();
     };
-  }, [user]);
+  }, [user, clearAllTimeouts, schedulePromote]);
 
   const persist = useCallback(
     async (next: Order[]) => {
@@ -114,9 +175,10 @@ export function OrdersProvider({ children }: ProviderProps) {
       const next = [novo, ...orders];
       setOrders(next);
       await persist(next);
+      schedulePromote(novo);
       return novo;
     },
-    [user, orders, persist],
+    [user, orders, persist, schedulePromote],
   );
 
   const updateStatus = useCallback(
@@ -124,6 +186,14 @@ export function OrdersProvider({ children }: ProviderProps) {
       const next = orders.map((o) => (o.id === orderId ? { ...o, status } : o));
       setOrders(next);
       await persist(next);
+      // se foi marcado como retirado, cancela qualquer auto-promote pendente
+      if (status === 'retirado') {
+        const t = timeoutsRef.current.get(orderId);
+        if (t) {
+          clearTimeout(t);
+          timeoutsRef.current.delete(orderId);
+        }
+      }
     },
     [orders, persist],
   );
@@ -142,7 +212,8 @@ export function OrdersProvider({ children }: ProviderProps) {
     if (!user) return;
     const stored = await loadOrdersFromStorage(user.id);
     setOrders(stored);
-  }, [user]);
+    stored.forEach((o) => schedulePromote(o));
+  }, [user, schedulePromote]);
 
   const getOrder = useCallback(
     (orderId: string) => orders.find((o) => o.id === orderId),
