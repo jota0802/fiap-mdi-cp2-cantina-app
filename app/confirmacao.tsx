@@ -117,7 +117,7 @@ export default function Confirmacao() {
   }
 
   if (!order) {
-    return <LoadingScreen label="PROCESSANDO" subtitle="GERANDO SUA SENHA" />;
+    return <LoadingScreen label="Processando" subtitle="Gerando sua senha" />;
   }
 
   const itensQtd = order.items.reduce((acc, ci) => acc + ci.quantidade, 0);
@@ -179,14 +179,14 @@ export default function Confirmacao() {
             <Text style={styles.bentoValor}>{itensQtd}</Text>
             <Text style={styles.bentoLabel}>{itensQtd === 1 ? 'Item' : 'Itens'}</Text>
           </View>
-          <View style={[styles.bentoCard, styles.bentoCardDestaque]}>
-            <View style={[styles.bentoIconWrap, { backgroundColor: 'rgba(255,255,255,0.16)' }]}>
-              <Ionicons name="cash-outline" size={14} color={colors.primaryText} />
+          <View style={[styles.bentoCard, styles.bentoCardTotal]}>
+            <View style={[styles.bentoIconWrap, { backgroundColor: 'rgba(255,255,255,0.18)' }]}>
+              <Ionicons name="cash-outline" size={14} color="#FFFFFF" />
             </View>
-            <Text style={[styles.bentoValor, { color: colors.primaryText }]}>
+            <Text style={[styles.bentoValor, { color: '#FFFFFF' }]}>
               R$ {order.total.toFixed(2)}
             </Text>
-            <Text style={[styles.bentoLabel, { color: 'rgba(255,255,255,0.85)' }]}>Total</Text>
+            <Text style={[styles.bentoLabel, { color: 'rgba(255,255,255,0.9)' }]}>Total</Text>
           </View>
         </View>
 
@@ -335,9 +335,9 @@ const createStyles = (c: ThemeColors) =>
       borderColor: c.border,
       gap: spacing.sm,
     },
-    bentoCardDestaque: {
-      backgroundColor: c.text,
-      borderColor: c.text,
+    bentoCardTotal: {
+      backgroundColor: c.success,
+      borderColor: c.success,
     },
     bentoIconWrap: {
       width: 28,
