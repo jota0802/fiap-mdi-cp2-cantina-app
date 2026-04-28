@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
+  Pressable,
+  ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import { Redirect, useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
 import LoadingScreen from '@/components/LoadingScreen';
@@ -15,7 +17,14 @@ import { useOrders } from '@/context/OrdersContext';
 import { useTheme } from '@/context/ThemeContext';
 import { haptic } from '@/lib/haptics';
 import { notifyImmediate, scheduleNotification } from '@/lib/notifications';
-import { fontFamily, fontSize, letterSpacing, radius, spacing } from '@/constants/theme';
+import {
+  fontFamily,
+  fontSize,
+  letterSpacing,
+  radius,
+  shadow,
+  spacing,
+} from '@/constants/theme';
 import type { Order, ThemeColors } from '@/types';
 
 const PREP_SECONDS = 180;
@@ -23,6 +32,7 @@ const PREP_SECONDS = 180;
 export default function Confirmacao() {
   const router = useRouter();
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
   const { items, totalItens, totalPreco, buildResumo, clear } = useCart();
@@ -70,7 +80,6 @@ export default function Confirmacao() {
 
         clear();
       } catch (e) {
-        // se algo falhar, tenta de novo na próxima entrada
         hasCreatedRef.current = false;
       }
     })();
@@ -102,7 +111,6 @@ export default function Confirmacao() {
     ]).start();
   }, [order, senhaScale, senhaOpacity, checkScale]);
 
-  // Sem itens e sem pedido criado: redireciona pro cardápio
   if (!order && totalItens === 0) {
     return <Redirect href="/cardapio" />;
   }
@@ -111,73 +119,98 @@ export default function Confirmacao() {
     return <LoadingScreen label="PROCESSANDO" subtitle="GERANDO SUA SENHA" />;
   }
 
+  const itensQtd = order.items.reduce((acc, ci) => acc + ci.quantidade, 0);
+
   return (
     <View style={styles.container}>
-      <View style={styles.content}>
-        <Animated.View style={[styles.checkCircle, { transform: [{ scale: checkScale }] }]}>
-          <Ionicons name="checkmark" size={32} color={colors.primaryText} />
-        </Animated.View>
+      <ScrollView
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingTop: insets.top + spacing['2xl'], paddingBottom: insets.bottom + spacing['4xl'] },
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Check + label */}
+        <View style={styles.topo}>
+          <Animated.View style={[styles.checkCircle, { transform: [{ scale: checkScale }] }]}>
+            <Ionicons name="checkmark" size={28} color={colors.primaryText} />
+          </Animated.View>
+          <Text style={styles.eyebrow}>PEDIDO CONFIRMADO</Text>
+          <Text style={styles.tituloPagina}>Sua senha está pronta</Text>
+        </View>
 
-        <Text style={styles.confirmado}>PEDIDO CONFIRMADO</Text>
-
+        {/* Hero senha */}
         <Animated.View
           style={[
-            styles.senhaContainer,
-            {
-              opacity: senhaOpacity,
-              transform: [{ scale: senhaScale }],
-            },
+            styles.senhaHero,
+            { opacity: senhaOpacity, transform: [{ scale: senhaScale }] },
           ]}
         >
-          <Text style={styles.senhaLabel}>SUA SENHA</Text>
-          <Text style={styles.senhaNumero}>{order.senha}</Text>
-        </Animated.View>
-
-        <Text style={styles.senhaInstrucao}>APRESENTE ESTE NÚMERO NO BALCÃO</Text>
-
-        <View style={styles.resumoCard}>
-          <View style={styles.resumoLinha}>
-            <Text style={styles.resumoLabel}>ITENS</Text>
-            <Text style={styles.resumoValor}>
-              {order.items.reduce((acc, ci) => acc + ci.quantidade, 0)}
-            </Text>
+          <View style={styles.senhaHeroDecor}>
+            <View style={styles.dotRow}>
+              {[0, 1, 2, 3, 4].map((i) => (
+                <View key={i} style={styles.dot} />
+              ))}
+            </View>
           </View>
 
-          <View style={styles.divisor} />
+          <Text style={styles.senhaLabel}>SUA SENHA</Text>
+          <Text style={styles.senhaNumero}>{order.senha}</Text>
+          <Text style={styles.senhaInstrucao}>Apresente este número no balcão</Text>
+        </Animated.View>
 
-          <Text style={styles.resumoDetalhe}>{order.resumo}</Text>
-
-          <View style={styles.divisor} />
-
-          <View style={styles.resumoLinha}>
-            <Text style={styles.totalLabel}>TOTAL</Text>
-            <Text style={styles.totalValor}>R$ {order.total.toFixed(2)}</Text>
+        {/* Bento 2 cards: itens / total */}
+        <View style={styles.bentoStats}>
+          <View style={styles.bentoCard}>
+            <View style={styles.bentoIconWrap}>
+              <Ionicons name="bag-handle-outline" size={14} color={colors.textMuted} />
+            </View>
+            <Text style={styles.bentoValor}>{itensQtd}</Text>
+            <Text style={styles.bentoLabel}>{itensQtd === 1 ? 'Item' : 'Itens'}</Text>
+          </View>
+          <View style={[styles.bentoCard, styles.bentoCardDestaque]}>
+            <View style={[styles.bentoIconWrap, { backgroundColor: 'rgba(255,255,255,0.16)' }]}>
+              <Ionicons name="cash-outline" size={14} color={colors.primaryText} />
+            </View>
+            <Text style={[styles.bentoValor, { color: colors.primaryText }]}>
+              R$ {order.total.toFixed(2)}
+            </Text>
+            <Text style={[styles.bentoLabel, { color: 'rgba(255,255,255,0.85)' }]}>Total</Text>
           </View>
         </View>
 
-        <View style={styles.avisoContainer}>
-          <Ionicons name="notifications-outline" size={16} color={colors.primary} />
+        {/* Detalhes do pedido */}
+        <View style={styles.detalheCard}>
+          <Text style={styles.detalheLabel}>DETALHES</Text>
+          <Text style={styles.detalheTexto}>{order.resumo}</Text>
+        </View>
+
+        {/* Aviso de notificação */}
+        <View style={styles.aviso}>
+          <View style={styles.avisoIconWrap}>
+            <Ionicons name="notifications-outline" size={14} color={colors.primary} />
+          </View>
           <Text style={styles.avisoTexto}>
-            VOCÊ SERÁ NOTIFICADO QUANDO O PEDIDO ESTIVER PRONTO
+            Você será notificado quando o pedido estiver pronto pra retirada.
           </Text>
         </View>
 
-        <TouchableOpacity
-          style={styles.botaoPrimario}
+        {/* Ações */}
+        <Pressable
+          style={({ pressed }) => [styles.botaoPrimario, pressed && styles.pressedSoft]}
           onPress={() => router.replace('/pedidos')}
-          activeOpacity={0.85}
         >
-          <Text style={styles.botaoPrimarioTexto}>VER MEUS PEDIDOS</Text>
-        </TouchableOpacity>
+          <Text style={styles.botaoPrimarioTexto}>Ver meus pedidos</Text>
+          <Ionicons name="arrow-forward" size={16} color={colors.primaryText} />
+        </Pressable>
 
-        <TouchableOpacity
-          style={styles.botaoSecundario}
+        <Pressable
+          style={({ pressed }) => [styles.botaoSecundario, pressed && styles.pressedSoft]}
           onPress={() => router.replace('/cardapio')}
-          activeOpacity={0.85}
         >
-          <Text style={styles.botaoSecundarioTexto}>NOVO PEDIDO</Text>
-        </TouchableOpacity>
-      </View>
+          <Text style={styles.botaoSecundarioTexto}>Fazer novo pedido</Text>
+        </Pressable>
+      </ScrollView>
     </View>
   );
 }
@@ -187,40 +220,71 @@ const createStyles = (c: ThemeColors) =>
     container: {
       flex: 1,
       backgroundColor: c.bg,
-      justifyContent: 'center',
     },
-    content: {
+    scrollContent: {
+      paddingHorizontal: spacing.xl,
+      flexGrow: 1,
+    },
+    topo: {
       alignItems: 'center',
-      paddingHorizontal: spacing['2xl'],
+      marginBottom: spacing.xl,
     },
     checkCircle: {
-      width: 64,
-      height: 64,
-      borderRadius: 32,
+      width: 56,
+      height: 56,
+      borderRadius: 28,
       backgroundColor: c.success,
       alignItems: 'center',
       justifyContent: 'center',
-      marginBottom: spacing.xl,
+      marginBottom: spacing.lg,
+      ...shadow.md,
     },
-    confirmado: {
-      fontFamily: fontFamily.extrabold,
-      fontSize: fontSize.base,
-      color: c.text,
+    eyebrow: {
+      fontFamily: fontFamily.semibold,
+      fontSize: fontSize.xs,
+      color: c.textSubtle,
       letterSpacing: letterSpacing.widest,
-      marginBottom: spacing['3xl'],
     },
-    senhaContainer: {
+    tituloPagina: {
+      fontFamily: fontFamily.extrabold,
+      fontSize: fontSize['2xl'],
+      color: c.text,
+      marginTop: spacing.xs,
+    },
+
+    /* Hero senha */
+    senhaHero: {
       backgroundColor: c.primary,
       borderRadius: radius['2xl'],
-      paddingVertical: spacing['3xl'],
-      paddingHorizontal: spacing['5xl'],
+      paddingVertical: spacing['2xl'],
+      paddingHorizontal: spacing.xl,
       alignItems: 'center',
       marginBottom: spacing.md,
+      overflow: 'hidden',
+      ...shadow.primary,
+    },
+    senhaHeroDecor: {
+      position: 'absolute',
+      top: -8,
+      left: 0,
+      right: 0,
+      alignItems: 'center',
+      opacity: 0.18,
+    },
+    dotRow: {
+      flexDirection: 'row',
+      gap: 6,
+    },
+    dot: {
+      width: 4,
+      height: 4,
+      borderRadius: 2,
+      backgroundColor: '#FFFFFF',
     },
     senhaLabel: {
       fontFamily: fontFamily.semibold,
       fontSize: fontSize.xs,
-      color: 'rgba(255,255,255,0.7)',
+      color: 'rgba(255,255,255,0.8)',
       letterSpacing: letterSpacing.widest,
       marginBottom: spacing.sm,
     },
@@ -228,111 +292,135 @@ const createStyles = (c: ThemeColors) =>
       fontFamily: fontFamily.extrabold,
       fontSize: fontSize['6xl'],
       color: c.primaryText,
-      letterSpacing: 12,
+      letterSpacing: 8,
+      lineHeight: fontSize['6xl'] * 1.05,
     },
     senhaInstrucao: {
       fontFamily: fontFamily.medium,
-      fontSize: fontSize.xs,
-      color: c.textSubtle,
-      letterSpacing: letterSpacing.wide,
-      marginBottom: spacing['3xl'],
+      fontSize: fontSize.md,
+      color: 'rgba(255,255,255,0.85)',
+      marginTop: spacing.sm,
     },
-    resumoCard: {
-      backgroundColor: c.card,
+
+    /* Bento stats */
+    bentoStats: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+      marginBottom: spacing.md,
+    },
+    bentoCard: {
+      flex: 1,
+      backgroundColor: c.surface,
       borderRadius: radius.lg,
-      padding: spacing.xl,
-      width: '100%',
-      marginBottom: spacing.lg,
+      padding: spacing.md,
       borderWidth: 1,
       borderColor: c.border,
+      gap: spacing.sm,
     },
-    resumoLinha: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
+    bentoCardDestaque: {
+      backgroundColor: c.text,
+      borderColor: c.text,
+    },
+    bentoIconWrap: {
+      width: 28,
+      height: 28,
+      borderRadius: 14,
+      backgroundColor: c.surfaceElevated,
       alignItems: 'center',
+      justifyContent: 'center',
     },
-    resumoLabel: {
-      fontFamily: fontFamily.semibold,
-      fontSize: fontSize.sm,
-      color: c.textSubtle,
-      letterSpacing: letterSpacing.wide,
-    },
-    resumoValor: {
-      fontFamily: fontFamily.bold,
-      fontSize: fontSize.base,
+    bentoValor: {
+      fontFamily: fontFamily.extrabold,
+      fontSize: fontSize.xl,
       color: c.text,
     },
-    divisor: {
-      height: 1,
-      backgroundColor: c.border,
-      marginVertical: spacing.md + 2,
-    },
-    resumoDetalhe: {
-      fontFamily: fontFamily.regular,
+    bentoLabel: {
+      fontFamily: fontFamily.medium,
       fontSize: fontSize.md,
       color: c.textMuted,
-      lineHeight: 22,
     },
-    totalLabel: {
-      fontFamily: fontFamily.bold,
-      fontSize: fontSize.md,
-      color: c.text,
-      letterSpacing: letterSpacing.wide,
-    },
-    totalValor: {
-      fontFamily: fontFamily.extrabold,
-      fontSize: fontSize['2xl'],
-      color: c.primary,
-    },
-    avisoContainer: {
-      backgroundColor: c.card,
-      borderRadius: radius.md,
-      padding: spacing.md + 2,
-      width: '100%',
-      marginBottom: spacing['2xl'] + 4,
-      borderLeftWidth: 3,
-      borderLeftColor: c.primary,
+
+    /* Detalhe */
+    detalheCard: {
+      backgroundColor: c.surface,
+      borderRadius: radius.lg,
+      padding: spacing.lg,
       borderWidth: 1,
       borderColor: c.border,
+      marginBottom: spacing.md,
+    },
+    detalheLabel: {
+      fontFamily: fontFamily.semibold,
+      fontSize: fontSize.xs,
+      color: c.textSubtle,
+      letterSpacing: letterSpacing.widest,
+      marginBottom: spacing.sm,
+    },
+    detalheTexto: {
+      fontFamily: fontFamily.medium,
+      fontSize: fontSize.base,
+      color: c.text,
+      lineHeight: 20,
+    },
+
+    /* Aviso */
+    aviso: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: spacing.sm + 2,
+      gap: spacing.md,
+      backgroundColor: c.primarySoft,
+      borderRadius: radius.lg,
+      padding: spacing.md,
+      marginBottom: spacing.xl,
+    },
+    avisoIconWrap: {
+      width: 28,
+      height: 28,
+      borderRadius: 14,
+      backgroundColor: c.surface,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     avisoTexto: {
       flex: 1,
-      fontFamily: fontFamily.semibold,
-      fontSize: fontSize.xs,
-      color: c.textMuted,
-      letterSpacing: letterSpacing.wide,
+      fontFamily: fontFamily.medium,
+      fontSize: fontSize.md,
+      color: c.text,
       lineHeight: 18,
     },
+
+    /* Botões */
     botaoPrimario: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.sm,
       backgroundColor: c.primary,
       paddingVertical: spacing.lg,
       borderRadius: radius.full,
-      alignItems: 'center',
-      width: '100%',
-      marginBottom: spacing.sm + 2,
+      marginBottom: spacing.sm,
+      ...shadow.primary,
     },
     botaoPrimarioTexto: {
       fontFamily: fontFamily.bold,
       color: c.primaryText,
-      fontSize: fontSize.md,
-      letterSpacing: letterSpacing.wide,
+      fontSize: fontSize.base,
     },
     botaoSecundario: {
-      backgroundColor: 'transparent',
-      paddingVertical: spacing.md + 2,
+      paddingVertical: spacing.md,
       borderRadius: radius.full,
       alignItems: 'center',
-      width: '100%',
       borderWidth: 1,
       borderColor: c.border,
+      backgroundColor: c.surface,
     },
     botaoSecundarioTexto: {
       fontFamily: fontFamily.semibold,
-      color: c.textMuted,
-      fontSize: fontSize.md,
-      letterSpacing: letterSpacing.wide,
+      color: c.text,
+      fontSize: fontSize.base,
+    },
+    pressedSoft: {
+      opacity: 0.85,
+      transform: [{ scale: 0.98 }],
     },
   });
