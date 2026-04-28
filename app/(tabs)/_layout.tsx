@@ -1,12 +1,14 @@
+import { Platform, StyleSheet } from 'react-native';
 import { Redirect, Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { fontFamily } from '@/constants/theme';
 
 export default function TabsLayout() {
-  const { colors } = useTheme();
+  const { colors, mode } = useTheme();
   const { user } = useAuth();
 
   if (!user) {
@@ -19,13 +21,21 @@ export default function TabsLayout() {
         headerShown: false,
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textSubtle,
+        tabBarBackground: () => (
+          <BlurView
+            tint={mode === 'dark' ? 'dark' : 'light'}
+            intensity={Platform.OS === 'ios' ? 80 : 100}
+            style={StyleSheet.absoluteFill}
+          />
+        ),
         tabBarStyle: {
-          backgroundColor: colors.tabBar,
+          backgroundColor: 'transparent',
           borderTopColor: colors.border,
           borderTopWidth: 1,
-          height: 64,
+          height: 68,
           paddingBottom: 10,
           paddingTop: 8,
+          position: 'absolute',
         },
         tabBarLabelStyle: {
           fontFamily: fontFamily.semibold,
