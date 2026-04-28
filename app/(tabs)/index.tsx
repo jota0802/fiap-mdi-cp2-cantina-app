@@ -10,6 +10,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 
 import CARDAPIO from '@/data/cardapio';
 import ItemThumbnail from '@/components/ItemThumbnail';
@@ -65,6 +66,7 @@ export default function Home() {
   const router = useRouter();
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
+  const tabBarHeight = useBottomTabBarHeight();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const { opacity, translateY } = useFadeIn(450);
 
@@ -122,7 +124,10 @@ export default function Home() {
   return (
     <View style={styles.container}>
       <ScrollView
-        contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + spacing.lg }]}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingTop: insets.top + spacing.lg, paddingBottom: tabBarHeight + spacing.lg },
+        ]}
         showsVerticalScrollIndicator={false}
       >
         {/* Saudação */}
@@ -373,48 +378,63 @@ type ComboCardProps = {
 };
 
 function ComboCard({ combo, items, preco, colors, styles, onAdicionar }: ComboCardProps) {
-  const eyebrow =
-    combo.fonte === 'historico' ? 'PERSONALIZADO PRA VOCÊ' : 'COMBO RECOMENDADO';
+  const personalizado = combo.fonte === 'historico';
+  const eyebrow = personalizado ? 'PERSONALIZADO PRA VOCÊ' : 'SUGESTÃO PRO HORÁRIO';
 
   return (
     <View style={styles.comboCard}>
       <View style={styles.comboHeader}>
-        <View style={styles.comboHeaderInfo}>
-          <Text style={styles.comboEyebrow}>{eyebrow}</Text>
-          <Text style={styles.comboTitulo}>{combo.titulo}</Text>
-          <Text style={styles.comboSubtitulo}>{combo.subtitulo}</Text>
+        <View
+          style={[
+            styles.comboIconWrap,
+            { backgroundColor: personalizado ? colors.primarySoft : 'rgba(245, 158, 11, 0.14)' },
+          ]}
+        >
+          <Ionicons
+            name={personalizado ? 'heart' : 'sparkles'}
+            size={14}
+            color={personalizado ? colors.primary : '#F59E0B'}
+          />
         </View>
-        <View style={[styles.comboIconWrap, { backgroundColor: colors.primarySoft }]}>
-          <Ionicons name="sparkles" size={16} color={colors.primary} />
-        </View>
+        <Text
+          style={[
+            styles.comboEyebrow,
+            { color: personalizado ? colors.primary : '#F59E0B' },
+          ]}
+        >
+          {eyebrow}
+        </Text>
       </View>
 
-      <View style={styles.comboItens}>
+      <Text style={styles.comboTitulo}>{combo.titulo}</Text>
+      <Text style={styles.comboSubtitulo}>{combo.subtitulo}</Text>
+
+      <View style={styles.comboItensRow}>
         {items.map((item, idx) => (
           <View key={item.id} style={styles.comboItemWrap}>
-            <View style={styles.comboItemRow}>
+            <View style={styles.comboItemCard}>
               <ItemThumbnail
                 emoji={item.emoji}
                 imagem={item.imagem}
-                size={48}
+                size={56}
                 borderRadius={radius.md}
-                bgColor={colors.surfaceElevated}
+                bgColor={colors.bg}
               />
-              <View style={styles.comboItemInfo}>
-                <Text style={styles.comboItemNome} numberOfLines={1}>
-                  {item.nome}
-                </Text>
-                <Text style={styles.comboItemPreco}>R$ {item.preco.toFixed(2)}</Text>
-              </View>
+              <Text style={styles.comboItemNome} numberOfLines={2}>
+                {item.nome}
+              </Text>
+              <Text style={styles.comboItemPreco}>R$ {item.preco.toFixed(2)}</Text>
             </View>
-            {idx === 0 ? (
-              <View style={styles.comboPlus}>
-                <Ionicons name="add" size={14} color={colors.textSubtle} />
+            {idx === 0 && items.length > 1 ? (
+              <View style={styles.comboPlusBadge}>
+                <Ionicons name="add" size={12} color={colors.textSubtle} />
               </View>
             ) : null}
           </View>
         ))}
       </View>
+
+      <View style={styles.comboDivisor} />
 
       <View style={styles.comboFooter}>
         <View>
@@ -427,8 +447,8 @@ function ComboCard({ combo, items, preco, colors, styles, onAdicionar }: ComboCa
           accessibilityRole="button"
           accessibilityLabel={`Adicionar combo ${combo.titulo} ao carrinho por R$ ${preco.toFixed(2)}`}
         >
-          <Ionicons name="add" size={16} color={colors.primaryText} />
-          <Text style={styles.comboBotaoTexto}>Adicionar</Text>
+          <Ionicons name="add" size={18} color={colors.primaryText} />
+          <Text style={styles.comboBotaoTexto}>Adicionar combo</Text>
         </Pressable>
       </View>
     </View>
@@ -655,12 +675,12 @@ const createStyles = (c: ThemeColors) =>
     },
     bentoBigBackdrop: {
       position: 'absolute',
-      right: -spacing.xl,
-      top: -spacing.xl,
-      opacity: 0.18,
+      right: -spacing.lg,
+      bottom: -spacing.xl,
+      opacity: 0.22,
     },
     bentoBigEmoji: {
-      fontSize: 140,
+      fontSize: 130,
     },
     bentoBigContent: {
       flex: 1,
@@ -747,81 +767,94 @@ const createStyles = (c: ThemeColors) =>
       padding: spacing.lg,
       borderWidth: 1,
       borderColor: c.border,
-      gap: spacing.md,
       ...shadow.md,
     },
     comboHeader: {
       flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'flex-start',
-      gap: spacing.md,
-    },
-    comboHeaderInfo: {
-      flex: 1,
+      alignItems: 'center',
+      gap: spacing.sm,
+      marginBottom: spacing.md,
     },
     comboEyebrow: {
-      fontFamily: fontFamily.semibold,
+      fontFamily: fontFamily.bold,
       fontSize: fontSize.xs,
-      color: c.primary,
       letterSpacing: letterSpacing.widest,
     },
     comboTitulo: {
       fontFamily: fontFamily.extrabold,
-      fontSize: fontSize.lg,
+      fontSize: fontSize['2xl'],
       color: c.text,
-      marginTop: spacing.xs,
+      lineHeight: fontSize['2xl'] * 1.1,
     },
     comboSubtitulo: {
       fontFamily: fontFamily.medium,
       fontSize: fontSize.md,
       color: c.textMuted,
-      marginTop: 2,
+      marginTop: spacing.xs,
+      marginBottom: spacing.lg,
     },
     comboIconWrap: {
-      width: 36,
-      height: 36,
-      borderRadius: 18,
+      width: 28,
+      height: 28,
+      borderRadius: 14,
       alignItems: 'center',
       justifyContent: 'center',
     },
-    comboItens: {
-      gap: spacing.xs,
+    comboItensRow: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+      alignItems: 'stretch',
     },
     comboItemWrap: {
-      gap: spacing.xs,
-    },
-    comboItemRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: spacing.md,
-      backgroundColor: c.bg,
-      padding: spacing.sm + 2,
-      borderRadius: radius.md,
-    },
-    comboItemInfo: {
       flex: 1,
+      position: 'relative',
+    },
+    comboItemCard: {
+      flex: 1,
+      backgroundColor: c.bg,
+      borderRadius: radius.md,
+      padding: spacing.md,
+      alignItems: 'flex-start',
+      gap: spacing.sm,
+      borderWidth: 1,
+      borderColor: c.border,
     },
     comboItemNome: {
       fontFamily: fontFamily.semibold,
-      fontSize: fontSize.base,
+      fontSize: fontSize.md,
       color: c.text,
+      lineHeight: fontSize.md * 1.3,
     },
     comboItemPreco: {
-      fontFamily: fontFamily.medium,
+      fontFamily: fontFamily.bold,
       fontSize: fontSize.md,
-      color: c.textMuted,
-      marginTop: 2,
+      color: c.text,
     },
-    comboPlus: {
+    comboPlusBadge: {
+      position: 'absolute',
+      right: -spacing.sm - 2,
+      top: '50%',
+      width: 22,
+      height: 22,
+      borderRadius: 11,
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.borderStrong,
       alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 2,
+      marginTop: -11,
+    },
+    comboDivisor: {
+      height: 1,
+      backgroundColor: c.separator,
+      marginVertical: spacing.md,
     },
     comboFooter: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      paddingTop: spacing.sm,
-      borderTopWidth: 1,
-      borderTopColor: c.separator,
+      gap: spacing.md,
     },
     comboPrecoLabel: {
       fontFamily: fontFamily.medium,
@@ -840,7 +873,7 @@ const createStyles = (c: ThemeColors) =>
       gap: spacing.xs + 2,
       backgroundColor: c.primary,
       paddingHorizontal: spacing.lg,
-      paddingVertical: spacing.sm + 2,
+      paddingVertical: spacing.md,
       borderRadius: radius.full,
       ...shadow.primary,
     },
