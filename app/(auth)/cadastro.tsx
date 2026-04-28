@@ -120,8 +120,9 @@ export default function CadastroScreen() {
         showsVerticalScrollIndicator={false}
       >
         <Animated.View style={[styles.header, { opacity, transform: [{ translateY }] }]}>
-          <FiapLogo width={70} color={colors.primary} />
-          <Text style={styles.titulo}>CRIAR CONTA</Text>
+          <FiapLogo width={64} color={colors.primary} />
+          <Text style={styles.eyebrow}>CANTINA FIAP</Text>
+          <Text style={styles.titulo}>Criar conta</Text>
           <Text style={styles.subtitulo}>Cadastre-se para começar a usar</Text>
         </Animated.View>
 
@@ -188,7 +189,7 @@ export default function CadastroScreen() {
             <Text style={styles.linkText}>Já tem conta?</Text>
             <Link href="/login" asChild>
               <Pressable hitSlop={8}>
-                <Text style={styles.linkAccent}>FAZER LOGIN</Text>
+                <Text style={styles.linkAccent}>Fazer login</Text>
               </Pressable>
             </Link>
           </View>
@@ -208,14 +209,20 @@ const createStyles = (c: ThemeColors) =>
     },
     header: {
       alignItems: 'center',
-      marginBottom: spacing['3xl'],
+      marginBottom: spacing['2xl'],
+    },
+    eyebrow: {
+      fontFamily: fontFamily.semibold,
+      fontSize: fontSize.xs,
+      color: c.textSubtle,
+      letterSpacing: letterSpacing.widest,
+      marginTop: spacing.lg,
     },
     titulo: {
       fontFamily: fontFamily.extrabold,
       fontSize: fontSize['3xl'],
       color: c.text,
-      letterSpacing: letterSpacing.ultra,
-      marginTop: spacing.lg,
+      marginTop: spacing.xs,
     },
     subtitulo: {
       fontFamily: fontFamily.medium,
@@ -229,7 +236,7 @@ const createStyles = (c: ThemeColors) =>
     geralErrorBox: {
       borderWidth: 1,
       borderColor: c.error,
-      backgroundColor: c.card,
+      backgroundColor: c.surface,
       borderRadius: 12,
       padding: spacing.md,
       marginTop: spacing.xs,
@@ -260,6 +267,5 @@ const createStyles = (c: ThemeColors) =>
       fontFamily: fontFamily.bold,
       fontSize: fontSize.md,
       color: c.primary,
-      letterSpacing: letterSpacing.normal,
     },
   });
