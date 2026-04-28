@@ -19,6 +19,7 @@ import { useTheme } from '@/context/ThemeContext';
 import { useFadeIn } from '@/hooks/useFadeIn';
 import { useShake } from '@/hooks/useShake';
 import { haptic } from '@/lib/haptics';
+import { validateEmail, validateSenha } from '@/lib/validation';
 import { fontFamily, fontSize, letterSpacing, spacing } from '@/constants/theme';
 import type { ThemeColors } from '@/types';
 
@@ -30,17 +31,10 @@ type Errors = {
 
 function validar(values: { email: string; senha: string }): Errors {
   const errors: Errors = {};
-  const email = values.email.trim();
-  if (!email) {
-    errors.email = 'O e-mail é obrigatório';
-  } else if (!email.includes('@') || !email.includes('.')) {
-    errors.email = 'E-mail inválido';
-  }
-  if (!values.senha) {
-    errors.senha = 'A senha é obrigatória';
-  } else if (values.senha.length < 6) {
-    errors.senha = 'A senha deve ter no mínimo 6 caracteres';
-  }
+  const email = validateEmail(values.email);
+  if (email) errors.email = email;
+  const senha = validateSenha(values.senha);
+  if (senha) errors.senha = senha;
   return errors;
 }
 

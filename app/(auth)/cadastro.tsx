@@ -19,6 +19,12 @@ import { useTheme } from '@/context/ThemeContext';
 import { useFadeIn } from '@/hooks/useFadeIn';
 import { useShake } from '@/hooks/useShake';
 import { haptic } from '@/lib/haptics';
+import {
+  validateConfirmaSenha,
+  validateEmail,
+  validateNome,
+  validateSenha,
+} from '@/lib/validation';
 import { fontFamily, fontSize, letterSpacing, spacing } from '@/constants/theme';
 import type { ThemeColors } from '@/types';
 
@@ -31,31 +37,16 @@ type FormValues = {
 
 type Errors = Partial<Record<keyof FormValues | 'geral', string>>;
 
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
 function validar(values: FormValues): Errors {
   const errors: Errors = {};
-  if (!values.nome.trim()) {
-    errors.nome = 'O nome é obrigatório';
-  } else if (values.nome.trim().length < 2) {
-    errors.nome = 'Nome muito curto';
-  }
-  const email = values.email.trim();
-  if (!email) {
-    errors.email = 'O e-mail é obrigatório';
-  } else if (!EMAIL_REGEX.test(email)) {
-    errors.email = 'E-mail inválido';
-  }
-  if (!values.senha) {
-    errors.senha = 'A senha é obrigatória';
-  } else if (values.senha.length < 6) {
-    errors.senha = 'A senha deve ter no mínimo 6 caracteres';
-  }
-  if (!values.confirmaSenha) {
-    errors.confirmaSenha = 'Confirme sua senha';
-  } else if (values.confirmaSenha !== values.senha) {
-    errors.confirmaSenha = 'As senhas não coincidem';
-  }
+  const nome = validateNome(values.nome);
+  if (nome) errors.nome = nome;
+  const email = validateEmail(values.email);
+  if (email) errors.email = email;
+  const senha = validateSenha(values.senha);
+  if (senha) errors.senha = senha;
+  const confirma = validateConfirmaSenha(values.confirmaSenha, values.senha);
+  if (confirma) errors.confirmaSenha = confirma;
   return errors;
 }
 
