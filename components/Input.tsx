@@ -42,9 +42,7 @@ export default function Input({
   const content = (
     <>
       {label ? (
-        <Text style={[styles.label, { color: colors.textMuted }]}>
-          {label.toUpperCase()}
-        </Text>
+        <Text style={[styles.label, { color: colors.textMuted }]}>{label}</Text>
       ) : null}
       <View
         style={[
@@ -97,8 +95,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontFamily: fontFamily.semibold,
-    fontSize: fontSize.xs,
-    letterSpacing: letterSpacing.wide,
+    fontSize: fontSize.md,
     marginBottom: spacing.sm,
   },
   inputContainer: {

@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 
 import { useTheme } from '@/context/ThemeContext';
-import { fontFamily, fontSize, letterSpacing, radius, spacing } from '@/constants/theme';
+import { fontFamily, fontSize, radius, shadow, spacing } from '@/constants/theme';
 
 type Variant = 'primary' | 'secondary' | 'ghost';
 type Size = 'sm' | 'md' | 'lg';
@@ -66,16 +66,19 @@ export default function Button({
       bg: colors.primary,
       text: colors.primaryText,
       border: 'transparent',
+      shadow: shadow.primary,
     },
     secondary: {
-      bg: colors.cardElevated,
+      bg: colors.surface,
       text: colors.text,
       border: colors.border,
+      shadow: shadow.none,
     },
     ghost: {
       bg: 'transparent',
       text: colors.primary,
-      border: colors.primary,
+      border: colors.borderStrong,
+      shadow: shadow.none,
     },
   }[variant];
 
@@ -83,16 +86,16 @@ export default function Button({
     sm: {
       paddingVertical: spacing.sm + 2,
       paddingHorizontal: spacing.lg,
-      fontSize: fontSize.sm,
+      fontSize: fontSize.md,
     },
     md: {
       paddingVertical: spacing.md + 2,
-      paddingHorizontal: spacing.xl + 4,
-      fontSize: fontSize.md,
+      paddingHorizontal: spacing.xl,
+      fontSize: fontSize.base,
     },
     lg: {
       paddingVertical: spacing.lg,
-      paddingHorizontal: spacing['2xl'] + 8,
+      paddingHorizontal: spacing['2xl'],
       fontSize: fontSize.base,
     },
   }[size];
@@ -114,6 +117,7 @@ export default function Button({
         accessibilityState={{ disabled: disabled || loading, busy: loading }}
         style={[
           styles.base,
+          variantStyles.shadow,
           {
             backgroundColor: variantStyles.bg,
             borderColor: variantStyles.border,
@@ -133,10 +137,9 @@ export default function Button({
                 color: variantStyles.text,
                 fontFamily: fontFamily.bold,
                 fontSize: sizeStyles.fontSize,
-                letterSpacing: letterSpacing.wide,
               }}
             >
-              {title.toUpperCase()}
+              {title}
             </Text>
             {rightIcon}
           </View>
