@@ -19,8 +19,24 @@ import { useOrders } from '@/context/OrdersContext';
 import { useTheme } from '@/context/ThemeContext';
 import { haptic } from '@/lib/haptics';
 import { pickFromCamera, pickFromLibrary } from '@/lib/image-picker';
-import { fontFamily, fontSize, letterSpacing, radius, spacing } from '@/constants/theme';
+import {
+  fontFamily,
+  fontSize,
+  letterSpacing,
+  radius,
+  shadow,
+  spacing,
+} from '@/constants/theme';
 import type { ThemeColors } from '@/types';
+
+function formatarDataMembro(iso: string): string {
+  try {
+    const d = new Date(iso);
+    return d.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' });
+  } catch {
+    return '—';
+  }
+}
 
 export default function PerfilScreen() {
   const router = useRouter();
@@ -44,6 +60,7 @@ export default function PerfilScreen() {
 
   const totalPedidos = orders.length;
   const pedidosAtivos = orders.filter((o) => o.status !== 'retirado').length;
+  const totalGasto = orders.reduce((acc, o) => acc + o.total, 0);
 
   const showToast = (message: string, variant: 'success' | 'error' = 'success') => {
     setToast({ visible: true, message, variant });
@@ -55,7 +72,7 @@ export default function PerfilScreen() {
       const picked = await pickFromLibrary();
       if (picked) {
         await updateUser({ fotoUri: picked.uri });
-        showToast('Foto atualizada!');
+        showToast('Foto atualizada');
       }
     } catch {
       showToast('Não foi possível atualizar a foto', 'error');
@@ -70,7 +87,7 @@ export default function PerfilScreen() {
       const picked = await pickFromCamera();
       if (picked) {
         await updateUser({ fotoUri: picked.uri });
-        showToast('Foto atualizada!');
+        showToast('Foto atualizada');
       }
     } catch {
       showToast('Não foi possível abrir a câmera', 'error');
@@ -101,115 +118,161 @@ export default function PerfilScreen() {
         contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + spacing.lg }]}
         showsVerticalScrollIndicator={false}
       >
+        {/* Header compacto */}
         <View style={styles.header}>
-          <ProfileAvatar uri={user.fotoUri} nome={user.nome} size={104} />
-          <Text style={styles.nome}>{user.nome.toUpperCase()}</Text>
-          <Text style={styles.email}>{user.email}</Text>
+          <Text style={styles.eyebrow}>SUA CONTA</Text>
+          <Text style={styles.tituloPagina}>Perfil</Text>
         </View>
 
-        <View style={styles.statsRow}>
-          <View style={styles.statBox}>
-            <Text style={styles.statValor}>{totalPedidos}</Text>
-            <Text style={styles.statLabel}>PEDIDOS</Text>
-          </View>
-          <View style={styles.statBox}>
-            <Text style={styles.statValor}>{pedidosAtivos}</Text>
-            <Text style={styles.statLabel}>ATIVOS</Text>
-          </View>
-        </View>
-
-        <View style={styles.card}>
-          <Text style={styles.cardTitulo}>FOTO DE PERFIL</Text>
-          <View style={styles.fotoBotoes}>
-            <Pressable
-              style={({ pressed }) => [styles.fotoBotao, pressed && styles.pressed]}
-              onPress={handlePickFromCamera}
-              disabled={updatingPhoto}
-            >
-              <Ionicons name="camera-outline" size={20} color={colors.primary} />
-              <Text style={styles.fotoBotaoTexto}>TIRAR FOTO</Text>
-            </Pressable>
-            <Pressable
-              style={({ pressed }) => [styles.fotoBotao, pressed && styles.pressed]}
-              onPress={handlePickFromLibrary}
-              disabled={updatingPhoto}
-            >
-              <Ionicons name="images-outline" size={20} color={colors.primary} />
-              <Text style={styles.fotoBotaoTexto}>GALERIA</Text>
-            </Pressable>
-            {user.fotoUri ? (
-              <Pressable
-                style={({ pressed }) => [styles.fotoBotao, pressed && styles.pressed]}
-                onPress={handleRemoveFoto}
-                disabled={updatingPhoto}
-              >
-                <Ionicons name="trash-outline" size={20} color={colors.error} />
-                <Text style={[styles.fotoBotaoTexto, { color: colors.error }]}>REMOVER</Text>
-              </Pressable>
-            ) : null}
+        {/* Card hero do usuário */}
+        <View style={styles.userCard}>
+          <ProfileAvatar uri={user.fotoUri} nome={user.nome} size={64} />
+          <View style={styles.userInfo}>
+            <Text style={styles.userNome} numberOfLines={1}>
+              {user.nome}
+            </Text>
+            <Text style={styles.userEmail} numberOfLines={1}>
+              {user.email}
+            </Text>
           </View>
         </View>
 
-        <View style={styles.card}>
-          <Text style={styles.cardTitulo}>APARÊNCIA</Text>
-          <View style={styles.linhaToggle}>
-            <View style={styles.linhaToggleInfo}>
-              <Ionicons
-                name={mode === 'dark' ? 'moon' : 'sunny'}
-                size={20}
-                color={colors.primary}
-              />
-              <View>
-                <Text style={styles.linhaToggleLabel}>
-                  {mode === 'dark' ? 'TEMA ESCURO' : 'TEMA CLARO'}
-                </Text>
-                <Text style={styles.linhaToggleSub}>
-                  {mode === 'dark'
-                    ? 'Ative o modo claro para ambientes iluminados'
-                    : 'Ative o modo escuro para reduzir o brilho'}
-                </Text>
-              </View>
+        {/* Bento de stats: 3 cards */}
+        <View style={styles.statsBento}>
+          <StatCard
+            label="Pedidos"
+            valor={String(totalPedidos)}
+            icon="receipt-outline"
+            colors={colors}
+            styles={styles}
+          />
+          <StatCard
+            label="Ativos"
+            valor={String(pedidosAtivos)}
+            icon="time-outline"
+            colors={colors}
+            styles={styles}
+            destaque={pedidosAtivos > 0}
+          />
+          <StatCard
+            label="Total"
+            valor={`R$ ${totalGasto.toFixed(0)}`}
+            icon="cash-outline"
+            colors={colors}
+            styles={styles}
+          />
+        </View>
+
+        {/* Foto de perfil */}
+        <Text style={styles.sectionTitle}>Foto de perfil</Text>
+        <View style={styles.fotoBento}>
+          <Pressable
+            style={({ pressed }) => [styles.fotoBotao, pressed && styles.pressedSoft]}
+            onPress={handlePickFromCamera}
+            disabled={updatingPhoto}
+          >
+            <View style={styles.fotoIconWrap}>
+              <Ionicons name="camera-outline" size={18} color={colors.primary} />
             </View>
-            <Switch
-              value={mode === 'dark'}
-              onValueChange={toggleTheme}
-              trackColor={{ false: colors.border, true: colors.primary }}
-              thumbColor="#ffffff"
-              ios_backgroundColor={colors.border}
-            />
-          </View>
-        </View>
-
-        <View style={styles.card}>
-          <Text style={styles.cardTitulo}>AÇÕES</Text>
+            <Text style={styles.fotoBotaoTexto}>Câmera</Text>
+          </Pressable>
 
           <Pressable
-            style={({ pressed }) => [styles.linhaAcao, pressed && styles.pressed]}
+            style={({ pressed }) => [styles.fotoBotao, pressed && styles.pressedSoft]}
+            onPress={handlePickFromLibrary}
+            disabled={updatingPhoto}
+          >
+            <View style={styles.fotoIconWrap}>
+              <Ionicons name="images-outline" size={18} color={colors.primary} />
+            </View>
+            <Text style={styles.fotoBotaoTexto}>Galeria</Text>
+          </Pressable>
+
+          {user.fotoUri ? (
+            <Pressable
+              style={({ pressed }) => [styles.fotoBotao, pressed && styles.pressedSoft]}
+              onPress={handleRemoveFoto}
+              disabled={updatingPhoto}
+            >
+              <View style={[styles.fotoIconWrap, { backgroundColor: 'rgba(248, 113, 113, 0.14)' }]}>
+                <Ionicons name="trash-outline" size={18} color={colors.error} />
+              </View>
+              <Text style={[styles.fotoBotaoTexto, { color: colors.error }]}>Remover</Text>
+            </Pressable>
+          ) : null}
+        </View>
+
+        {/* Aparência */}
+        <Text style={styles.sectionTitle}>Aparência</Text>
+        <View style={styles.themeCard}>
+          <View style={styles.themeInfo}>
+            <View style={styles.themeIconWrap}>
+              <Ionicons
+                name={mode === 'dark' ? 'moon' : 'sunny'}
+                size={18}
+                color={colors.primary}
+              />
+            </View>
+            <View style={styles.themeTextos}>
+              <Text style={styles.themeLabel}>
+                {mode === 'dark' ? 'Tema escuro' : 'Tema claro'}
+              </Text>
+              <Text style={styles.themeSub}>
+                {mode === 'dark'
+                  ? 'Ative o claro pra ambientes iluminados'
+                  : 'Ative o escuro pra reduzir o brilho'}
+              </Text>
+            </View>
+          </View>
+          <Switch
+            value={mode === 'dark'}
+            onValueChange={toggleTheme}
+            trackColor={{ false: colors.borderStrong, true: colors.primary }}
+            thumbColor="#ffffff"
+            ios_backgroundColor={colors.borderStrong}
+          />
+        </View>
+
+        {/* Ações */}
+        <Text style={styles.sectionTitle}>Conta</Text>
+        <View style={styles.acoesCard}>
+          <Pressable
+            style={({ pressed }) => [styles.linhaAcao, pressed && styles.pressedSoft]}
             onPress={() => router.push('/sobre')}
           >
-            <View style={styles.linhaAcaoInfo}>
-              <Ionicons name="information-circle-outline" size={20} color={colors.text} />
-              <Text style={styles.linhaAcaoLabel}>SOBRE O PROJETO</Text>
+            <View style={styles.linhaAcaoEsquerda}>
+              <View style={styles.linhaAcaoIconWrap}>
+                <Ionicons name="information-circle-outline" size={18} color={colors.text} />
+              </View>
+              <View>
+                <Text style={styles.linhaAcaoLabel}>Sobre o projeto</Text>
+                <Text style={styles.linhaAcaoSub}>Equipe, stack e detalhes</Text>
+              </View>
             </View>
-            <Ionicons name="chevron-forward" size={18} color={colors.textSubtle} />
+            <Ionicons name="chevron-forward" size={16} color={colors.textSubtle} />
           </Pressable>
 
           <View style={styles.divisor} />
 
           <Pressable
-            style={({ pressed }) => [styles.linhaAcao, pressed && styles.pressed]}
+            style={({ pressed }) => [styles.linhaAcao, pressed && styles.pressedSoft]}
             onPress={handleLogout}
           >
-            <View style={styles.linhaAcaoInfo}>
-              <Ionicons name="log-out-outline" size={20} color={colors.error} />
-              <Text style={[styles.linhaAcaoLabel, { color: colors.error }]}>SAIR</Text>
+            <View style={styles.linhaAcaoEsquerda}>
+              <View style={[styles.linhaAcaoIconWrap, { backgroundColor: 'rgba(248, 113, 113, 0.14)' }]}>
+                <Ionicons name="log-out-outline" size={18} color={colors.error} />
+              </View>
+              <View>
+                <Text style={[styles.linhaAcaoLabel, { color: colors.error }]}>Sair</Text>
+                <Text style={styles.linhaAcaoSub}>Encerrar sessão</Text>
+              </View>
             </View>
-            <Ionicons name="chevron-forward" size={18} color={colors.error} />
+            <Ionicons name="chevron-forward" size={16} color={colors.error} />
           </Pressable>
         </View>
 
         <Text style={styles.footerHint}>
-          Suas credenciais ficam armazenadas com segurança no seu dispositivo
+          Membro desde {formatarDataMembro(user.criadoEm)} · credenciais protegidas no dispositivo
         </Text>
       </ScrollView>
 
@@ -223,6 +286,33 @@ export default function PerfilScreen() {
   );
 }
 
+type StatCardProps = {
+  label: string;
+  valor: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  colors: ThemeColors;
+  styles: ReturnType<typeof createStyles>;
+  destaque?: boolean;
+};
+
+function StatCard({ label, valor, icon, colors, styles, destaque }: StatCardProps) {
+  return (
+    <View style={[styles.statCard, destaque && styles.statCardDestaque]}>
+      <View style={[styles.statIcon, destaque && { backgroundColor: colors.surface }]}>
+        <Ionicons
+          name={icon}
+          size={14}
+          color={destaque ? colors.primaryText : colors.textMuted}
+        />
+      </View>
+      <Text style={[styles.statValor, destaque && { color: colors.primaryText }]}>{valor}</Text>
+      <Text style={[styles.statLabel, destaque && { color: 'rgba(255,255,255,0.85)' }]}>
+        {label}
+      </Text>
+    </View>
+  );
+}
+
 const createStyles = (c: ThemeColors) =>
   StyleSheet.create({
     container: { flex: 1, backgroundColor: c.bg },
@@ -230,138 +320,224 @@ const createStyles = (c: ThemeColors) =>
       paddingBottom: spacing['4xl'],
     },
     header: {
+      paddingHorizontal: spacing.xl,
+      marginBottom: spacing.lg,
+    },
+    eyebrow: {
+      fontFamily: fontFamily.semibold,
+      fontSize: fontSize.xs,
+      color: c.textSubtle,
+      letterSpacing: letterSpacing.widest,
+    },
+    tituloPagina: {
+      fontFamily: fontFamily.extrabold,
+      fontSize: fontSize['3xl'],
+      color: c.text,
+      marginTop: spacing.xs,
+    },
+
+    /* User card */
+    userCard: {
+      flexDirection: 'row',
       alignItems: 'center',
+      gap: spacing.lg,
+      marginHorizontal: spacing.xl,
+      marginBottom: spacing.lg,
+      backgroundColor: c.surface,
+      borderRadius: radius.xl,
+      padding: spacing.lg,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    userInfo: { flex: 1 },
+    userNome: {
+      fontFamily: fontFamily.bold,
+      fontSize: fontSize.lg,
+      color: c.text,
+    },
+    userEmail: {
+      fontFamily: fontFamily.medium,
+      fontSize: fontSize.md,
+      color: c.textMuted,
+      marginTop: 2,
+    },
+
+    /* Stats bento */
+    statsBento: {
+      flexDirection: 'row',
       gap: spacing.sm,
       paddingHorizontal: spacing.xl,
-      marginBottom: spacing['2xl'],
+      marginBottom: spacing.xl,
     },
-    nome: {
+    statCard: {
+      flex: 1,
+      backgroundColor: c.surface,
+      borderRadius: radius.lg,
+      padding: spacing.md,
+      borderWidth: 1,
+      borderColor: c.border,
+      gap: spacing.sm,
+    },
+    statCardDestaque: {
+      backgroundColor: c.primary,
+      borderColor: c.primary,
+      ...shadow.primary,
+    },
+    statIcon: {
+      width: 28,
+      height: 28,
+      borderRadius: 14,
+      backgroundColor: c.surfaceElevated,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    statValor: {
       fontFamily: fontFamily.extrabold,
       fontSize: fontSize.xl,
       color: c.text,
-      letterSpacing: letterSpacing.wider,
-      marginTop: spacing.md,
     },
-    email: {
+    statLabel: {
       fontFamily: fontFamily.medium,
       fontSize: fontSize.md,
       color: c.textMuted,
     },
-    statsRow: {
-      flexDirection: 'row',
-      gap: spacing.md,
+
+    /* Section title */
+    sectionTitle: {
+      fontFamily: fontFamily.bold,
+      fontSize: fontSize.md,
+      color: c.textMuted,
       paddingHorizontal: spacing.xl,
-      marginBottom: spacing['2xl'],
+      marginBottom: spacing.sm,
+      marginTop: spacing.sm,
     },
-    statBox: {
-      flex: 1,
-      backgroundColor: c.card,
-      borderRadius: radius.lg,
-      padding: spacing.lg,
-      alignItems: 'center',
-      borderWidth: 1,
-      borderColor: c.border,
-    },
-    statValor: {
-      fontFamily: fontFamily.extrabold,
-      fontSize: fontSize['3xl'] - 4,
-      color: c.primary,
-    },
-    statLabel: {
-      fontFamily: fontFamily.semibold,
-      fontSize: fontSize.xs,
-      color: c.textSubtle,
-      letterSpacing: letterSpacing.wider,
-      marginTop: spacing.xs,
-    },
-    card: {
-      backgroundColor: c.card,
-      marginHorizontal: spacing.xl,
-      marginBottom: spacing.md,
-      borderRadius: radius.lg,
-      padding: spacing.xl,
-      borderWidth: 1,
-      borderColor: c.border,
-    },
-    cardTitulo: {
-      fontFamily: fontFamily.extrabold,
-      fontSize: fontSize.sm,
-      color: c.primary,
-      letterSpacing: letterSpacing.wider,
+
+    /* Foto bento */
+    fotoBento: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+      paddingHorizontal: spacing.xl,
       marginBottom: spacing.lg,
     },
-    fotoBotoes: {
-      gap: spacing.sm,
-    },
     fotoBotao: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: spacing.md,
-      backgroundColor: c.cardElevated,
+      flex: 1,
+      backgroundColor: c.surface,
+      borderRadius: radius.lg,
       paddingVertical: spacing.md + 2,
-      paddingHorizontal: spacing.lg,
-      borderRadius: radius.md,
+      alignItems: 'center',
+      gap: spacing.sm,
       borderWidth: 1,
       borderColor: c.border,
     },
-    fotoBotaoTexto: {
-      fontFamily: fontFamily.bold,
-      fontSize: fontSize.sm,
-      color: c.text,
-      letterSpacing: letterSpacing.wide,
+    fotoIconWrap: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: c.primarySoft,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
-    linhaToggle: {
+    fotoBotaoTexto: {
+      fontFamily: fontFamily.semibold,
+      fontSize: fontSize.md,
+      color: c.text,
+    },
+
+    /* Theme card */
+    themeCard: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
       gap: spacing.md,
+      marginHorizontal: spacing.xl,
+      marginBottom: spacing.lg,
+      backgroundColor: c.surface,
+      borderRadius: radius.lg,
+      padding: spacing.lg,
+      borderWidth: 1,
+      borderColor: c.border,
     },
-    linhaToggleInfo: {
+    themeInfo: {
       flex: 1,
       flexDirection: 'row',
       alignItems: 'center',
       gap: spacing.md,
     },
-    linhaToggleLabel: {
-      fontFamily: fontFamily.bold,
-      fontSize: fontSize.md,
-      color: c.text,
-      letterSpacing: letterSpacing.normal,
+    themeIconWrap: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: c.primarySoft,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
-    linhaToggleSub: {
-      fontFamily: fontFamily.regular,
-      fontSize: fontSize.sm,
+    themeTextos: { flex: 1 },
+    themeLabel: {
+      fontFamily: fontFamily.semibold,
+      fontSize: fontSize.base,
+      color: c.text,
+    },
+    themeSub: {
+      fontFamily: fontFamily.medium,
+      fontSize: fontSize.md,
       color: c.textMuted,
       marginTop: 2,
-      maxWidth: 220,
+    },
+
+    /* Ações card */
+    acoesCard: {
+      marginHorizontal: spacing.xl,
+      marginBottom: spacing.xl,
+      backgroundColor: c.surface,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: c.border,
+      overflow: 'hidden',
     },
     linhaAcao: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      paddingVertical: spacing.md,
+      padding: spacing.lg,
     },
-    linhaAcaoInfo: {
+    linhaAcaoEsquerda: {
+      flex: 1,
       flexDirection: 'row',
       alignItems: 'center',
       gap: spacing.md,
     },
+    linhaAcaoIconWrap: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: c.surfaceElevated,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
     linhaAcaoLabel: {
-      fontFamily: fontFamily.bold,
-      fontSize: fontSize.md,
+      fontFamily: fontFamily.semibold,
+      fontSize: fontSize.base,
       color: c.text,
-      letterSpacing: letterSpacing.normal,
+    },
+    linhaAcaoSub: {
+      fontFamily: fontFamily.medium,
+      fontSize: fontSize.md,
+      color: c.textMuted,
+      marginTop: 2,
     },
     divisor: {
       height: 1,
-      backgroundColor: c.border,
+      backgroundColor: c.separator,
+      marginHorizontal: spacing.lg,
     },
-    pressed: {
-      opacity: 0.6,
+
+    pressedSoft: {
+      opacity: 0.85,
+      transform: [{ scale: 0.98 }],
     },
     footerHint: {
       fontFamily: fontFamily.regular,
-      fontSize: fontSize.sm,
+      fontSize: fontSize.md,
       color: c.textSubtle,
       textAlign: 'center',
       paddingHorizontal: spacing['2xl'],
