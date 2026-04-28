@@ -11,6 +11,7 @@ import {
 
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { CartProvider } from '@/context/CartContext';
+import { OrdersProvider } from '@/context/OrdersContext';
 import { ThemeProvider, useTheme } from '@/context/ThemeContext';
 import LoadingScreen from '@/components/LoadingScreen';
 
@@ -54,7 +55,9 @@ export default function RootLayout() {
     <ThemeProvider>
       <AuthProvider>
         <CartProvider>
-          {fontsLoaded ? <RootStack /> : <ThemedSplash />}
+          <OrdersProvider>
+            {fontsLoaded ? <RootStack /> : <ThemedSplash />}
+          </OrdersProvider>
         </CartProvider>
       </AuthProvider>
     </ThemeProvider>
