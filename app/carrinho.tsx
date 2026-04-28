@@ -5,7 +5,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -18,7 +17,14 @@ import { useTheme } from '@/context/ThemeContext';
 import CARDAPIO from '@/data/cardapio';
 import { useFadeIn } from '@/hooks/useFadeIn';
 import { haptic } from '@/lib/haptics';
-import { fontFamily, fontSize, letterSpacing, radius, spacing } from '@/constants/theme';
+import {
+  fontFamily,
+  fontSize,
+  letterSpacing,
+  radius,
+  shadow,
+  spacing,
+} from '@/constants/theme';
 import type { ItemCardapio, ThemeColors } from '@/types';
 
 type LinhaItemProps = {
@@ -50,21 +56,25 @@ function LinhaItem({
 
       <View style={styles.linhaInfo}>
         <View style={styles.linhaTopo}>
-          <Text style={styles.linhaNome} numberOfLines={1}>
-            {item.nome.toUpperCase()}
-          </Text>
+          <View style={styles.linhaNomeWrap}>
+            <Text style={styles.linhaNome} numberOfLines={1}>
+              {item.nome}
+            </Text>
+            <Text style={styles.linhaPrecoUnit}>
+              R$ {item.preco.toFixed(2)} · cada
+            </Text>
+          </View>
           <Pressable
             onPress={() => {
               haptic.warning();
               onRemoverTodos();
             }}
             hitSlop={10}
+            style={styles.removeButton}
           >
-            <Ionicons name="close" size={18} color={colors.textSubtle} />
+            <Ionicons name="close" size={16} color={colors.textSubtle} />
           </Pressable>
         </View>
-
-        <Text style={styles.linhaPrecoUnit}>R$ {item.preco.toFixed(2)} cada</Text>
 
         <View style={styles.linhaControles}>
           <View style={styles.qtyGroup}>
@@ -76,7 +86,7 @@ function LinhaItem({
               }}
               hitSlop={6}
             >
-              <Ionicons name="remove" size={16} color={colors.text} />
+              <Ionicons name="remove" size={14} color={colors.text} />
             </Pressable>
             <Text style={styles.qtyValor}>{quantidade}</Text>
             <Pressable
@@ -91,7 +101,7 @@ function LinhaItem({
               }}
               hitSlop={6}
             >
-              <Ionicons name="add" size={16} color={colors.primaryText} />
+              <Ionicons name="add" size={14} color={colors.primaryText} />
             </Pressable>
           </View>
 
@@ -148,17 +158,24 @@ export default function CarrinhoScreen() {
         <Pressable
           onPress={handleVoltar}
           hitSlop={12}
-          style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}
+          style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
         >
-          <Ionicons name="chevron-back" size={22} color={colors.text} />
+          <Ionicons name="chevron-back" size={20} color={colors.text} />
         </Pressable>
-        <Text style={styles.headerTitulo}>SEU CARRINHO</Text>
+        <View style={styles.headerCenter}>
+          <Text style={styles.headerEyebrow}>SEU PEDIDO</Text>
+          <Text style={styles.headerTitulo}>Carrinho</Text>
+        </View>
         {items.length > 0 ? (
-          <Pressable onPress={handleLimpar} hitSlop={12}>
-            <Text style={styles.limparTexto}>LIMPAR</Text>
+          <Pressable
+            onPress={handleLimpar}
+            hitSlop={12}
+            style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
+          >
+            <Ionicons name="trash-outline" size={18} color={colors.textMuted} />
           </Pressable>
         ) : (
-          <View style={styles.headerSpacer} />
+          <View style={styles.iconButtonSpacer} />
         )}
       </View>
 
@@ -174,14 +191,13 @@ export default function CarrinhoScreen() {
               subtitle="Volte para o cardápio e monte seu pedido"
             />
             <View style={styles.emptyAcao}>
-              <TouchableOpacity
-                style={styles.emptyBotao}
+              <Pressable
+                style={({ pressed }) => [styles.emptyBotao, pressed && styles.pressedSoft]}
                 onPress={() => router.replace('/cardapio')}
-                activeOpacity={0.85}
               >
                 <Ionicons name="restaurant-outline" size={18} color={colors.primaryText} />
-                <Text style={styles.emptyBotaoTexto}>IR PARA O CARDÁPIO</Text>
-              </TouchableOpacity>
+                <Text style={styles.emptyBotaoTexto}>Ir para o cardápio</Text>
+              </Pressable>
             </View>
           </ScrollView>
         ) : (
@@ -189,9 +205,13 @@ export default function CarrinhoScreen() {
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
           >
-            <Text style={styles.contadorLabel}>
-              {totalItens} {totalItens === 1 ? 'ITEM' : 'ITENS'}
-            </Text>
+            <View style={styles.contadorRow}>
+              <Text style={styles.contadorLabel}>
+                {totalItens} {totalItens === 1 ? 'item' : 'itens'}
+              </Text>
+              <View style={styles.contadorDot} />
+              <Text style={styles.contadorSub}>Pronto pra confirmar</Text>
+            </View>
 
             <View style={styles.lista}>
               {linhasComItem.map(({ item, quantidade }) => (
@@ -210,32 +230,34 @@ export default function CarrinhoScreen() {
 
             <Pressable
               onPress={() => router.push('/cardapio')}
-              style={({ pressed }) => [styles.adicionarMais, pressed && styles.pressed]}
+              style={({ pressed }) => [styles.adicionarMais, pressed && styles.pressedSoft]}
             >
-              <Ionicons name="add-circle-outline" size={20} color={colors.primary} />
-              <Text style={styles.adicionarMaisTexto}>ADICIONAR MAIS ITENS</Text>
+              <Ionicons name="add" size={18} color={colors.primary} />
+              <Text style={styles.adicionarMaisTexto}>Adicionar mais itens</Text>
             </Pressable>
 
             <View style={styles.totaisCard}>
               <View style={styles.totaisLinha}>
-                <Text style={styles.totaisLabel}>SUBTOTAL</Text>
+                <Text style={styles.totaisLabel}>Subtotal</Text>
                 <Text style={styles.totaisValor}>R$ {totalPreco.toFixed(2)}</Text>
               </View>
               <View style={styles.totaisLinha}>
-                <Text style={styles.totaisLabel}>TAXA</Text>
-                <Text style={[styles.totaisValor, { color: colors.success }]}>GRÁTIS</Text>
+                <Text style={styles.totaisLabel}>Taxa de retirada</Text>
+                <Text style={[styles.totaisValor, { color: colors.success }]}>Grátis</Text>
               </View>
               <View style={styles.divisor} />
               <View style={styles.totaisLinha}>
-                <Text style={styles.totalLabel}>TOTAL</Text>
+                <Text style={styles.totalLabel}>Total</Text>
                 <Text style={styles.totalValor}>R$ {totalPreco.toFixed(2)}</Text>
               </View>
             </View>
 
             <View style={styles.avisoRetirada}>
-              <Ionicons name="information-circle-outline" size={16} color={colors.primary} />
+              <View style={styles.avisoIconWrap}>
+                <Ionicons name="information-circle" size={14} color={colors.primary} />
+              </View>
               <Text style={styles.avisoTexto}>
-                Pagamento direto no balcão. Você receberá uma senha de retirada.
+                Pagamento direto no balcão. Você receberá uma senha de retirada após confirmar.
               </Text>
             </View>
           </ScrollView>
@@ -246,20 +268,21 @@ export default function CarrinhoScreen() {
         <View
           style={[
             styles.barraConfirmar,
-            { paddingBottom: insets.bottom + spacing.lg },
+            { paddingBottom: insets.bottom + spacing.md },
           ]}
         >
-          <TouchableOpacity
-            style={styles.botaoConfirmar}
+          <Pressable
+            style={({ pressed }) => [styles.botaoConfirmar, pressed && styles.pressedSoft]}
             onPress={handleConfirmar}
-            activeOpacity={0.85}
           >
-            <View>
-              <Text style={styles.botaoConfirmarLabel}>CONFIRMAR PEDIDO</Text>
+            <View style={styles.botaoConfirmarTextos}>
+              <Text style={styles.botaoConfirmarLabel}>Confirmar pedido</Text>
               <Text style={styles.botaoConfirmarValor}>R$ {totalPreco.toFixed(2)}</Text>
             </View>
-            <Ionicons name="arrow-forward" size={22} color={colors.primaryText} />
-          </TouchableOpacity>
+            <View style={styles.botaoConfirmarIconWrap}>
+              <Ionicons name="arrow-forward" size={18} color={colors.primaryText} />
+            </View>
+          </Pressable>
         </View>
       ) : null}
     </View>
@@ -273,35 +296,39 @@ const createStyles = (c: ThemeColors) =>
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      paddingBottom: spacing.md,
+      paddingBottom: spacing.lg,
       paddingHorizontal: spacing.xl,
     },
-    backButton: {
-      width: 36,
-      height: 36,
-      borderRadius: 18,
+    iconButton: {
+      width: 40,
+      height: 40,
+      borderRadius: radius.full,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: c.card,
+      backgroundColor: c.surface,
       borderWidth: 1,
       borderColor: c.border,
     },
-    headerTitulo: {
-      fontFamily: fontFamily.extrabold,
-      fontSize: fontSize.md,
-      color: c.text,
+    iconButtonSpacer: { width: 40 },
+    headerCenter: {
+      alignItems: 'center',
+      flex: 1,
+    },
+    headerEyebrow: {
+      fontFamily: fontFamily.semibold,
+      fontSize: fontSize.xs,
+      color: c.textSubtle,
       letterSpacing: letterSpacing.widest,
     },
-    headerSpacer: { width: 36 },
-    limparTexto: {
+    headerTitulo: {
       fontFamily: fontFamily.bold,
-      fontSize: fontSize.xs,
-      color: c.error,
-      letterSpacing: letterSpacing.wide,
+      fontSize: fontSize.xl,
+      color: c.text,
+      marginTop: 2,
     },
     scrollContent: {
       paddingHorizontal: spacing.xl,
-      paddingBottom: 140,
+      paddingBottom: 160,
     },
     emptyScroll: {
       flexGrow: 1,
@@ -319,30 +346,45 @@ const createStyles = (c: ThemeColors) =>
       backgroundColor: c.primary,
       paddingVertical: spacing.lg,
       borderRadius: radius.full,
+      ...shadow.primary,
     },
     emptyBotaoTexto: {
       fontFamily: fontFamily.bold,
       color: c.primaryText,
-      fontSize: fontSize.md,
-      letterSpacing: letterSpacing.wide,
+      fontSize: fontSize.base,
+    },
+    contadorRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      marginBottom: spacing.lg,
+      marginTop: spacing.xs,
     },
     contadorLabel: {
-      fontFamily: fontFamily.semibold,
-      fontSize: fontSize.xs,
-      color: c.textSubtle,
-      letterSpacing: letterSpacing.wider,
-      marginBottom: spacing.md,
-      marginTop: spacing.sm,
+      fontFamily: fontFamily.bold,
+      fontSize: fontSize.base,
+      color: c.text,
+    },
+    contadorDot: {
+      width: 3,
+      height: 3,
+      borderRadius: 2,
+      backgroundColor: c.textSubtle,
+    },
+    contadorSub: {
+      fontFamily: fontFamily.medium,
+      fontSize: fontSize.md,
+      color: c.textMuted,
     },
     lista: {
       gap: spacing.sm,
-      marginBottom: spacing.lg,
+      marginBottom: spacing.md,
     },
     linha: {
       flexDirection: 'row',
-      backgroundColor: c.card,
+      backgroundColor: c.surface,
       borderRadius: radius.lg,
-      padding: spacing.md + 2,
+      padding: spacing.md,
       gap: spacing.md,
       borderWidth: 1,
       borderColor: c.border,
@@ -351,7 +393,7 @@ const createStyles = (c: ThemeColors) =>
       width: 56,
       height: 56,
       borderRadius: radius.md,
-      backgroundColor: c.cardElevated,
+      backgroundColor: c.surfaceElevated,
       alignItems: 'center',
       justifyContent: 'center',
     },
@@ -359,39 +401,48 @@ const createStyles = (c: ThemeColors) =>
     linhaInfo: {
       flex: 1,
       justifyContent: 'space-between',
+      gap: spacing.sm,
     },
     linhaTopo: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'flex-start',
+      gap: spacing.sm,
+    },
+    linhaNomeWrap: {
+      flex: 1,
     },
     linhaNome: {
-      flex: 1,
-      fontFamily: fontFamily.bold,
-      fontSize: fontSize.md,
+      fontFamily: fontFamily.semibold,
+      fontSize: fontSize.base,
       color: c.text,
-      letterSpacing: letterSpacing.normal,
-      marginRight: spacing.sm,
     },
     linhaPrecoUnit: {
-      fontFamily: fontFamily.regular,
-      fontSize: fontSize.sm,
+      fontFamily: fontFamily.medium,
+      fontSize: fontSize.md,
       color: c.textSubtle,
       marginTop: 2,
+    },
+    removeButton: {
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: c.surfaceElevated,
     },
     linhaControles: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      marginTop: spacing.sm,
     },
     qtyGroup: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: spacing.sm + 2,
-      backgroundColor: c.cardElevated,
-      paddingHorizontal: spacing.sm,
-      paddingVertical: spacing.xs,
+      gap: spacing.sm,
+      backgroundColor: c.bg,
+      paddingHorizontal: spacing.xs,
+      paddingVertical: 2,
       borderRadius: radius.full,
       borderWidth: 1,
       borderColor: c.border,
@@ -409,92 +460,94 @@ const createStyles = (c: ThemeColors) =>
     },
     qtyValor: {
       fontFamily: fontFamily.bold,
-      fontSize: fontSize.base,
+      fontSize: fontSize.md,
       color: c.text,
-      minWidth: 18,
+      minWidth: 14,
       textAlign: 'center',
     },
     linhaSubtotal: {
-      fontFamily: fontFamily.extrabold,
+      fontFamily: fontFamily.bold,
       fontSize: fontSize.lg,
-      color: c.primary,
+      color: c.text,
     },
     adicionarMais: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      gap: spacing.sm + 2,
-      paddingVertical: spacing.lg,
+      gap: spacing.sm,
+      paddingVertical: spacing.md + 2,
       borderRadius: radius.lg,
       borderWidth: 1,
       borderColor: c.border,
       borderStyle: 'dashed',
       marginBottom: spacing.lg,
+      backgroundColor: c.primarySoft,
     },
     adicionarMaisTexto: {
-      fontFamily: fontFamily.bold,
-      fontSize: fontSize.md,
+      fontFamily: fontFamily.semibold,
+      fontSize: fontSize.base,
       color: c.primary,
-      letterSpacing: letterSpacing.wide,
     },
     totaisCard: {
-      backgroundColor: c.card,
-      borderRadius: radius.lg,
+      backgroundColor: c.surface,
+      borderRadius: radius.xl,
       padding: spacing.xl,
       borderWidth: 1,
       borderColor: c.border,
-      marginBottom: spacing.lg,
+      marginBottom: spacing.md,
+      gap: spacing.sm,
     },
     totaisLinha: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      marginBottom: spacing.sm + 2,
     },
     totaisLabel: {
-      fontFamily: fontFamily.semibold,
-      fontSize: fontSize.sm,
-      color: c.textSubtle,
-      letterSpacing: letterSpacing.wide,
+      fontFamily: fontFamily.medium,
+      fontSize: fontSize.base,
+      color: c.textMuted,
     },
     totaisValor: {
-      fontFamily: fontFamily.bold,
+      fontFamily: fontFamily.semibold,
       fontSize: fontSize.base,
       color: c.text,
     },
     divisor: {
       height: 1,
-      backgroundColor: c.border,
+      backgroundColor: c.separator,
       marginVertical: spacing.sm,
     },
     totalLabel: {
       fontFamily: fontFamily.bold,
-      fontSize: fontSize.md,
+      fontSize: fontSize.lg,
       color: c.text,
-      letterSpacing: letterSpacing.wide,
     },
     totalValor: {
       fontFamily: fontFamily.extrabold,
       fontSize: fontSize['2xl'],
-      color: c.primary,
+      color: c.text,
     },
     avisoRetirada: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: spacing.sm + 2,
-      backgroundColor: c.card,
-      borderRadius: radius.md,
-      padding: spacing.md + 2,
-      borderLeftWidth: 3,
-      borderLeftColor: c.primary,
-      borderWidth: 1,
-      borderColor: c.border,
+      gap: spacing.md,
+      backgroundColor: c.primarySoft,
+      borderRadius: radius.lg,
+      padding: spacing.md,
+    },
+    avisoIconWrap: {
+      width: 28,
+      height: 28,
+      borderRadius: 14,
+      backgroundColor: c.surface,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     avisoTexto: {
       flex: 1,
       fontFamily: fontFamily.medium,
-      fontSize: fontSize.sm,
-      color: c.textMuted,
+      fontSize: fontSize.md,
+      color: c.text,
       lineHeight: 18,
     },
     barraConfirmar: {
@@ -502,11 +555,11 @@ const createStyles = (c: ThemeColors) =>
       bottom: 0,
       left: 0,
       right: 0,
-      backgroundColor: c.card,
+      backgroundColor: c.bg,
       borderTopWidth: 1,
       borderTopColor: c.border,
       paddingHorizontal: spacing.xl,
-      paddingTop: spacing.lg,
+      paddingTop: spacing.md,
     },
     botaoConfirmar: {
       flexDirection: 'row',
@@ -514,22 +567,37 @@ const createStyles = (c: ThemeColors) =>
       justifyContent: 'space-between',
       backgroundColor: c.primary,
       paddingHorizontal: spacing.xl,
-      paddingVertical: spacing.lg,
+      paddingVertical: spacing.md,
       borderRadius: radius.full,
+      ...shadow.primary,
+    },
+    botaoConfirmarTextos: {
+      flex: 1,
     },
     botaoConfirmarLabel: {
-      fontFamily: fontFamily.bold,
-      fontSize: fontSize.xs,
-      color: 'rgba(255,255,255,0.7)',
-      letterSpacing: letterSpacing.widest,
+      fontFamily: fontFamily.medium,
+      fontSize: fontSize.md,
+      color: 'rgba(255,255,255,0.8)',
     },
     botaoConfirmarValor: {
-      fontFamily: fontFamily.extrabold,
+      fontFamily: fontFamily.bold,
       fontSize: fontSize.xl,
       color: c.primaryText,
-      marginTop: 2,
+      marginTop: 1,
+    },
+    botaoConfirmarIconWrap: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: 'rgba(255,255,255,0.18)',
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     pressed: {
       opacity: 0.6,
+    },
+    pressedSoft: {
+      opacity: 0.85,
+      transform: [{ scale: 0.98 }],
     },
   });
