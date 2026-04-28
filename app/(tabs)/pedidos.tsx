@@ -11,6 +11,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 
 import EmptyState from '@/components/EmptyState';
 import { SkeletonOrderCard } from '@/components/Skeleton';
@@ -152,6 +153,7 @@ export default function PedidosScreen() {
   const router = useRouter();
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
+  const tabBarHeight = useBottomTabBarHeight();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const { orders, isHydrated, refresh, markRetirado, markCancelado } = useOrders();
   const { clear, setQuantidade } = useCart();
@@ -228,7 +230,10 @@ export default function PedidosScreen() {
       <FlatList
         data={orders}
         keyExtractor={(o) => o.id}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[
+          styles.listContent,
+          { paddingBottom: tabBarHeight + spacing.lg },
+        ]}
         showsVerticalScrollIndicator={false}
         renderItem={({ item }) => (
           <PedidoCard

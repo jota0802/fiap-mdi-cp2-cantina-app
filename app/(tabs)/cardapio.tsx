@@ -10,6 +10,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 
 import CARDAPIO from '@/data/cardapio';
 import EmptyState from '@/components/EmptyState';
@@ -46,6 +47,7 @@ export default function Cardapio() {
   const router = useRouter();
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
+  const tabBarHeight = useBottomTabBarHeight();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
   const {
@@ -237,11 +239,16 @@ export default function Cardapio() {
           </>
         )}
 
-        <View style={styles.espacoFinal} />
+        <View style={{ height: tabBarHeight + (totalItens > 0 ? 110 : spacing.lg) }} />
       </ScrollView>
 
       {totalItens > 0 ? (
-        <View style={[styles.barraInferior, { paddingBottom: insets.bottom + spacing.md }]}>
+        <View
+          style={[
+            styles.barraInferior,
+            { bottom: tabBarHeight, paddingBottom: spacing.md },
+          ]}
+        >
           <View style={styles.resumo}>
             <Text style={styles.resumoItens}>
               {totalItens} {totalItens === 1 ? 'item selecionado' : 'itens selecionados'}
@@ -354,10 +361,8 @@ const createStyles = (c: ThemeColors) =>
       height: 1,
       backgroundColor: c.separator,
     },
-    espacoFinal: { height: 120 },
     barraInferior: {
       position: 'absolute',
-      bottom: 0,
       left: 0,
       right: 0,
       backgroundColor: c.bg,

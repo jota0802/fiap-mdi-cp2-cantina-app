@@ -10,6 +10,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 
 import LoadingScreen from '@/components/LoadingScreen';
 import ProfileAvatar from '@/components/ProfileAvatar';
@@ -45,6 +46,7 @@ export default function PerfilScreen() {
   const router = useRouter();
   const { colors, mode, toggleTheme } = useTheme();
   const insets = useSafeAreaInsets();
+  const tabBarHeight = useBottomTabBarHeight();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
   const { user, signOut, updateUser } = useAuth();
@@ -118,7 +120,10 @@ export default function PerfilScreen() {
   return (
     <View style={styles.container}>
       <ScrollView
-        contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + spacing.lg }]}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingTop: insets.top + spacing.lg, paddingBottom: tabBarHeight + spacing.lg },
+        ]}
         showsVerticalScrollIndicator={false}
       >
         {/* Header com subtítulo */}
