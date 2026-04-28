@@ -90,7 +90,9 @@ Depois escaneie o QR Code com o **Expo Go** no celular, ou pressione:
 
 ### Validar o build
 ```bash
-npm run typecheck  # checa TypeScript strict
+npm run typecheck    # TypeScript strict + noUncheckedIndexedAccess
+npm test             # 26 testes Node validando validacao, hash e cart (sem precisar de device)
+npx expo-doctor      # 18 checks de configuracao do projeto Expo
 ```
 
 ---
@@ -106,7 +108,7 @@ npm run typecheck  # checa TypeScript strict
 | 3 | **Início** | Hero animado, "Como funciona" em 3 passos, destaques |
 | 4 | **Cardápio** | Lista por categoria + busca em tempo real + badge animado |
 | 5 | **Confirmação** | Loading com dots, checkmark animado, senha com spring scale |
-| 6 | **Pedidos** | Histórico com status, pull-to-refresh, skeleton loaders |
+| 6 | **Pedidos** | Histórico com **badges coloridos por status** (laranja preparando · verde pronto · cinza retirado), barra de progresso colorida, pull-to-refresh, skeleton loaders |
 | 7 | **Perfil** | Foto, stats, tema toggle, logout, link Sobre |
 | 8 | **Sobre** | Cards do projeto, integrantes, tecnologias, decisões |
 
@@ -273,6 +275,41 @@ Atende literalmente o requisito do CP2:
 - ✅ Botão de submit **desabilitado** enquanto há erros visíveis
 - ✅ Validação roda em tempo real após o primeiro submit (não atrapalha primeira digitação)
 - ✅ Shake horizontal + haptic.error reforçam o erro visualmente e tatilmente
+- ✅ Regras centralizadas em [`lib/validation.ts`](./lib/validation.ts) — login e cadastro usam exatamente as mesmas funções
+
+### Status dos pedidos — paleta semântica
+
+Cada estado do pedido tem cor, ícone e estilo dedicados para identificação instantânea, definidos em [`constants/theme.ts`](./constants/theme.ts) (`statusPalette`):
+
+| Status | Cor | Ícone | Significado |
+|---|---|---|---|
+| 🟠 **PREPARANDO** | `#F59E0B` (amber) | `time-outline` | Pedido recém-feito, sendo preparado na cozinha |
+| 🟢 **PRONTO** | `#10B981` (emerald) | `checkmark-circle-outline` | Pode retirar no balcão (auto-promove após 3 min) |
+| ⚫ **RETIRADO** | `#6B7280` (gray) | `bag-check-outline` | Finalizado |
+
+O badge mostra **fundo translúcido + borda + ícone + label**, e o card tem uma **barra colorida** acima do resumo. Quando o pedido está `pronto`, o botão "MARCAR COMO RETIRADO" também adota a cor verde para reforçar a chamada à ação. As cores funcionam tanto em dark quanto em light theme (usam `rgba`).
+
+### Auto-promoção do pedido
+
+O `OrdersContext` agenda um `setTimeout` ao criar cada pedido para virar o status de `pendente → pronto` após **3 minutos** (`PREP_TIME_MS`). Ao reabrir o app, um sweep varre os pedidos pendentes:
+- Se já passou do tempo → promove imediatamente
+- Senão → agenda o tempo restante
+
+`timeoutsRef` guarda os IDs para cancelar no logout / troca de usuário, evitando vazamento. Marcar manualmente como `retirado` também cancela o auto-promote.
+
+### Testes automatizados
+
+Há **26 testes em Node** rodando via `npm test` (sem precisar de device):
+
+- [`test/validation.test.mjs`](./test/validation.test.mjs) (7 testes) — validações de email, senha, nome e confirmação
+- [`test/hash.test.mjs`](./test/hash.test.mjs) (6 testes) — determinismo, formato hex 64-chars, salt fixo, verifySenha OK/erro
+- [`test/cart.test.mjs`](./test/cart.test.mjs) (13 testes) — addItem/removeItem, totalItens/totalPreco, busca por nome/categoria, imutabilidade
+
+Replicam exatamente as funções de `lib/validation.ts`, `lib/hash.ts` e `CartContext` em Node puro (hash usa `node:crypto` que produz o mesmo SHA-256 hex que `expo-crypto`).
+
+### Suporte a notch / Dynamic Island
+
+Todas as telas usam `useSafeAreaInsets()` do `react-native-safe-area-context` para calcular `paddingTop` dinâmico (`insets.top + spacing`), garantindo que o conteúdo não fique atrás da barra de status em iPhones modernos. As telas de auth também aplicam `paddingBottom = insets.bottom` para respeitar o home indicator.
 
 ### TypeScript strict
 

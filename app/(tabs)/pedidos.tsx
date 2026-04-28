@@ -15,7 +15,14 @@ import EmptyState from '@/components/EmptyState';
 import { SkeletonOrderCard } from '@/components/Skeleton';
 import { useOrders } from '@/context/OrdersContext';
 import { useTheme } from '@/context/ThemeContext';
-import { fontFamily, fontSize, letterSpacing, radius, spacing } from '@/constants/theme';
+import {
+  fontFamily,
+  fontSize,
+  letterSpacing,
+  radius,
+  spacing,
+  statusPalette,
+} from '@/constants/theme';
 import type { Order, ThemeColors } from '@/types';
 
 function formatarData(iso: string): string {
@@ -23,20 +30,6 @@ function formatarData(iso: string): string {
   const data = date.toLocaleDateString('pt-BR');
   const hora = date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
   return `${data} · ${hora}`;
-}
-
-type StatusInfo = { label: string; color: string };
-
-function getStatusInfo(status: Order['status'], colors: ThemeColors): StatusInfo {
-  switch (status) {
-    case 'retirado':
-      return { label: 'RETIRADO', color: colors.textSubtle };
-    case 'pronto':
-      return { label: 'PRONTO', color: colors.success };
-    case 'pendente':
-    default:
-      return { label: 'PREPARANDO', color: colors.primary };
-  }
 }
 
 type CardProps = {
@@ -47,7 +40,7 @@ type CardProps = {
 };
 
 function PedidoCard({ order, styles, colors, onMarcarRetirado }: CardProps) {
-  const status = getStatusInfo(order.status, colors);
+  const status = statusPalette[order.status];
 
   return (
     <View style={styles.card}>
@@ -58,14 +51,19 @@ function PedidoCard({ order, styles, colors, onMarcarRetirado }: CardProps) {
         </View>
         <View style={styles.cardHeaderInfo}>
           <Text style={styles.cardData}>{formatarData(order.criadoEm)}</Text>
-          <View style={[styles.statusBadge, { borderColor: status.color }]}>
-            <View style={[styles.statusDot, { backgroundColor: status.color }]} />
+          <View
+            style={[
+              styles.statusBadge,
+              { backgroundColor: status.bg, borderColor: status.border },
+            ]}
+          >
+            <Ionicons name={status.icon} size={12} color={status.color} />
             <Text style={[styles.statusLabel, { color: status.color }]}>{status.label}</Text>
           </View>
         </View>
       </View>
 
-      <View style={styles.divisor} />
+      <View style={[styles.statusBar, { backgroundColor: status.color }]} />
 
       <Text style={styles.resumoLinha}>{order.resumo}</Text>
 
@@ -76,12 +74,29 @@ function PedidoCard({ order, styles, colors, onMarcarRetirado }: CardProps) {
 
       {order.status !== 'retirado' ? (
         <TouchableOpacity
-          style={styles.acaoBotao}
+          style={[
+            styles.acaoBotao,
+            order.status === 'pronto' && {
+              backgroundColor: status.bg,
+              borderColor: status.border,
+            },
+          ]}
           onPress={onMarcarRetirado}
           activeOpacity={0.8}
         >
-          <Ionicons name="checkmark-circle-outline" size={16} color={colors.text} />
-          <Text style={styles.acaoBotaoTexto}>MARCAR COMO RETIRADO</Text>
+          <Ionicons
+            name="checkmark-circle-outline"
+            size={16}
+            color={order.status === 'pronto' ? status.color : colors.text}
+          />
+          <Text
+            style={[
+              styles.acaoBotaoTexto,
+              order.status === 'pronto' && { color: status.color },
+            ]}
+          >
+            MARCAR COMO RETIRADO
+          </Text>
         </TouchableOpacity>
       ) : null}
     </View>
@@ -253,20 +268,16 @@ const createStyles = (c: ThemeColors) =>
       borderRadius: radius.full,
       borderWidth: 1,
     },
-    statusDot: {
-      width: 6,
-      height: 6,
-      borderRadius: 3,
-    },
     statusLabel: {
       fontFamily: fontFamily.bold,
       fontSize: 10,
       letterSpacing: letterSpacing.wide,
     },
-    divisor: {
-      height: 1,
-      backgroundColor: c.border,
+    statusBar: {
+      height: 3,
+      borderRadius: 2,
       marginVertical: spacing.md + 2,
+      opacity: 0.7,
     },
     resumoLinha: {
       fontFamily: fontFamily.regular,

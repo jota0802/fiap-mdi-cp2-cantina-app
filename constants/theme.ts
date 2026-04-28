@@ -89,3 +89,41 @@ export const letterSpacing = {
   widest: 4,
   ultra: 6,
 } as const;
+
+export type StatusKey = 'pendente' | 'pronto' | 'retirado';
+
+export type StatusPalette = {
+  label: string;
+  color: string;
+  bg: string;
+  border: string;
+  icon: 'time-outline' | 'checkmark-circle-outline' | 'bag-check-outline';
+};
+
+/**
+ * Cores semânticas para os status de pedido (laranja preparando,
+ * verde pronto, cinza retirado). Funciona em dark e light theme.
+ */
+export const statusPalette: Record<StatusKey, StatusPalette> = {
+  pendente: {
+    label: 'PREPARANDO',
+    color: '#F59E0B', // amber-500
+    bg: 'rgba(245, 158, 11, 0.12)',
+    border: 'rgba(245, 158, 11, 0.4)',
+    icon: 'time-outline',
+  },
+  pronto: {
+    label: 'PRONTO',
+    color: '#10B981', // emerald-500
+    bg: 'rgba(16, 185, 129, 0.14)',
+    border: 'rgba(16, 185, 129, 0.45)',
+    icon: 'checkmark-circle-outline',
+  },
+  retirado: {
+    label: 'RETIRADO',
+    color: '#6B7280', // gray-500
+    bg: 'rgba(107, 114, 128, 0.12)',
+    border: 'rgba(107, 114, 128, 0.35)',
+    icon: 'bag-check-outline',
+  },
+};
