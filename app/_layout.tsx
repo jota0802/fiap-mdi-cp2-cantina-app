@@ -33,6 +33,10 @@ function RootStack() {
           name="confirmacao"
           options={{ animation: 'slide_from_bottom' }}
         />
+        <Stack.Screen
+          name="sobre"
+          options={{ animation: 'slide_from_right' }}
+        />
       </Stack>
     </>
   );

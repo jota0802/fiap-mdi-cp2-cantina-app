@@ -1,5 +1,7 @@
 import { useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 
 import FiapLogo from '@/components/FiapLogo';
 import { useTheme } from '@/context/ThemeContext';
@@ -24,10 +26,23 @@ const TECNOLOGIAS = [
 
 export default function Sobre() {
   const { colors } = useTheme();
+  const router = useRouter();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
   return (
     <View style={styles.container}>
+      <View style={styles.headerNav}>
+        <Pressable
+          onPress={() => router.back()}
+          hitSlop={12}
+          style={({ pressed }) => [styles.backButton, pressed && styles.backButtonPressed]}
+        >
+          <Ionicons name="chevron-back" size={22} color={colors.text} />
+        </Pressable>
+        <Text style={styles.headerNavTitle}>SOBRE</Text>
+        <View style={styles.headerNavSpacer} />
+      </View>
+
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <View style={styles.logoContainer}>
@@ -124,10 +139,40 @@ export default function Sobre() {
 const createStyles = (c: ThemeColors) =>
   StyleSheet.create({
     container: { flex: 1, backgroundColor: c.bg },
+    headerNav: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingTop: 56,
+      paddingBottom: spacing.md,
+      paddingHorizontal: spacing.xl,
+    },
+    backButton: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: c.card,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    backButtonPressed: {
+      opacity: 0.6,
+    },
+    headerNavTitle: {
+      fontFamily: fontFamily.extrabold,
+      fontSize: fontSize.md,
+      color: c.text,
+      letterSpacing: letterSpacing.widest,
+    },
+    headerNavSpacer: {
+      width: 36,
+    },
     scrollContent: { paddingBottom: spacing['4xl'] },
     header: {
       alignItems: 'center',
-      paddingTop: spacing['6xl'],
+      paddingTop: spacing.xl,
       paddingBottom: spacing['4xl'] - 4,
       gap: spacing.xs + 2,
     },
