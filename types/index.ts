@@ -1,5 +1,15 @@
 export type Categoria = 'Bebidas' | 'Lanches' | 'Sobremesas';
 
+export type Tag =
+  | 'vegano'
+  | 'vegetariano'
+  | 'sem-gluten'
+  | 'sem-lactose'
+  | 'quente'
+  | 'frio'
+  | 'popular'
+  | 'novo';
+
 export type ItemCardapio = {
   id: number;
   nome: string;
@@ -8,6 +18,7 @@ export type ItemCardapio = {
   emoji: string;
   imagem?: string;
   categoria: Categoria;
+  tags?: Tag[];
 };
 
 export type CartItem = {
@@ -31,7 +42,8 @@ export type Order = {
   total: number;
   resumo: string;
   criadoEm: string;
-  status: 'pendente' | 'pronto' | 'retirado';
+  prontoEm?: string;
+  status: 'pendente' | 'pronto' | 'retirado' | 'cancelado';
 };
 
 export type ThemeMode = 'light' | 'dark';

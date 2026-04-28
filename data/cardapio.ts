@@ -11,6 +11,7 @@ const CARDAPIO: ItemCardapio[] = [
     emoji: '☕',
     imagem: `https://images.unsplash.com/photo-1510707577719-ae7c14805e3a${UNSPLASH_PARAMS}`,
     categoria: 'Bebidas',
+    tags: ['quente', 'sem-lactose'],
   },
   {
     id: 2,
@@ -20,6 +21,7 @@ const CARDAPIO: ItemCardapio[] = [
     emoji: '☕',
     imagem: `https://images.unsplash.com/photo-1572442388796-11668a67e53d${UNSPLASH_PARAMS}`,
     categoria: 'Bebidas',
+    tags: ['quente', 'popular'],
   },
   {
     id: 3,
@@ -29,6 +31,7 @@ const CARDAPIO: ItemCardapio[] = [
     emoji: '🧃',
     imagem: `https://images.unsplash.com/photo-1546549032-9571cd6b27df${UNSPLASH_PARAMS}`,
     categoria: 'Bebidas',
+    tags: ['frio', 'vegano', 'sem-lactose'],
   },
   {
     id: 4,
@@ -38,6 +41,7 @@ const CARDAPIO: ItemCardapio[] = [
     emoji: '🧀',
     imagem: `https://images.unsplash.com/photo-1518779578993-ec3579fee39f${UNSPLASH_PARAMS}`,
     categoria: 'Lanches',
+    tags: ['quente', 'vegetariano', 'popular'],
   },
   {
     id: 5,
@@ -47,6 +51,7 @@ const CARDAPIO: ItemCardapio[] = [
     emoji: '🍗',
     imagem: `https://images.unsplash.com/photo-1559847844-5315695dadae${UNSPLASH_PARAMS}`,
     categoria: 'Lanches',
+    tags: ['quente', 'popular'],
   },
   {
     id: 6,
@@ -56,6 +61,7 @@ const CARDAPIO: ItemCardapio[] = [
     emoji: '🍔',
     imagem: `https://images.unsplash.com/photo-1568901346375-23c9450c58cd${UNSPLASH_PARAMS}`,
     categoria: 'Lanches',
+    tags: ['quente', 'popular'],
   },
   {
     id: 7,
@@ -65,6 +71,7 @@ const CARDAPIO: ItemCardapio[] = [
     emoji: '🥪',
     imagem: `https://images.unsplash.com/photo-1528736235302-52922df5c122${UNSPLASH_PARAMS}`,
     categoria: 'Lanches',
+    tags: ['quente'],
   },
   {
     id: 8,
@@ -74,6 +81,47 @@ const CARDAPIO: ItemCardapio[] = [
     emoji: '🍇',
     imagem: `https://images.unsplash.com/photo-1490474418585-ba9bad8fd0ea${UNSPLASH_PARAMS}`,
     categoria: 'Sobremesas',
+    tags: ['frio', 'vegetariano', 'sem-lactose'],
+  },
+  {
+    id: 9,
+    nome: 'Brigadeiro Gourmet',
+    preco: 4.0,
+    descricao: 'Tradicional brasileiro com chocolate belga',
+    emoji: '🍫',
+    imagem: `https://images.unsplash.com/photo-1481391032119-d89fee407e44${UNSPLASH_PARAMS}`,
+    categoria: 'Sobremesas',
+    tags: ['vegetariano', 'sem-gluten'],
+  },
+  {
+    id: 10,
+    nome: 'Salada Caesar',
+    preco: 14.0,
+    descricao: 'Folhas frescas, frango grelhado e parmesão',
+    emoji: '🥗',
+    imagem: `https://images.unsplash.com/photo-1546793665-c74683f339c1${UNSPLASH_PARAMS}`,
+    categoria: 'Lanches',
+    tags: ['frio', 'novo'],
+  },
+  {
+    id: 11,
+    nome: 'Refrigerante Lata',
+    preco: 5.5,
+    descricao: 'Coca, Guaraná, Sprite ou Fanta',
+    emoji: '🥤',
+    imagem: `https://images.unsplash.com/photo-1581636625402-29b2a704ef13${UNSPLASH_PARAMS}`,
+    categoria: 'Bebidas',
+    tags: ['frio'],
+  },
+  {
+    id: 12,
+    nome: 'Croissant',
+    preco: 7.5,
+    descricao: 'Manteiga francesa, recheio de chocolate',
+    emoji: '🥐',
+    imagem: `https://images.unsplash.com/photo-1555507036-ab1f4038808a${UNSPLASH_PARAMS}`,
+    categoria: 'Lanches',
+    tags: ['quente', 'vegetariano', 'novo'],
   },
 ];
 
