@@ -149,7 +149,7 @@ c60b129 feat(orders): cria OrdersContext com persistencia por usuario
 
 ## 🛣️ Próximos passos
 
-**Top 8 — TODOS CONCLUÍDOS ✅** (28/04/2026)
+**Top 8 — TODOS CONCLUÍDOS ✅**
 
 | # | Feature | Implementação |
 |---|---|---|
@@ -162,7 +162,20 @@ c60b129 feat(orders): cria OrdersContext com persistencia por usuario
 | 7 | Editar perfil | `app/perfil-editar.tsx` + validação email único em `AuthContext.updateUser` |
 | 8 | QR Code da senha | `app/confirmacao.tsx` + `react-native-qrcode-svg` |
 
-**Próximo backlog (categorias B/C/D/E do `docs/ROADMAP.md`):** Glassmorphism nas barras (#9), Reanimated 3 (#13), Lottie checkmark (#15), Favoritos (#21), Biometria (#24), Acessibilidade completa (#26), Microcopy humanizado (#30) — escolher conforme tempo restante.
+**Tier 2 — features adicionais ✅**
+
+| Item | Implementação |
+|---|---|
+| #9 Glassmorphism tab bar | `expo-blur` BlurView no `(tabs)/_layout.tsx` |
+| #18 + #19 Tags + cardápio expandido | 8 tags coloridos + 12 items |
+| #21 Favoritos | `FavoritesContext` + heart toggle no `ItemCardapio` + seção na Home |
+| #22 Recuperar senha | `(auth)/recover-senha.tsx` + `AuthContext.resetSenha` |
+| #23 Estimativa dinâmica | `lib/estimativa.ts` + `Order.prontoEm` |
+| #25 Cancelar pedido | Status `cancelado` + Alert de confirmação |
+| #26 Acessibilidade | `accessibilityLabel/Role` em Pressables principais |
+| #30 Microcopy | Textos mais humanos em emptystates e avisos |
+
+**Próximo backlog (depois do tier 2 - 28/04/2026):** Reanimated 3 (#13), Layout animations (#14), Lottie checkmark (#15), Ripple Android (#16), Banner foreground notifications (#17), Biometria (#24), Dynamic Type (#27), Sound feedback (#29), Swipe-to-delete carrinho — escolher conforme tempo.
 
 ## 🎨 Design system consolidado (28/04/2026)
 

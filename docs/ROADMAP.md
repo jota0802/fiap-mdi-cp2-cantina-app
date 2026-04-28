@@ -31,12 +31,12 @@ Pós-redesign premium minimalista, todas as telas seguem agora:
 
 ## A. Layout & Visual (refinamento)
 
-| # | Item | Esforço | Detalhes |
-|---|---|---|---|
-| 9 | **Glassmorphism nas barras** | 🟡 | `expo-blur` na tab bar e header da Home (BlurView com tint do tema) |
-| 10 | **Gradients sutis** | 🟢 | `expo-linear-gradient` no card hero, no card da senha e em botões primários (gradient FIAP rosa→roxo) |
-| 11 | **Dark mode menos preto** | 🟢 | Trocar `#0A0A0A` por `#0F0F1A` ou `#020617` em `constants/theme.ts` (mais sofisticado) |
-| 12 | **Sombras sutis em cards no light theme** | 🟢 | Adicionar `shadowOffset/Radius/elevation` nos cards quando `mode === 'light'` |
+| # | Item | Status |
+|---|---|---|
+| 9 | **Glassmorphism nas barras** | ✅ `BlurView` na tab bar com tint dinâmico por tema |
+| 10 | **Gradients sutis** | ⏳ `expo-linear-gradient` no card hero, na senha e em botões primários |
+| 11 | **Dark mode menos preto** | ✅ Tokens novos em `theme.ts` (#0E0E16, #181826) |
+| 12 | **Sombras sutis em cards no light theme** | ✅ Tokens `shadow.sm/md/lg/primary` |
 
 ## B. Microinterações & Animações
 
@@ -50,21 +50,21 @@ Pós-redesign premium minimalista, todas as telas seguem agora:
 
 ## C. Conteúdo & Dados
 
-| # | Item | Esforço | Detalhes |
-|---|---|---|---|
-| 18 | **Tags em itens** | 🟢 | Campo `tags?: string[]` no tipo `ItemCardapio` (`vegano`, `sem glúten`, `quente`, `frio`, `+18`); chips coloridos abaixo da descrição |
-| 19 | **Cardápio com mais itens (12-16)** | 🟢 | Expandir `data/cardapio.ts` pra demo mais densa |
-| 20 | **Categoria com ícone próprio** | 🟢 | Tipo `Categoria` ganha `icone: keyof Ionicons` pra usar nos chips de filtro (#6) |
+| # | Item | Status |
+|---|---|---|
+| 18 | **Tags em itens** | ✅ Tipo `Tag` com 8 tags + `tagPalette` colorido + chips abaixo da descrição |
+| 19 | **Cardápio com mais itens** | ✅ 12 itens (4 novos: Brigadeiro, Salada Caesar, Refrigerante, Croissant) |
+| 20 | **Categoria com ícone próprio** | ✅ Já no chip de filtro (cardapio.tsx) |
 
 ## D. Fluxo & Funcionalidades
 
-| # | Item | Esforço | Detalhes |
-|---|---|---|---|
-| 21 | **Favoritos** | 🟡 | `FavoritesContext` persistido por user; coração no `ItemCardapio`; tab de favoritos no Perfil |
-| 22 | **Recover de senha mockado** | 🟢 | Link "Esqueci minha senha" no login → form de email → gera nova senha mockada (mostrar pra demo) |
-| 23 | **Estimativa de tempo dinâmica** | 🟡 | Calcular `secondsFromNow` na notificação como `pedidosPendentes × tempoMedioPorPedido` em vez de 180s fixo |
-| 24 | **Biometria pra desbloquear** | 🔴 | `expo-local-authentication`; após primeiro login, perguntar se quer ativar; substitui senha nas próximas aberturas |
-| 25 | **Cancelar pedido** | 🟢 | Botão "Cancelar" em pedidos `pendente`; muda status pra novo `'cancelado'`; cancela auto-promote e a notification agendada |
+| # | Item | Status |
+|---|---|---|
+| 21 | **Favoritos** | ✅ `FavoritesContext` + heart toggle no ItemCardapio + seção "Seus favoritos" na Home |
+| 22 | **Recover de senha mockado** | ✅ Link "Esqueceu sua senha?" no login → tela `recover-senha.tsx` com form de redefinição |
+| 23 | **Estimativa de tempo dinâmica** | ✅ `lib/estimativa.ts` calcula prazo (90s base + 60s/pedido pendente, cap 600s); persistido em `Order.prontoEm` |
+| 24 | **Biometria pra desbloquear** | ⏳ `expo-local-authentication` |
+| 25 | **Cancelar pedido** | ✅ Status `cancelado` + botão com Alert de confirmação em pedidos pendentes |
 
 ## E. Acessibilidade & Performance
 
