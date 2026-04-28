@@ -37,14 +37,22 @@ export type ThemeMode = 'light' | 'dark';
 
 export type ThemeColors = {
   bg: string;
+  bgElevated: string;
+  surface: string;
+  surfaceElevated: string;
+  surfaceHover: string;
   card: string;
   cardElevated: string;
   border: string;
+  borderStrong: string;
+  separator: string;
   text: string;
   textMuted: string;
   textSubtle: string;
   primary: string;
+  primaryDeep: string;
   primaryText: string;
+  primarySoft: string;
   success: string;
   error: string;
   overlay: string;
