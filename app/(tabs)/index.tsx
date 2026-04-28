@@ -18,6 +18,13 @@ import { useCart } from '@/context/CartContext';
 import { useOrders } from '@/context/OrdersContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useFadeIn } from '@/hooks/useFadeIn';
+import { haptic } from '@/lib/haptics';
+import {
+  getComboRecomendado,
+  getPeriodoAtual,
+  precoCombo,
+  type Combo,
+} from '@/lib/recomendacao';
 import {
   fontFamily,
   fontSize,
@@ -27,7 +34,7 @@ import {
   spacing,
   statusPalette,
 } from '@/constants/theme';
-import type { Order, ThemeColors } from '@/types';
+import type { ItemCardapio, Order, ThemeColors } from '@/types';
 
 const DESTAQUES = CARDAPIO.filter((item) => [1, 5, 6, 8].includes(item.id));
 
@@ -42,6 +49,17 @@ function primeiroNome(nome: string): string {
   return nome.trim().split(' ')[0] ?? nome;
 }
 
+function formatarHorario(iso: string): string {
+  try {
+    return new Date(iso).toLocaleTimeString('pt-BR', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  } catch {
+    return '—';
+  }
+}
+
 export default function Home() {
   const router = useRouter();
   const { colors } = useTheme();
@@ -51,15 +69,45 @@ export default function Home() {
 
   const { user } = useAuth();
   const { orders } = useOrders();
-  const { totalItens } = useCart();
+  const { totalItens, addItem } = useCart();
 
   const pedidoAtivo: Order | undefined = useMemo(
     () => orders.find((o) => o.status === 'pendente' || o.status === 'pronto'),
     [orders],
   );
 
+  const ultimosPedidos = useMemo(
+    () =>
+      [...orders]
+        .sort((a, b) => new Date(b.criadoEm).getTime() - new Date(a.criadoEm).getTime())
+        .slice(0, 4),
+    [orders],
+  );
+
+  const periodoAtual = useMemo(() => getPeriodoAtual(), []);
+  const combo = useMemo(
+    () => getComboRecomendado(periodoAtual, orders),
+    [periodoAtual, orders],
+  );
+  const comboItems = useMemo(
+    () =>
+      combo.itemIds
+        .map((id) => CARDAPIO.find((i) => i.id === id))
+        .filter((x): x is ItemCardapio => !!x),
+    [combo],
+  );
+  const comboPreco = useMemo(() => precoCombo(combo, CARDAPIO), [combo]);
+
   const saudacao = getSaudacao();
   const nome = user ? primeiroNome(user.nome) : '';
+
+  const handleAdicionarCombo = () => {
+    for (const id of combo.itemIds) {
+      addItem(id);
+    }
+    haptic.success();
+    router.push('/carrinho');
+  };
 
   return (
     <View style={styles.container}>
@@ -71,7 +119,6 @@ export default function Home() {
         <Animated.View
           style={[styles.saudacaoBlock, { opacity, transform: [{ translateY }] }]}
         >
-          <Text style={styles.eyebrow}>CANTINA FIAP</Text>
           <Text style={styles.saudacao}>
             {saudacao},{'\n'}
             <Text style={styles.saudacaoNome}>{nome || 'visitante'}</Text>
@@ -91,7 +138,6 @@ export default function Home() {
 
         {/* Bento 2-coluna */}
         <View style={styles.bentoRow}>
-          {/* Coluna esquerda: card grande "Fazer pedido" */}
           <Pressable
             style={({ pressed }) => [styles.bentoBig, pressed && styles.pressedSoft]}
             onPress={() => router.push('/cardapio')}
@@ -110,7 +156,6 @@ export default function Home() {
             </View>
           </Pressable>
 
-          {/* Coluna direita: stack vertical com 2 cards */}
           <View style={styles.bentoStack}>
             <Pressable
               style={({ pressed }) => [styles.bentoSmall, pressed && styles.pressedSoft]}
@@ -157,6 +202,45 @@ export default function Home() {
           </View>
         </View>
 
+        {/* Combo recomendado */}
+        {comboItems.length === 2 ? (
+          <ComboCard
+            combo={combo}
+            items={comboItems}
+            preco={comboPreco}
+            colors={colors}
+            styles={styles}
+            onAdicionar={handleAdicionarCombo}
+          />
+        ) : null}
+
+        {/* Últimos pedidos */}
+        {ultimosPedidos.length > 0 ? (
+          <>
+            <View style={styles.secaoHeader}>
+              <Text style={styles.secaoTitulo}>Últimos pedidos</Text>
+              <Pressable hitSlop={10} onPress={() => router.push('/pedidos')}>
+                <Text style={styles.secaoLink}>Ver tudo</Text>
+              </Pressable>
+            </View>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.ultimosScroll}
+            >
+              {ultimosPedidos.map((order) => (
+                <UltimoPedidoCard
+                  key={order.id}
+                  order={order}
+                  styles={styles}
+                  colors={colors}
+                  onPress={() => router.push('/pedidos')}
+                />
+              ))}
+            </ScrollView>
+          </>
+        ) : null}
+
         {/* Destaques */}
         <View style={styles.secaoHeader}>
           <Text style={styles.secaoTitulo}>Destaques</Text>
@@ -192,21 +276,118 @@ export default function Home() {
             </Pressable>
           ))}
         </ScrollView>
-
-        {/* Card "como funciona" — minimalista, único */}
-        <View style={styles.dicaCard}>
-          <View style={styles.dicaIconWrap}>
-            <Ionicons name="sparkles-outline" size={16} color={colors.primary} />
-          </View>
-          <View style={styles.dicaInfo}>
-            <Text style={styles.dicaTitulo}>Sem fila, sem complicação</Text>
-            <Text style={styles.dicaTexto}>
-              Monte seu pedido, confirme e retire no balcão com sua senha.
-            </Text>
-          </View>
-        </View>
       </ScrollView>
     </View>
+  );
+}
+
+type ComboCardProps = {
+  combo: Combo;
+  items: ItemCardapio[];
+  preco: number;
+  colors: ThemeColors;
+  styles: ReturnType<typeof createStyles>;
+  onAdicionar: () => void;
+};
+
+function ComboCard({ combo, items, preco, colors, styles, onAdicionar }: ComboCardProps) {
+  const eyebrow =
+    combo.fonte === 'historico' ? 'PERSONALIZADO PRA VOCÊ' : 'COMBO RECOMENDADO';
+
+  return (
+    <View style={styles.comboCard}>
+      <View style={styles.comboHeader}>
+        <View style={styles.comboHeaderInfo}>
+          <Text style={styles.comboEyebrow}>{eyebrow}</Text>
+          <Text style={styles.comboTitulo}>{combo.titulo}</Text>
+          <Text style={styles.comboSubtitulo}>{combo.subtitulo}</Text>
+        </View>
+        <View style={[styles.comboIconWrap, { backgroundColor: colors.primarySoft }]}>
+          <Ionicons name="sparkles" size={16} color={colors.primary} />
+        </View>
+      </View>
+
+      <View style={styles.comboItens}>
+        {items.map((item, idx) => (
+          <View key={item.id} style={styles.comboItemWrap}>
+            <View style={styles.comboItemRow}>
+              <ItemThumbnail
+                emoji={item.emoji}
+                imagem={item.imagem}
+                size={48}
+                borderRadius={radius.md}
+                bgColor={colors.surfaceElevated}
+              />
+              <View style={styles.comboItemInfo}>
+                <Text style={styles.comboItemNome} numberOfLines={1}>
+                  {item.nome}
+                </Text>
+                <Text style={styles.comboItemPreco}>R$ {item.preco.toFixed(2)}</Text>
+              </View>
+            </View>
+            {idx === 0 ? (
+              <View style={styles.comboPlus}>
+                <Ionicons name="add" size={14} color={colors.textSubtle} />
+              </View>
+            ) : null}
+          </View>
+        ))}
+      </View>
+
+      <View style={styles.comboFooter}>
+        <View>
+          <Text style={styles.comboPrecoLabel}>Total do combo</Text>
+          <Text style={styles.comboPrecoValor}>R$ {preco.toFixed(2)}</Text>
+        </View>
+        <Pressable
+          style={({ pressed }) => [styles.comboBotao, pressed && styles.pressedSoft]}
+          onPress={onAdicionar}
+        >
+          <Ionicons name="add" size={16} color={colors.primaryText} />
+          <Text style={styles.comboBotaoTexto}>Adicionar</Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
+type UltimoPedidoCardProps = {
+  order: Order;
+  styles: ReturnType<typeof createStyles>;
+  colors: ThemeColors;
+  onPress: () => void;
+};
+
+function UltimoPedidoCard({ order, styles, colors, onPress }: UltimoPedidoCardProps) {
+  const palette = statusPalette[order.status];
+
+  return (
+    <Pressable
+      style={({ pressed }) => [styles.ultimoCard, pressed && styles.pressedSoft]}
+      onPress={onPress}
+    >
+      <View
+        style={[
+          styles.ultimoStatus,
+          { backgroundColor: palette.bg, borderColor: palette.border },
+        ]}
+      >
+        <Ionicons name={palette.icon} size={11} color={palette.color} />
+        <Text style={[styles.ultimoStatusTexto, { color: palette.color }]}>
+          {palette.label}
+        </Text>
+      </View>
+
+      <View style={styles.ultimoMeio}>
+        <Text style={styles.ultimoSenhaLabel}>SENHA</Text>
+        <Text style={styles.ultimoSenha}>{order.senha}</Text>
+      </View>
+
+      <View style={styles.ultimoFooter}>
+        <Text style={styles.ultimoHora}>{formatarHorario(order.criadoEm)}</Text>
+        <Text style={styles.ultimoTotal}>R$ {order.total.toFixed(2)}</Text>
+      </View>
+    </Pressable>
   );
 }
 
@@ -228,7 +409,12 @@ function PedidoAtivoCard({ order, colors, styles, onPress }: PedidoAtivoCardProp
       onPress={onPress}
     >
       <View style={styles.pedidoAtivoTopo}>
-        <View style={[styles.pedidoAtivoStatus, { backgroundColor: palette.bg, borderColor: palette.border }]}>
+        <View
+          style={[
+            styles.pedidoAtivoStatus,
+            { backgroundColor: palette.bg, borderColor: palette.border },
+          ]}
+        >
           <Ionicons name={palette.icon} size={12} color={palette.color} />
           <Text style={[styles.pedidoAtivoStatusTexto, { color: palette.color }]}>
             {palette.label}
@@ -269,13 +455,6 @@ const createStyles = (c: ThemeColors) =>
     saudacaoBlock: {
       paddingHorizontal: spacing.xl,
       marginBottom: spacing['2xl'],
-    },
-    eyebrow: {
-      fontFamily: fontFamily.semibold,
-      fontSize: fontSize.xs,
-      color: c.textSubtle,
-      letterSpacing: letterSpacing.widest,
-      marginBottom: spacing.sm,
     },
     saudacao: {
       fontFamily: fontFamily.medium,
@@ -471,6 +650,182 @@ const createStyles = (c: ThemeColors) =>
       marginTop: 2,
     },
 
+    /* Combo card */
+    comboCard: {
+      marginHorizontal: spacing.xl,
+      marginBottom: spacing.xl,
+      backgroundColor: c.surface,
+      borderRadius: radius.xl,
+      padding: spacing.lg,
+      borderWidth: 1,
+      borderColor: c.border,
+      gap: spacing.md,
+      ...shadow.md,
+    },
+    comboHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'flex-start',
+      gap: spacing.md,
+    },
+    comboHeaderInfo: {
+      flex: 1,
+    },
+    comboEyebrow: {
+      fontFamily: fontFamily.semibold,
+      fontSize: fontSize.xs,
+      color: c.primary,
+      letterSpacing: letterSpacing.widest,
+    },
+    comboTitulo: {
+      fontFamily: fontFamily.extrabold,
+      fontSize: fontSize.lg,
+      color: c.text,
+      marginTop: spacing.xs,
+    },
+    comboSubtitulo: {
+      fontFamily: fontFamily.medium,
+      fontSize: fontSize.md,
+      color: c.textMuted,
+      marginTop: 2,
+    },
+    comboIconWrap: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    comboItens: {
+      gap: spacing.xs,
+    },
+    comboItemWrap: {
+      gap: spacing.xs,
+    },
+    comboItemRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      backgroundColor: c.bg,
+      padding: spacing.sm + 2,
+      borderRadius: radius.md,
+    },
+    comboItemInfo: {
+      flex: 1,
+    },
+    comboItemNome: {
+      fontFamily: fontFamily.semibold,
+      fontSize: fontSize.base,
+      color: c.text,
+    },
+    comboItemPreco: {
+      fontFamily: fontFamily.medium,
+      fontSize: fontSize.md,
+      color: c.textMuted,
+      marginTop: 2,
+    },
+    comboPlus: {
+      alignItems: 'center',
+    },
+    comboFooter: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingTop: spacing.sm,
+      borderTopWidth: 1,
+      borderTopColor: c.separator,
+    },
+    comboPrecoLabel: {
+      fontFamily: fontFamily.medium,
+      fontSize: fontSize.md,
+      color: c.textMuted,
+    },
+    comboPrecoValor: {
+      fontFamily: fontFamily.extrabold,
+      fontSize: fontSize.xl,
+      color: c.text,
+      marginTop: 2,
+    },
+    comboBotao: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs + 2,
+      backgroundColor: c.primary,
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.sm + 2,
+      borderRadius: radius.full,
+      ...shadow.primary,
+    },
+    comboBotaoTexto: {
+      fontFamily: fontFamily.bold,
+      fontSize: fontSize.md,
+      color: c.primaryText,
+    },
+
+    /* Últimos pedidos */
+    ultimosScroll: {
+      gap: spacing.sm,
+      paddingHorizontal: spacing.xl,
+      paddingBottom: spacing.lg,
+    },
+    ultimoCard: {
+      width: 152,
+      backgroundColor: c.surface,
+      borderRadius: radius.lg,
+      padding: spacing.md,
+      borderWidth: 1,
+      borderColor: c.border,
+      gap: spacing.sm,
+    },
+    ultimoStatus: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      alignSelf: 'flex-start',
+      gap: 4,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 3,
+      borderRadius: radius.full,
+      borderWidth: 1,
+    },
+    ultimoStatusTexto: {
+      fontFamily: fontFamily.bold,
+      fontSize: fontSize.xs,
+      letterSpacing: letterSpacing.wider,
+    },
+    ultimoMeio: {
+      paddingVertical: spacing.xs,
+    },
+    ultimoSenhaLabel: {
+      fontFamily: fontFamily.semibold,
+      fontSize: fontSize.xs,
+      color: c.textSubtle,
+      letterSpacing: letterSpacing.widest,
+    },
+    ultimoSenha: {
+      fontFamily: fontFamily.extrabold,
+      fontSize: fontSize['2xl'],
+      color: c.text,
+      marginTop: 2,
+    },
+    ultimoFooter: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingTop: spacing.xs,
+      borderTopWidth: 1,
+      borderTopColor: c.separator,
+    },
+    ultimoHora: {
+      fontFamily: fontFamily.medium,
+      fontSize: fontSize.md,
+      color: c.textMuted,
+    },
+    ultimoTotal: {
+      fontFamily: fontFamily.bold,
+      fontSize: fontSize.md,
+      color: c.text,
+    },
+
     /* Destaques */
     secaoHeader: {
       flexDirection: 'row',
@@ -515,41 +870,6 @@ const createStyles = (c: ThemeColors) =>
       fontSize: fontSize.base,
       color: c.text,
       marginTop: spacing.xs,
-    },
-
-    /* Dica */
-    dicaCard: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: spacing.md,
-      marginHorizontal: spacing.xl,
-      marginTop: spacing.md,
-      backgroundColor: c.primarySoft,
-      borderRadius: radius.lg,
-      padding: spacing.md,
-    },
-    dicaIconWrap: {
-      width: 32,
-      height: 32,
-      borderRadius: 16,
-      backgroundColor: c.surface,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    dicaInfo: {
-      flex: 1,
-    },
-    dicaTitulo: {
-      fontFamily: fontFamily.bold,
-      fontSize: fontSize.md,
-      color: c.text,
-    },
-    dicaTexto: {
-      fontFamily: fontFamily.medium,
-      fontSize: fontSize.md,
-      color: c.textMuted,
-      marginTop: 2,
-      lineHeight: 17,
     },
 
     pressedSoft: {
