@@ -238,6 +238,24 @@ export default function PerfilScreen() {
         <View style={styles.acoesCard}>
           <Pressable
             style={({ pressed }) => [styles.linhaAcao, pressed && styles.pressedSoft]}
+            onPress={() => router.push('/perfil-editar')}
+          >
+            <View style={styles.linhaAcaoEsquerda}>
+              <View style={[styles.linhaAcaoIconWrap, { backgroundColor: colors.primarySoft }]}>
+                <Ionicons name="create-outline" size={18} color={colors.primary} />
+              </View>
+              <View>
+                <Text style={styles.linhaAcaoLabel}>Editar dados</Text>
+                <Text style={styles.linhaAcaoSub}>Alterar nome ou e-mail</Text>
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={colors.textSubtle} />
+          </Pressable>
+
+          <View style={styles.divisor} />
+
+          <Pressable
+            style={({ pressed }) => [styles.linhaAcao, pressed && styles.pressedSoft]}
             onPress={() => router.push('/sobre')}
           >
             <View style={styles.linhaAcaoEsquerda}>

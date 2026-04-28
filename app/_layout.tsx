@@ -41,6 +41,10 @@ function RootStack() {
           name="sobre"
           options={{ animation: 'slide_from_right' }}
         />
+        <Stack.Screen
+          name="perfil-editar"
+          options={{ animation: 'slide_from_right' }}
+        />
       </Stack>
     </>
   );

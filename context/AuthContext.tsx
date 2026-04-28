@@ -153,6 +153,14 @@ export function AuthProvider({ children }: ProviderProps) {
     async (patch) => {
       if (!user) return;
       const users = await loadUsers();
+      if (patch.email && patch.email.toLowerCase() !== user.email.toLowerCase()) {
+        const taken = users.some(
+          (u) => u.id !== user.id && u.email.toLowerCase() === patch.email!.toLowerCase(),
+        );
+        if (taken) {
+          throw new Error('E-mail já está em uso por outra conta');
+        }
+      }
       const updated: User = { ...user, ...patch };
       const next = users.map((u) => (u.id === user.id ? updated : u));
       await saveUsers(next);
