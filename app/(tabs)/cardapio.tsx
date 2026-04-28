@@ -103,6 +103,10 @@ export default function Cardapio() {
         <View style={styles.tituloRow}>
           <View style={styles.tituloCol}>
             <Text style={styles.titulo}>Cardápio</Text>
+            <Text style={styles.subtitulo}>
+              {itensFiltrados.length} {itensFiltrados.length === 1 ? 'item' : 'itens'}
+              {categoriaAtiva !== 'Todas' ? ` em ${categoriaAtiva}` : ' disponíveis'}
+            </Text>
           </View>
 
           {totalItens > 0 ? (
@@ -111,6 +115,8 @@ export default function Cardapio() {
                 onPress={irParaCarrinho}
                 style={({ pressed }) => [styles.badge, pressed && styles.pressedSoft]}
                 hitSlop={8}
+                accessibilityRole="button"
+                accessibilityLabel={`Abrir carrinho com ${totalItens} ${totalItens === 1 ? 'item' : 'itens'}`}
               >
                 <Ionicons name="bag-handle" size={14} color={colors.primaryText} />
                 <Text style={styles.badgeText}>{totalItens}</Text>
@@ -130,7 +136,12 @@ export default function Cardapio() {
             returnKeyType="search"
             rightSlot={
               busca.length > 0 ? (
-                <Pressable onPress={() => setBusca('')} hitSlop={12}>
+                <Pressable
+                  onPress={() => setBusca('')}
+                  hitSlop={12}
+                  accessibilityRole="button"
+                  accessibilityLabel="Limpar busca"
+                >
                   <Ionicons
                     name="close-circle"
                     size={18}
@@ -161,6 +172,9 @@ export default function Cardapio() {
                   ativo && styles.chipAtivo,
                   pressed && styles.pressedSoft,
                 ]}
+                accessibilityRole="button"
+                accessibilityLabel={`Filtrar por categoria ${cat}`}
+                accessibilityState={{ selected: ativo }}
               >
                 <Ionicons
                   name={CATEGORIA_ICONE[cat]}
@@ -187,8 +201,8 @@ export default function Cardapio() {
             title="Nada encontrado"
             subtitle={
               busca.trim()
-                ? `Nenhum item corresponde a "${busca.trim()}"`
-                : 'Nenhum item nessa categoria por enquanto'
+                ? 'Tente outra busca ou explore o cardápio completo'
+                : 'Sem itens nessa categoria por enquanto'
             }
           />
         ) : (
@@ -217,7 +231,7 @@ export default function Cardapio() {
               <EmptyState
                 emoji="👇"
                 title="Toque no + para adicionar"
-                subtitle="Monte seu pedido para liberar a revisão"
+                subtitle="Adicione itens pra revisar e confirmar"
               />
             ) : null}
           </>
@@ -237,6 +251,8 @@ export default function Cardapio() {
           <Pressable
             style={({ pressed }) => [styles.botaoConfirmar, pressed && styles.pressedSoft]}
             onPress={irParaCarrinho}
+            accessibilityRole="button"
+            accessibilityLabel={`Revisar pedido com ${totalItens} ${totalItens === 1 ? 'item' : 'itens'}, total R$ ${totalPreco.toFixed(2)}`}
           >
             <Text style={styles.botaoConfirmarTexto}>Revisar pedido</Text>
             <Ionicons name="arrow-forward" size={16} color={colors.primaryText} />
@@ -265,6 +281,12 @@ const createStyles = (c: ThemeColors) =>
       fontFamily: fontFamily.extrabold,
       fontSize: fontSize['3xl'],
       color: c.text,
+    },
+    subtitulo: {
+      fontFamily: fontFamily.medium,
+      fontSize: fontSize.md,
+      color: c.textMuted,
+      marginTop: spacing.xs,
     },
     badge: {
       flexDirection: 'row',

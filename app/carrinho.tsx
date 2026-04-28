@@ -75,6 +75,8 @@ function LinhaItem({
             }}
             hitSlop={10}
             style={styles.removeButton}
+            accessibilityRole="button"
+            accessibilityLabel={`Remover ${item.nome} do carrinho`}
           >
             <Ionicons name="close" size={16} color={colors.textSubtle} />
           </Pressable>
@@ -89,6 +91,8 @@ function LinhaItem({
                 onRemover();
               }}
               hitSlop={6}
+              accessibilityRole="button"
+              accessibilityLabel={`Diminuir quantidade de ${item.nome}`}
             >
               <Ionicons name="remove" size={14} color={colors.text} />
             </Pressable>
@@ -104,6 +108,8 @@ function LinhaItem({
                 onAdicionar();
               }}
               hitSlop={6}
+              accessibilityRole="button"
+              accessibilityLabel={`Aumentar quantidade de ${item.nome}`}
             >
               <Ionicons name="add" size={14} color={colors.primaryText} />
             </Pressable>
@@ -163,6 +169,8 @@ export default function CarrinhoScreen() {
           onPress={handleVoltar}
           hitSlop={12}
           style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
+          accessibilityRole="button"
+          accessibilityLabel="Voltar"
         >
           <Ionicons name="chevron-back" size={20} color={colors.text} />
         </Pressable>
@@ -174,6 +182,8 @@ export default function CarrinhoScreen() {
             onPress={handleLimpar}
             hitSlop={12}
             style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
+            accessibilityRole="button"
+            accessibilityLabel="Limpar carrinho"
           >
             <Ionicons name="trash-outline" size={18} color={colors.textMuted} />
           </Pressable>
@@ -197,6 +207,8 @@ export default function CarrinhoScreen() {
               <Pressable
                 style={({ pressed }) => [styles.emptyBotao, pressed && styles.pressedSoft]}
                 onPress={() => router.replace('/cardapio')}
+                accessibilityRole="button"
+                accessibilityLabel="Ir para o cardápio"
               >
                 <Ionicons name="restaurant-outline" size={18} color={colors.primaryText} />
                 <Text style={styles.emptyBotaoTexto}>Ir para o cardápio</Text>
@@ -213,7 +225,7 @@ export default function CarrinhoScreen() {
                 {totalItens} {totalItens === 1 ? 'item' : 'itens'}
               </Text>
               <View style={styles.contadorDot} />
-              <Text style={styles.contadorSub}>Pronto pra confirmar</Text>
+              <Text style={styles.contadorSub}>Tudo certo pra confirmar</Text>
             </View>
 
             <View style={styles.lista}>
@@ -234,6 +246,8 @@ export default function CarrinhoScreen() {
             <Pressable
               onPress={() => router.push('/cardapio')}
               style={({ pressed }) => [styles.adicionarMais, pressed && styles.pressedSoft]}
+              accessibilityRole="button"
+              accessibilityLabel="Adicionar mais itens ao carrinho"
             >
               <Ionicons name="add" size={18} color={colors.primary} />
               <Text style={styles.adicionarMaisTexto}>Adicionar mais itens</Text>
@@ -260,7 +274,7 @@ export default function CarrinhoScreen() {
                 <Ionicons name="information-circle" size={14} color={colors.primary} />
               </View>
               <Text style={styles.avisoTexto}>
-                Pagamento direto no balcão. Você receberá uma senha de retirada após confirmar.
+                Você paga no balcão e recebe uma senha pra retirar quando ficar pronto.
               </Text>
             </View>
           </ScrollView>
@@ -277,6 +291,8 @@ export default function CarrinhoScreen() {
           <Pressable
             style={({ pressed }) => [styles.botaoConfirmar, pressed && styles.pressedSoft]}
             onPress={handleConfirmar}
+            accessibilityRole="button"
+            accessibilityLabel={`Confirmar pedido no total de R$ ${totalPreco.toFixed(2)}`}
           >
             <View style={styles.botaoConfirmarTextos}>
               <Text style={styles.botaoConfirmarLabel}>Confirmar pedido</Text>

@@ -163,7 +163,13 @@ export default function Onboarding({ onComplete }: Props) {
       <View style={styles.headerRow}>
         <View />
         {!ultimoSlide ? (
-          <Pressable onPress={handlePular} hitSlop={12} style={styles.pularButton}>
+          <Pressable
+            onPress={handlePular}
+            hitSlop={12}
+            style={styles.pularButton}
+            accessibilityRole="button"
+            accessibilityLabel="Pular onboarding"
+          >
             <Text style={styles.pularTexto}>Pular</Text>
           </Pressable>
         ) : (
@@ -187,7 +193,14 @@ export default function Onboarding({ onComplete }: Props) {
 
       <View style={styles.dotsRow}>
         {SLIDES.map((_, i) => (
-          <Pressable key={i} onPress={() => irPara(i)} hitSlop={8}>
+          <Pressable
+            key={i}
+            onPress={() => irPara(i)}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={`Ir para o slide ${i + 1} de ${SLIDES.length}`}
+            accessibilityState={{ selected: i === indice }}
+          >
             <View
               style={[
                 styles.dot,
@@ -207,6 +220,8 @@ export default function Onboarding({ onComplete }: Props) {
             pressed && styles.pressedSoft,
           ]}
           onPress={handleProximo}
+          accessibilityRole="button"
+          accessibilityLabel={ultimoSlide ? 'Começar a usar o app' : 'Ir para o próximo slide'}
         >
           <Text style={styles.botaoTexto}>{ultimoSlide ? 'Começar' : 'Próximo'}</Text>
           <Ionicons
