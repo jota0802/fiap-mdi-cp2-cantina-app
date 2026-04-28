@@ -59,38 +59,45 @@ function PedidoCard({
   const status = statusPalette[order.status];
 
   return (
-    <Pressable
-      style={({ pressed }) => [styles.card, pressed && styles.pressedSoft]}
-      onPress={onAbrirDetalhes}
-      accessibilityRole="button"
-      accessibilityLabel={`Ver detalhes do pedido senha ${order.senha}, status ${status.label.toLowerCase()}, total R$ ${order.total.toFixed(2)}`}
-    >
-      <View style={styles.cardHeader}>
-        <View style={styles.senhaBox}>
-          <Text style={styles.senhaLabel}>SENHA</Text>
-          <Text style={styles.senhaNumero}>{order.senha}</Text>
-        </View>
-        <View style={styles.cardHeaderInfo}>
-          <Text style={styles.cardData}>{formatarData(order.criadoEm)}</Text>
-          <View
-            style={[
-              styles.statusBadge,
-              { backgroundColor: status.bg, borderColor: status.border },
-            ]}
-          >
-            <Ionicons name={status.icon} size={12} color={status.color} />
-            <Text style={[styles.statusLabel, { color: status.color }]}>{status.label}</Text>
+    <View style={styles.card}>
+      {/* Área clicável que abre os detalhes — só os elementos informacionais */}
+      <Pressable
+        style={({ pressed }) => [styles.cardCabecaPressable, pressed && styles.pressedSoft]}
+        onPress={onAbrirDetalhes}
+        accessibilityRole="button"
+        accessibilityLabel={`Ver detalhes do pedido senha ${order.senha}, status ${status.label.toLowerCase()}, total R$ ${order.total.toFixed(2)}`}
+      >
+        <View style={styles.cardHeader}>
+          <View style={styles.senhaBox}>
+            <Text style={styles.senhaLabel}>SENHA</Text>
+            <Text style={styles.senhaNumero}>{order.senha}</Text>
+          </View>
+          <View style={styles.cardHeaderInfo}>
+            <Text style={styles.cardData}>{formatarData(order.criadoEm)}</Text>
+            <View
+              style={[
+                styles.statusBadge,
+                { backgroundColor: status.bg, borderColor: status.border },
+              ]}
+            >
+              <Ionicons name={status.icon} size={12} color={status.color} />
+              <Text style={[styles.statusLabel, { color: status.color }]}>{status.label}</Text>
+            </View>
           </View>
         </View>
-      </View>
 
-      <Text style={styles.resumoLinha}>{order.resumo}</Text>
+        <Text style={styles.resumoLinha}>{order.resumo}</Text>
 
-      <View style={styles.cardFooter}>
-        <Text style={styles.totalLabel}>TOTAL</Text>
-        <Text style={styles.totalValor}>R$ {order.total.toFixed(2)}</Text>
-      </View>
+        <View style={styles.cardFooter}>
+          <Text style={styles.totalLabel}>TOTAL</Text>
+          <View style={styles.cardFooterDireita}>
+            <Text style={styles.totalValor}>R$ {order.total.toFixed(2)}</Text>
+            <Ionicons name="chevron-forward" size={14} color={colors.textSubtle} />
+          </View>
+        </View>
+      </Pressable>
 
+      {/* Botões de ação ficam FORA do Pressable principal pra evitar nested buttons */}
       {order.status === 'pendente' || order.status === 'pronto' ? (
         <View style={styles.acoesRow}>
           <Pressable
@@ -145,7 +152,7 @@ function PedidoCard({
           <Text style={styles.acaoPedirNovoTexto}>Pedir de novo</Text>
         </Pressable>
       ) : null}
-    </Pressable>
+    </View>
   );
 }
 
@@ -310,6 +317,14 @@ const createStyles = (c: ThemeColors) =>
       borderColor: c.border,
       gap: spacing.md,
       ...shadow.md,
+    },
+    cardCabecaPressable: {
+      gap: spacing.md,
+    },
+    cardFooterDireita: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs + 2,
     },
     cardHeader: {
       flexDirection: 'row',
