@@ -2,6 +2,7 @@ import { useMemo, useRef } from 'react';
 import { View, Text, Pressable, StyleSheet, Animated } from 'react-native';
 
 import { useTheme } from '@/context/ThemeContext';
+import { haptic } from '@/lib/haptics';
 import { fontFamily, fontSize, letterSpacing, radius, spacing } from '@/constants/theme';
 import type { ItemCardapio as ItemCardapioModel, ThemeColors } from '@/types';
 
@@ -41,6 +42,7 @@ export default function ItemCardapio({ item, quantidade, onAdicionar, onRemover 
           <Pressable
             style={({ pressed }) => [styles.botaoMenos, pressed && styles.pressed]}
             onPress={() => {
+              haptic.light();
               onRemover(item.id);
               animatePop();
             }}
@@ -59,6 +61,7 @@ export default function ItemCardapio({ item, quantidade, onAdicionar, onRemover 
         <Pressable
           style={({ pressed }) => [styles.botaoMais, pressed && styles.pressed]}
           onPress={() => {
+            haptic.light();
             onAdicionar(item.id);
             animatePop();
           }}

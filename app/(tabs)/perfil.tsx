@@ -16,6 +16,7 @@ import Toast from '@/components/Toast';
 import { useAuth } from '@/context/AuthContext';
 import { useOrders } from '@/context/OrdersContext';
 import { useTheme } from '@/context/ThemeContext';
+import { haptic } from '@/lib/haptics';
 import { pickFromCamera, pickFromLibrary } from '@/lib/image-picker';
 import { fontFamily, fontSize, letterSpacing, radius, spacing } from '@/constants/theme';
 import type { ThemeColors } from '@/types';
@@ -87,6 +88,7 @@ export default function PerfilScreen() {
   };
 
   const handleLogout = async () => {
+    haptic.medium();
     await signOut();
     router.replace('/login');
   };

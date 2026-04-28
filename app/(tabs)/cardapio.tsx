@@ -17,6 +17,7 @@ import Input from '@/components/Input';
 import ItemCardapio from '@/components/ItemCardapio';
 import { useCart } from '@/context/CartContext';
 import { useTheme } from '@/context/ThemeContext';
+import { haptic } from '@/lib/haptics';
 import { fontFamily, fontSize, letterSpacing, radius, spacing } from '@/constants/theme';
 import type { Categoria, ThemeColors } from '@/types';
 
@@ -68,6 +69,7 @@ export default function Cardapio() {
 
   const confirmarPedido = () => {
     if (totalItens === 0) return;
+    haptic.success();
     router.push({
       pathname: '/confirmacao',
       params: {

@@ -11,7 +11,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import EmptyState from '@/components/EmptyState';
-import LoadingScreen from '@/components/LoadingScreen';
+import { SkeletonOrderCard } from '@/components/Skeleton';
 import { useOrders } from '@/context/OrdersContext';
 import { useTheme } from '@/context/ThemeContext';
 import { fontFamily, fontSize, letterSpacing, radius, spacing } from '@/constants/theme';
@@ -100,11 +100,23 @@ export default function PedidosScreen() {
     setRefreshing(false);
   }, [refresh]);
 
-  if (!isHydrated) {
-    return <LoadingScreen label="CARREGANDO PEDIDOS" />;
-  }
-
   const totalAtivos = orders.filter((o) => o.status !== 'retirado').length;
+
+  if (!isHydrated) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.titulo}>PEDIDOS</Text>
+          <Text style={styles.subtitulo}>CARREGANDO HISTÓRICO</Text>
+        </View>
+        <View style={styles.listContent}>
+          <SkeletonOrderCard />
+          <SkeletonOrderCard />
+          <SkeletonOrderCard />
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>

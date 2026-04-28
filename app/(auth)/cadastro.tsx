@@ -18,6 +18,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useFadeIn } from '@/hooks/useFadeIn';
 import { useShake } from '@/hooks/useShake';
+import { haptic } from '@/lib/haptics';
 import { fontFamily, fontSize, letterSpacing, spacing } from '@/constants/theme';
 import type { ThemeColors } from '@/types';
 
@@ -91,6 +92,7 @@ export default function CadastroScreen() {
     setSubmitted(true);
     setServerError(null);
     if (hasErrors) {
+      haptic.error();
       shake();
       return;
     }
@@ -102,10 +104,12 @@ export default function CadastroScreen() {
     });
     setLoading(false);
     if (!result.success) {
+      haptic.error();
       setServerError(result.error);
       shake();
       return;
     }
+    haptic.success();
     router.replace('/');
   };
 

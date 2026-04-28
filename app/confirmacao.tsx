@@ -13,6 +13,7 @@ import LoadingScreen from '@/components/LoadingScreen';
 import { useCart } from '@/context/CartContext';
 import { useOrders } from '@/context/OrdersContext';
 import { useTheme } from '@/context/ThemeContext';
+import { haptic } from '@/lib/haptics';
 import { notifyImmediate, scheduleNotification } from '@/lib/notifications';
 import { fontFamily, fontSize, letterSpacing, radius, spacing } from '@/constants/theme';
 import type { Order, ThemeColors } from '@/types';
@@ -54,6 +55,7 @@ export default function Confirmacao() {
           resumo: resumoSnapshot,
         });
         setOrder(novo);
+        haptic.success();
 
         notifyImmediate(
           `Pedido confirmado · senha ${senha}`,
