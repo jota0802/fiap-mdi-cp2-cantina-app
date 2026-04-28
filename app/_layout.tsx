@@ -1,7 +1,33 @@
 import { useCallback, useEffect, useState } from 'react';
+import { LogBox, Platform } from 'react-native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+
+if (Platform.OS === 'web') {
+  // RN Web emite warnings deprecation/runtime sem impacto funcional.
+  // Silenciar pra console limpo no dev.
+  LogBox.ignoreLogs([
+    'useNativeDriver',
+    '"shadow*" style props are deprecated',
+    '[expo-notifications]',
+    'pointerEvents is deprecated',
+  ]);
+  // No web também sobrescreve console.warn pra esses padrões (LogBox não cobre 100%)
+  const origWarn = console.warn;
+  console.warn = (...args: unknown[]) => {
+    const first = typeof args[0] === 'string' ? args[0] : '';
+    if (
+      first.includes('useNativeDriver') ||
+      first.includes('"shadow*"') ||
+      first.includes('[expo-notifications]') ||
+      first.includes('pointerEvents is deprecated')
+    ) {
+      return;
+    }
+    origWarn(...args);
+  };
+}
 import {
   useFonts,
   Manrope_400Regular,
