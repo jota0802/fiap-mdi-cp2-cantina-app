@@ -13,8 +13,10 @@ import { Ionicons } from '@expo/vector-icons';
 
 import EmptyState from '@/components/EmptyState';
 import { SkeletonOrderCard } from '@/components/Skeleton';
+import { useCart } from '@/context/CartContext';
 import { useOrders } from '@/context/OrdersContext';
 import { useTheme } from '@/context/ThemeContext';
+import { haptic } from '@/lib/haptics';
 import {
   fontFamily,
   fontSize,
@@ -38,9 +40,10 @@ type CardProps = {
   styles: ReturnType<typeof createStyles>;
   colors: ThemeColors;
   onMarcarRetirado: () => void;
+  onPedirNovo: () => void;
 };
 
-function PedidoCard({ order, styles, colors, onMarcarRetirado }: CardProps) {
+function PedidoCard({ order, styles, colors, onMarcarRetirado, onPedirNovo }: CardProps) {
   const status = statusPalette[order.status];
 
   return (
@@ -97,7 +100,15 @@ function PedidoCard({ order, styles, colors, onMarcarRetirado }: CardProps) {
             Marcar como retirado
           </Text>
         </Pressable>
-      ) : null}
+      ) : (
+        <Pressable
+          style={({ pressed }) => [styles.acaoPedirNovo, pressed && styles.pressedSoft]}
+          onPress={onPedirNovo}
+        >
+          <Ionicons name="refresh" size={16} color={colors.primary} />
+          <Text style={styles.acaoPedirNovoTexto}>Pedir de novo</Text>
+        </Pressable>
+      )}
     </View>
   );
 }
@@ -108,7 +119,20 @@ export default function PedidosScreen() {
   const insets = useSafeAreaInsets();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const { orders, isHydrated, refresh, markRetirado } = useOrders();
+  const { clear, setQuantidade } = useCart();
   const [refreshing, setRefreshing] = useState(false);
+
+  const handlePedirNovo = useCallback(
+    (order: Order) => {
+      clear();
+      for (const ci of order.items) {
+        setQuantidade(ci.itemId, ci.quantidade);
+      }
+      haptic.success();
+      router.push('/carrinho');
+    },
+    [clear, setQuantidade, router],
+  );
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -158,6 +182,7 @@ export default function PedidosScreen() {
             styles={styles}
             colors={colors}
             onMarcarRetirado={() => markRetirado(item.id)}
+            onPedirNovo={() => handlePedirNovo(item)}
           />
         )}
         ListEmptyComponent={
@@ -317,6 +342,20 @@ const createStyles = (c: ThemeColors) =>
       fontFamily: fontFamily.semibold,
       fontSize: fontSize.md,
       color: c.text,
+    },
+    acaoPedirNovo: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.sm,
+      paddingVertical: spacing.md,
+      borderRadius: radius.full,
+      backgroundColor: c.primarySoft,
+    },
+    acaoPedirNovoTexto: {
+      fontFamily: fontFamily.semibold,
+      fontSize: fontSize.md,
+      color: c.primary,
     },
     ctaWrapper: {
       paddingHorizontal: spacing.xl,
