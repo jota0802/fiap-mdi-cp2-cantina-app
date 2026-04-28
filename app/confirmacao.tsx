@@ -10,6 +10,7 @@ import {
 import { Redirect, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import QRCode from 'react-native-qrcode-svg';
 
 import LoadingScreen from '@/components/LoadingScreen';
 import { useCart } from '@/context/CartContext';
@@ -156,6 +157,16 @@ export default function Confirmacao() {
 
           <Text style={styles.senhaLabel}>SUA SENHA</Text>
           <Text style={styles.senhaNumero}>{order.senha}</Text>
+
+          <View style={styles.qrWrap}>
+            <QRCode
+              value={`cantina:senha:${order.senha}:order:${order.id}`}
+              size={92}
+              color="#0A0A14"
+              backgroundColor="#FFFFFF"
+            />
+          </View>
+
           <Text style={styles.senhaInstrucao}>Apresente este número no balcão</Text>
         </Animated.View>
 
@@ -295,11 +306,18 @@ const createStyles = (c: ThemeColors) =>
       letterSpacing: 8,
       lineHeight: fontSize['6xl'] * 1.05,
     },
+    qrWrap: {
+      backgroundColor: '#FFFFFF',
+      padding: spacing.sm + 2,
+      borderRadius: radius.md,
+      marginTop: spacing.lg,
+      ...shadow.md,
+    },
     senhaInstrucao: {
       fontFamily: fontFamily.medium,
       fontSize: fontSize.md,
       color: 'rgba(255,255,255,0.85)',
-      marginTop: spacing.sm,
+      marginTop: spacing.md,
     },
 
     /* Bento stats */
