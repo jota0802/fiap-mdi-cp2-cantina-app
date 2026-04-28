@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  Alert,
   Animated,
   Pressable,
   ScrollView,
@@ -17,6 +18,7 @@ import { useCart } from '@/context/CartContext';
 import { useOrders } from '@/context/OrdersContext';
 import { useTheme } from '@/context/ThemeContext';
 import { haptic } from '@/lib/haptics';
+import { formatarTempoRestante } from '@/lib/estimativa';
 import { notifyImmediate, scheduleNotification } from '@/lib/notifications';
 import {
   fontFamily,
@@ -28,8 +30,6 @@ import {
 } from '@/constants/theme';
 import type { Order, ThemeColors } from '@/types';
 
-const PREP_SECONDS = 180;
-
 export default function Confirmacao() {
   const router = useRouter();
   const { colors } = useTheme();
@@ -37,7 +37,8 @@ export default function Confirmacao() {
   const styles = useMemo(() => createStyles(colors), [colors]);
 
   const { items, totalItens, totalPreco, buildResumo, clear } = useCart();
-  const { addOrder } = useOrders();
+  const { addOrder, markCancelado } = useOrders();
+  const [cancelado, setCancelado] = useState(false);
 
   const [order, setOrder] = useState<Order | null>(null);
 
@@ -68,15 +69,19 @@ export default function Confirmacao() {
         setOrder(novo);
         haptic.success();
 
+        const prazoSegundos = novo.prontoEm
+          ? Math.max(0, (new Date(novo.prontoEm).getTime() - Date.now()) / 1000)
+          : 180;
+
         notifyImmediate(
           `Pedido confirmado · senha ${senha}`,
-          `Acompanhe seu pedido pela aba Pedidos. Total: R$ ${totalSnapshot.toFixed(2)}`,
+          `Tempo estimado: ${formatarTempoRestante(prazoSegundos)}. Total: R$ ${totalSnapshot.toFixed(2)}`,
         );
 
         scheduleNotification(
           `Senha ${senha} pronta para retirada`,
           'Apresente sua senha no balcão da cantina.',
-          PREP_SECONDS,
+          prazoSegundos,
         );
 
         clear();
@@ -210,6 +215,8 @@ export default function Confirmacao() {
         <Pressable
           style={({ pressed }) => [styles.botaoPrimario, pressed && styles.pressedSoft]}
           onPress={() => router.replace('/pedidos')}
+          accessibilityRole="button"
+          accessibilityLabel="Ver meus pedidos"
         >
           <Text style={styles.botaoPrimarioTexto}>Ver meus pedidos</Text>
           <Ionicons name="arrow-forward" size={16} color={colors.primaryText} />
@@ -218,9 +225,41 @@ export default function Confirmacao() {
         <Pressable
           style={({ pressed }) => [styles.botaoSecundario, pressed && styles.pressedSoft]}
           onPress={() => router.replace('/cardapio')}
+          accessibilityRole="button"
+          accessibilityLabel="Fazer novo pedido"
         >
           <Text style={styles.botaoSecundarioTexto}>Fazer novo pedido</Text>
         </Pressable>
+
+        {!cancelado ? (
+          <Pressable
+            style={({ pressed }) => [styles.botaoCancelar, pressed && styles.pressedSoft]}
+            onPress={() => {
+              Alert.alert(
+                'Cancelar este pedido?',
+                `O pedido com a senha ${order.senha} será cancelado e não poderá ser recuperado.`,
+                [
+                  { text: 'Manter pedido', style: 'cancel' },
+                  {
+                    text: 'Cancelar',
+                    style: 'destructive',
+                    onPress: async () => {
+                      haptic.warning();
+                      await markCancelado(order.id);
+                      setCancelado(true);
+                      setTimeout(() => router.replace('/pedidos'), 600);
+                    },
+                  },
+                ],
+              );
+            }}
+            accessibilityRole="button"
+            accessibilityLabel="Cancelar este pedido"
+          >
+            <Ionicons name="close-outline" size={14} color={colors.error} />
+            <Text style={styles.botaoCancelarTexto}>Cancelar pedido</Text>
+          </Pressable>
+        ) : null}
       </ScrollView>
     </View>
   );
@@ -436,6 +475,20 @@ const createStyles = (c: ThemeColors) =>
       fontFamily: fontFamily.semibold,
       color: c.text,
       fontSize: fontSize.base,
+    },
+    botaoCancelar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.xs + 2,
+      paddingVertical: spacing.md,
+      borderRadius: radius.full,
+      marginTop: spacing.sm,
+    },
+    botaoCancelarTexto: {
+      fontFamily: fontFamily.medium,
+      color: c.error,
+      fontSize: fontSize.md,
     },
     pressedSoft: {
       opacity: 0.85,
