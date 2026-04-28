@@ -18,7 +18,6 @@ export type User = {
   id: string;
   nome: string;
   email: string;
-  passwordHash: string;
   fotoUri?: string;
   criadoEm: string;
 };
