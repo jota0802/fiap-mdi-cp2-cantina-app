@@ -1,214 +1,559 @@
 import { useMemo } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Animated } from 'react-native';
+import {
+  Animated,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 
-import FiapLogo from '@/components/FiapLogo';
 import CARDAPIO from '@/data/cardapio';
+import { useAuth } from '@/context/AuthContext';
+import { useCart } from '@/context/CartContext';
+import { useOrders } from '@/context/OrdersContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useFadeIn } from '@/hooks/useFadeIn';
-import { fontFamily, fontSize, letterSpacing, radius, spacing } from '@/constants/theme';
-import type { ThemeColors } from '@/types';
+import {
+  fontFamily,
+  fontSize,
+  letterSpacing,
+  radius,
+  shadow,
+  spacing,
+  statusPalette,
+} from '@/constants/theme';
+import type { Order, ThemeColors } from '@/types';
 
 const DESTAQUES = CARDAPIO.filter((item) => [1, 5, 6, 8].includes(item.id));
+
+function getSaudacao(): string {
+  const h = new Date().getHours();
+  if (h >= 5 && h < 12) return 'Bom dia';
+  if (h >= 12 && h < 18) return 'Boa tarde';
+  return 'Boa noite';
+}
+
+function primeiroNome(nome: string): string {
+  return nome.trim().split(' ')[0] ?? nome;
+}
 
 export default function Home() {
   const router = useRouter();
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const styles = useMemo(() => createStyles(colors), [colors]);
-  const { opacity, translateY } = useFadeIn(500);
+  const { opacity, translateY } = useFadeIn(450);
+
+  const { user } = useAuth();
+  const { orders } = useOrders();
+  const { totalItens } = useCart();
+
+  const pedidoAtivo: Order | undefined = useMemo(
+    () => orders.find((o) => o.status === 'pendente' || o.status === 'pronto'),
+    [orders],
+  );
+
+  const saudacao = getSaudacao();
+  const nome = user ? primeiroNome(user.nome) : '';
 
   return (
     <View style={styles.container}>
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + spacing.lg }]}
         showsVerticalScrollIndicator={false}
       >
+        {/* Saudação */}
         <Animated.View
-          style={[
-            styles.header,
-            { paddingTop: insets.top + spacing.xl, opacity, transform: [{ translateY }] },
-          ]}
+          style={[styles.saudacaoBlock, { opacity, transform: [{ translateY }] }]}
         >
-          <FiapLogo width={100} color={colors.primary} />
-          <Text style={styles.titulo}>CANTINA</Text>
-          <Text style={styles.subtitulo}>SEU PEDIDO SEM FILA</Text>
-        </Animated.View>
-
-        <Animated.View style={[styles.heroCard, { opacity }]}>
-          <Text style={styles.heroEmoji}>{'🍔'}</Text>
-          <Text style={styles.heroTitulo}>FAÇA SEU PEDIDO</Text>
-          <Text style={styles.heroDescricao}>
-            Escolha seus itens, confirme e retire no balcão com sua senha.
+          <Text style={styles.eyebrow}>CANTINA FIAP</Text>
+          <Text style={styles.saudacao}>
+            {saudacao},{'\n'}
+            <Text style={styles.saudacaoNome}>{nome || 'visitante'}</Text>
+            <Text style={styles.wave}> 👋</Text>
           </Text>
-          <TouchableOpacity
-            style={styles.heroBotao}
-            onPress={() => router.push('/cardapio')}
-            activeOpacity={0.85}
-          >
-            <Text style={styles.heroBotaoTexto}>VER CARDÁPIO</Text>
-          </TouchableOpacity>
         </Animated.View>
 
-        <Text style={styles.secaoTitulo}>COMO FUNCIONA</Text>
-        <View style={styles.passosContainer}>
-          {[
-            { num: '01', txt: 'ESCOLHA\nSEUS ITENS' },
-            { num: '02', txt: 'CONFIRME\nO PEDIDO' },
-            { num: '03', txt: 'RETIRE NO\nBALCÃO' },
-          ].map((p) => (
-            <View key={p.num} style={styles.passo}>
-              <Text style={styles.passoNumero}>{p.num}</Text>
-              <Text style={styles.passoTexto}>{p.txt}</Text>
+        {/* Card de pedido ativo (só se houver) */}
+        {pedidoAtivo ? (
+          <PedidoAtivoCard
+            order={pedidoAtivo}
+            colors={colors}
+            styles={styles}
+            onPress={() => router.push('/pedidos')}
+          />
+        ) : null}
+
+        {/* Bento 2-coluna */}
+        <View style={styles.bentoRow}>
+          {/* Coluna esquerda: card grande "Fazer pedido" */}
+          <Pressable
+            style={({ pressed }) => [styles.bentoBig, pressed && styles.pressedSoft]}
+            onPress={() => router.push('/cardapio')}
+          >
+            <View style={styles.bentoBigBackdrop}>
+              <Text style={styles.bentoBigEmoji}>🍔</Text>
             </View>
-          ))}
+            <View style={styles.bentoBigContent}>
+              <View>
+                <Text style={styles.bentoBigEyebrow}>NOVO PEDIDO</Text>
+                <Text style={styles.bentoBigTitulo}>Ver{'\n'}cardápio</Text>
+              </View>
+              <View style={styles.bentoBigArrow}>
+                <Ionicons name="arrow-forward" size={18} color={colors.primaryText} />
+              </View>
+            </View>
+          </Pressable>
+
+          {/* Coluna direita: stack vertical com 2 cards */}
+          <View style={styles.bentoStack}>
+            <Pressable
+              style={({ pressed }) => [styles.bentoSmall, pressed && styles.pressedSoft]}
+              onPress={() => router.push('/carrinho')}
+            >
+              <View style={styles.bentoSmallTopo}>
+                <View style={[styles.bentoIconWrap, { backgroundColor: colors.primarySoft }]}>
+                  <Ionicons name="bag-handle-outline" size={16} color={colors.primary} />
+                </View>
+                {totalItens > 0 ? (
+                  <View style={styles.bentoBadge}>
+                    <Text style={styles.bentoBadgeText}>{totalItens}</Text>
+                  </View>
+                ) : null}
+              </View>
+              <View>
+                <Text style={styles.bentoSmallTitulo}>Carrinho</Text>
+                <Text style={styles.bentoSmallSub}>
+                  {totalItens > 0
+                    ? `${totalItens} ${totalItens === 1 ? 'item' : 'itens'}`
+                    : 'Vazio'}
+                </Text>
+              </View>
+            </Pressable>
+
+            <Pressable
+              style={({ pressed }) => [styles.bentoSmall, pressed && styles.pressedSoft]}
+              onPress={() => router.push('/pedidos')}
+            >
+              <View style={styles.bentoSmallTopo}>
+                <View style={[styles.bentoIconWrap, { backgroundColor: colors.surfaceElevated }]}>
+                  <Ionicons name="time-outline" size={16} color={colors.text} />
+                </View>
+              </View>
+              <View>
+                <Text style={styles.bentoSmallTitulo}>Histórico</Text>
+                <Text style={styles.bentoSmallSub}>
+                  {orders.length > 0
+                    ? `${orders.length} ${orders.length === 1 ? 'pedido' : 'pedidos'}`
+                    : 'Nenhum ainda'}
+                </Text>
+              </View>
+            </Pressable>
+          </View>
         </View>
 
-        <Text style={styles.secaoTitulo}>DESTAQUES</Text>
-        <View style={styles.destaquesGrid}>
+        {/* Destaques */}
+        <View style={styles.secaoHeader}>
+          <Text style={styles.secaoTitulo}>Destaques</Text>
+          <Pressable hitSlop={10} onPress={() => router.push('/cardapio')}>
+            <Text style={styles.secaoLink}>Ver tudo</Text>
+          </Pressable>
+        </View>
+
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.destaquesScroll}
+        >
           {DESTAQUES.map((item) => (
-            <TouchableOpacity
+            <Pressable
               key={item.id}
-              style={styles.destaqueCard}
+              style={({ pressed }) => [styles.destaqueCard, pressed && styles.pressedSoft]}
               onPress={() => router.push('/cardapio')}
-              activeOpacity={0.85}
             >
-              <Text style={styles.destaqueEmoji}>{item.emoji}</Text>
-              <Text style={styles.destaqueNome}>{item.nome.toUpperCase()}</Text>
+              <View style={styles.destaqueEmojiWrap}>
+                <Text style={styles.destaqueEmoji}>{item.emoji}</Text>
+              </View>
+              <Text style={styles.destaqueNome} numberOfLines={1}>
+                {item.nome}
+              </Text>
               <Text style={styles.destaquePreco}>R$ {item.preco.toFixed(2)}</Text>
-            </TouchableOpacity>
+            </Pressable>
           ))}
+        </ScrollView>
+
+        {/* Card "como funciona" — minimalista, único */}
+        <View style={styles.dicaCard}>
+          <View style={styles.dicaIconWrap}>
+            <Ionicons name="sparkles-outline" size={16} color={colors.primary} />
+          </View>
+          <View style={styles.dicaInfo}>
+            <Text style={styles.dicaTitulo}>Sem fila, sem complicação</Text>
+            <Text style={styles.dicaTexto}>
+              Monte seu pedido, confirme e retire no balcão com sua senha.
+            </Text>
+          </View>
         </View>
       </ScrollView>
     </View>
   );
 }
 
+type PedidoAtivoCardProps = {
+  order: Order;
+  colors: ThemeColors;
+  styles: ReturnType<typeof createStyles>;
+  onPress: () => void;
+};
+
+function PedidoAtivoCard({ order, colors, styles, onPress }: PedidoAtivoCardProps) {
+  const status = order.status === 'retirado' ? 'pronto' : order.status;
+  const palette = statusPalette[status];
+  const itens = order.items.reduce((acc, ci) => acc + ci.quantidade, 0);
+
+  return (
+    <Pressable
+      style={({ pressed }) => [styles.pedidoAtivoCard, pressed && styles.pressedSoft]}
+      onPress={onPress}
+    >
+      <View style={styles.pedidoAtivoTopo}>
+        <View style={[styles.pedidoAtivoStatus, { backgroundColor: palette.bg, borderColor: palette.border }]}>
+          <Ionicons name={palette.icon} size={12} color={palette.color} />
+          <Text style={[styles.pedidoAtivoStatusTexto, { color: palette.color }]}>
+            {palette.label}
+          </Text>
+        </View>
+        <Ionicons name="chevron-forward" size={18} color={colors.textSubtle} />
+      </View>
+
+      <View style={styles.pedidoAtivoMeio}>
+        <View>
+          <Text style={styles.pedidoAtivoLabel}>SUA SENHA</Text>
+          <Text style={styles.pedidoAtivoSenha}>{order.senha}</Text>
+        </View>
+        <View style={styles.pedidoAtivoMeta}>
+          <Text style={styles.pedidoAtivoMetaLabel}>
+            {itens} {itens === 1 ? 'item' : 'itens'}
+          </Text>
+          <Text style={styles.pedidoAtivoMetaValor}>
+            R$ {order.total.toFixed(2)}
+          </Text>
+        </View>
+      </View>
+
+      <View style={styles.pedidoAtivoCta}>
+        <Text style={styles.pedidoAtivoCtaTexto}>Acompanhar pedido</Text>
+        <Ionicons name="arrow-forward" size={14} color={colors.primary} />
+      </View>
+    </Pressable>
+  );
+}
+
 const createStyles = (c: ThemeColors) =>
   StyleSheet.create({
     container: { flex: 1, backgroundColor: c.bg },
-    scrollContent: { paddingBottom: spacing['4xl'] },
-    header: {
-      alignItems: 'center',
+    scrollContent: {
       paddingBottom: spacing['4xl'],
-      gap: spacing.sm,
     },
-    titulo: {
+    saudacaoBlock: {
+      paddingHorizontal: spacing.xl,
+      marginBottom: spacing['2xl'],
+    },
+    eyebrow: {
+      fontFamily: fontFamily.semibold,
+      fontSize: fontSize.xs,
+      color: c.textSubtle,
+      letterSpacing: letterSpacing.widest,
+      marginBottom: spacing.sm,
+    },
+    saudacao: {
+      fontFamily: fontFamily.medium,
+      fontSize: fontSize['3xl'],
+      color: c.textMuted,
+      lineHeight: fontSize['3xl'] * 1.15,
+    },
+    saudacaoNome: {
+      fontFamily: fontFamily.extrabold,
+      color: c.text,
+    },
+    wave: {
+      fontFamily: fontFamily.regular,
+    },
+
+    /* Pedido ativo */
+    pedidoAtivoCard: {
+      marginHorizontal: spacing.xl,
+      marginBottom: spacing.lg,
+      backgroundColor: c.surface,
+      borderRadius: radius.xl,
+      padding: spacing.lg,
+      borderWidth: 1,
+      borderColor: c.border,
+      gap: spacing.md,
+      ...shadow.md,
+    },
+    pedidoAtivoTopo: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    pedidoAtivoStatus: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 4,
+      borderRadius: radius.full,
+      borderWidth: 1,
+    },
+    pedidoAtivoStatusTexto: {
+      fontFamily: fontFamily.bold,
+      fontSize: fontSize.xs,
+      letterSpacing: letterSpacing.wider,
+    },
+    pedidoAtivoMeio: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'flex-end',
+    },
+    pedidoAtivoLabel: {
+      fontFamily: fontFamily.semibold,
+      fontSize: fontSize.xs,
+      color: c.textSubtle,
+      letterSpacing: letterSpacing.widest,
+    },
+    pedidoAtivoSenha: {
       fontFamily: fontFamily.extrabold,
       fontSize: fontSize['4xl'],
       color: c.text,
-      letterSpacing: 8,
-      marginTop: spacing.lg,
+      letterSpacing: 2,
+      marginTop: 2,
     },
-    subtitulo: {
+    pedidoAtivoMeta: {
+      alignItems: 'flex-end',
+    },
+    pedidoAtivoMetaLabel: {
       fontFamily: fontFamily.medium,
-      fontSize: fontSize.sm,
-      color: c.textSubtle,
-      letterSpacing: letterSpacing.widest,
-    },
-    heroCard: {
-      backgroundColor: c.card,
-      marginHorizontal: spacing.xl,
-      borderRadius: radius.xl,
-      padding: spacing['3xl'],
-      alignItems: 'center',
-      marginBottom: spacing['4xl'],
-      borderWidth: 1,
-      borderColor: c.border,
-    },
-    heroEmoji: { fontSize: 48, marginBottom: spacing.lg },
-    heroTitulo: {
-      fontFamily: fontFamily.extrabold,
-      fontSize: fontSize.xl + 2,
-      color: c.text,
-      letterSpacing: letterSpacing.wider,
-      marginBottom: spacing.sm,
-    },
-    heroDescricao: {
-      fontFamily: fontFamily.regular,
-      fontSize: fontSize.base,
+      fontSize: fontSize.md,
       color: c.textMuted,
-      textAlign: 'center',
-      lineHeight: 22,
-      marginBottom: spacing['2xl'],
     },
-    heroBotao: {
-      backgroundColor: c.primary,
-      paddingHorizontal: spacing['3xl'],
-      paddingVertical: spacing.md + 2,
-      borderRadius: radius.full,
-    },
-    heroBotaoTexto: {
+    pedidoAtivoMetaValor: {
       fontFamily: fontFamily.bold,
-      color: c.primaryText,
-      fontSize: fontSize.md,
-      letterSpacing: letterSpacing.wide,
+      fontSize: fontSize.lg,
+      color: c.text,
+      marginTop: 2,
     },
-    secaoTitulo: {
-      fontFamily: fontFamily.extrabold,
-      fontSize: fontSize.md,
-      color: c.textSubtle,
-      letterSpacing: letterSpacing.widest,
-      marginBottom: spacing.lg,
-      paddingHorizontal: spacing.xl,
-    },
-    passosContainer: {
+    pedidoAtivoCta: {
       flexDirection: 'row',
-      paddingHorizontal: spacing.xl,
-      gap: spacing.sm + 2,
-      marginBottom: spacing['4xl'],
-    },
-    passo: {
-      flex: 1,
-      backgroundColor: c.card,
-      borderRadius: radius.lg,
-      padding: spacing.lg,
       alignItems: 'center',
-      borderWidth: 1,
-      borderColor: c.border,
+      justifyContent: 'center',
+      gap: spacing.xs + 2,
+      paddingTop: spacing.sm,
+      borderTopWidth: 1,
+      borderTopColor: c.separator,
     },
-    passoNumero: {
-      fontFamily: fontFamily.extrabold,
-      fontSize: 24,
+    pedidoAtivoCtaTexto: {
+      fontFamily: fontFamily.semibold,
+      fontSize: fontSize.md,
       color: c.primary,
-      marginBottom: spacing.sm,
     },
-    passoTexto: {
+
+    /* Bento grid */
+    bentoRow: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+      paddingHorizontal: spacing.xl,
+      marginBottom: spacing.xl,
+      height: 220,
+    },
+    bentoBig: {
+      flex: 1.1,
+      backgroundColor: c.primary,
+      borderRadius: radius.xl,
+      padding: spacing.lg,
+      justifyContent: 'space-between',
+      overflow: 'hidden',
+      ...shadow.primary,
+    },
+    bentoBigBackdrop: {
+      position: 'absolute',
+      right: -spacing.xl,
+      top: -spacing.xl,
+      opacity: 0.18,
+    },
+    bentoBigEmoji: {
+      fontSize: 140,
+    },
+    bentoBigContent: {
+      flex: 1,
+      justifyContent: 'space-between',
+    },
+    bentoBigEyebrow: {
       fontFamily: fontFamily.semibold,
       fontSize: fontSize.xs,
-      color: c.textMuted,
-      textAlign: 'center',
-      letterSpacing: letterSpacing.normal,
-      lineHeight: 16,
+      color: 'rgba(255,255,255,0.75)',
+      letterSpacing: letterSpacing.widest,
     },
-    destaquesGrid: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      paddingHorizontal: spacing.xl,
-      gap: spacing.sm + 2,
+    bentoBigTitulo: {
+      fontFamily: fontFamily.extrabold,
+      fontSize: fontSize['2xl'],
+      color: c.primaryText,
+      marginTop: spacing.xs,
+      lineHeight: fontSize['2xl'] * 1.1,
     },
-    destaqueCard: {
-      width: '48%',
-      backgroundColor: c.card,
-      borderRadius: radius.lg,
-      padding: spacing.xl,
+    bentoBigArrow: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: 'rgba(255,255,255,0.18)',
       alignItems: 'center',
+      justifyContent: 'center',
+      alignSelf: 'flex-start',
+    },
+    bentoStack: {
+      flex: 1,
+      gap: spacing.sm,
+    },
+    bentoSmall: {
+      flex: 1,
+      backgroundColor: c.surface,
+      borderRadius: radius.xl,
+      padding: spacing.md,
+      justifyContent: 'space-between',
       borderWidth: 1,
       borderColor: c.border,
     },
-    destaqueEmoji: { fontSize: 36, marginBottom: spacing.md - 2 },
-    destaqueNome: {
+    bentoSmallTopo: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    bentoIconWrap: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    bentoBadge: {
+      backgroundColor: c.primary,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 2,
+      borderRadius: radius.full,
+      minWidth: 20,
+      alignItems: 'center',
+    },
+    bentoBadgeText: {
       fontFamily: fontFamily.bold,
-      fontSize: fontSize.sm,
+      fontSize: fontSize.xs,
+      color: c.primaryText,
+    },
+    bentoSmallTitulo: {
+      fontFamily: fontFamily.bold,
+      fontSize: fontSize.base,
       color: c.text,
-      textAlign: 'center',
-      letterSpacing: letterSpacing.normal,
+    },
+    bentoSmallSub: {
+      fontFamily: fontFamily.medium,
+      fontSize: fontSize.md,
+      color: c.textMuted,
+      marginTop: 2,
+    },
+
+    /* Destaques */
+    secaoHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: spacing.xl,
+      marginBottom: spacing.md,
+    },
+    secaoTitulo: {
+      fontFamily: fontFamily.bold,
+      fontSize: fontSize.lg,
+      color: c.text,
+    },
+    secaoLink: {
+      fontFamily: fontFamily.semibold,
+      fontSize: fontSize.md,
+      color: c.primary,
+    },
+    destaquesScroll: {
+      gap: spacing.sm,
+      paddingHorizontal: spacing.xl,
+      paddingBottom: spacing.lg,
+    },
+    destaqueCard: {
+      width: 140,
+      backgroundColor: c.surface,
+      borderRadius: radius.lg,
+      padding: spacing.md,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    destaqueEmojiWrap: {
+      width: 48,
+      height: 48,
+      borderRadius: radius.md,
+      backgroundColor: c.surfaceElevated,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: spacing.md,
+    },
+    destaqueEmoji: { fontSize: 24 },
+    destaqueNome: {
+      fontFamily: fontFamily.semibold,
+      fontSize: fontSize.md,
+      color: c.text,
     },
     destaquePreco: {
       fontFamily: fontFamily.bold,
       fontSize: fontSize.base,
-      color: c.primary,
-      marginTop: spacing.xs + 2,
+      color: c.text,
+      marginTop: spacing.xs,
+    },
+
+    /* Dica */
+    dicaCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      marginHorizontal: spacing.xl,
+      marginTop: spacing.md,
+      backgroundColor: c.primarySoft,
+      borderRadius: radius.lg,
+      padding: spacing.md,
+    },
+    dicaIconWrap: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      backgroundColor: c.surface,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    dicaInfo: {
+      flex: 1,
+    },
+    dicaTitulo: {
+      fontFamily: fontFamily.bold,
+      fontSize: fontSize.md,
+      color: c.text,
+    },
+    dicaTexto: {
+      fontFamily: fontFamily.medium,
+      fontSize: fontSize.md,
+      color: c.textMuted,
+      marginTop: 2,
+      lineHeight: 17,
+    },
+
+    pressedSoft: {
+      opacity: 0.85,
+      transform: [{ scale: 0.98 }],
     },
   });
