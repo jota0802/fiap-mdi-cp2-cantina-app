@@ -1,10 +1,10 @@
 import { useCallback, useMemo, useState } from 'react';
 import {
   FlatList,
+  Pressable,
   RefreshControl,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -20,6 +20,7 @@ import {
   fontSize,
   letterSpacing,
   radius,
+  shadow,
   spacing,
   statusPalette,
 } from '@/constants/theme';
@@ -63,8 +64,6 @@ function PedidoCard({ order, styles, colors, onMarcarRetirado }: CardProps) {
         </View>
       </View>
 
-      <View style={[styles.statusBar, { backgroundColor: status.color }]} />
-
       <Text style={styles.resumoLinha}>{order.resumo}</Text>
 
       <View style={styles.cardFooter}>
@@ -73,16 +72,16 @@ function PedidoCard({ order, styles, colors, onMarcarRetirado }: CardProps) {
       </View>
 
       {order.status !== 'retirado' ? (
-        <TouchableOpacity
-          style={[
+        <Pressable
+          style={({ pressed }) => [
             styles.acaoBotao,
             order.status === 'pronto' && {
               backgroundColor: status.bg,
               borderColor: status.border,
             },
+            pressed && styles.pressedSoft,
           ]}
           onPress={onMarcarRetirado}
-          activeOpacity={0.8}
         >
           <Ionicons
             name="checkmark-circle-outline"
@@ -95,9 +94,9 @@ function PedidoCard({ order, styles, colors, onMarcarRetirado }: CardProps) {
               order.status === 'pronto' && { color: status.color },
             ]}
           >
-            MARCAR COMO RETIRADO
+            Marcar como retirado
           </Text>
-        </TouchableOpacity>
+        </Pressable>
       ) : null}
     </View>
   );
@@ -122,9 +121,10 @@ export default function PedidosScreen() {
   if (!isHydrated) {
     return (
       <View style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.titulo}>PEDIDOS</Text>
-          <Text style={styles.subtitulo}>CARREGANDO HISTÓRICO</Text>
+        <View style={[styles.header, { paddingTop: insets.top + spacing.lg }]}>
+          <Text style={styles.eyebrow}>HISTÓRICO</Text>
+          <Text style={styles.tituloPagina}>Pedidos</Text>
+          <Text style={styles.subtitulo}>Carregando histórico</Text>
         </View>
         <View style={styles.listContent}>
           <SkeletonOrderCard />
@@ -138,11 +138,12 @@ export default function PedidosScreen() {
   return (
     <View style={styles.container}>
       <View style={[styles.header, { paddingTop: insets.top + spacing.lg }]}>
-        <Text style={styles.titulo}>PEDIDOS</Text>
+        <Text style={styles.eyebrow}>HISTÓRICO</Text>
+        <Text style={styles.tituloPagina}>Pedidos</Text>
         <Text style={styles.subtitulo}>
           {totalAtivos > 0
-            ? `${totalAtivos} ${totalAtivos === 1 ? 'PEDIDO ATIVO' : 'PEDIDOS ATIVOS'}`
-            : 'NENHUM PEDIDO ATIVO'}
+            ? `${totalAtivos} ${totalAtivos === 1 ? 'pedido ativo' : 'pedidos ativos'}`
+            : 'Nenhum pedido ativo ainda'}
         </Text>
       </View>
 
@@ -167,13 +168,12 @@ export default function PedidosScreen() {
               subtitle="Faça seu primeiro pedido pelo cardápio para acompanhar aqui"
             />
             <View style={styles.ctaWrapper}>
-              <TouchableOpacity
-                style={styles.ctaBotao}
+              <Pressable
+                style={({ pressed }) => [styles.ctaBotao, pressed && styles.pressedSoft]}
                 onPress={() => router.push('/cardapio')}
-                activeOpacity={0.85}
               >
-                <Text style={styles.ctaBotaoTexto}>IR PARA O CARDÁPIO</Text>
-              </TouchableOpacity>
+                <Text style={styles.ctaBotaoTexto}>Ir para o cardápio</Text>
+              </Pressable>
             </View>
           </View>
         }
@@ -197,17 +197,22 @@ const createStyles = (c: ThemeColors) =>
       paddingHorizontal: spacing.xl,
       paddingBottom: spacing.lg,
     },
-    titulo: {
+    eyebrow: {
+      fontFamily: fontFamily.semibold,
+      fontSize: fontSize.xs,
+      color: c.textSubtle,
+      letterSpacing: letterSpacing.widest,
+    },
+    tituloPagina: {
       fontFamily: fontFamily.extrabold,
       fontSize: fontSize['3xl'],
       color: c.text,
-      letterSpacing: letterSpacing.ultra,
+      marginTop: spacing.xs,
     },
     subtitulo: {
       fontFamily: fontFamily.medium,
-      fontSize: fontSize.sm,
-      color: c.textSubtle,
-      letterSpacing: letterSpacing.wider,
+      fontSize: fontSize.md,
+      color: c.textMuted,
       marginTop: spacing.xs,
     },
     listContent: {
@@ -216,12 +221,14 @@ const createStyles = (c: ThemeColors) =>
       flexGrow: 1,
     },
     card: {
-      backgroundColor: c.card,
-      borderRadius: radius.lg,
-      padding: spacing.xl,
+      backgroundColor: c.surface,
+      borderRadius: radius.xl,
+      padding: spacing.lg,
       marginBottom: spacing.md,
       borderWidth: 1,
       borderColor: c.border,
+      gap: spacing.md,
+      ...shadow.md,
     },
     cardHeader: {
       flexDirection: 'row',
@@ -233,19 +240,20 @@ const createStyles = (c: ThemeColors) =>
       paddingVertical: spacing.md,
       paddingHorizontal: spacing.lg,
       alignItems: 'center',
-      minWidth: 88,
+      minWidth: 92,
+      ...shadow.primary,
     },
     senhaLabel: {
       fontFamily: fontFamily.semibold,
-      fontSize: 9,
-      color: 'rgba(255,255,255,0.7)',
-      letterSpacing: letterSpacing.wider,
+      fontSize: fontSize.xs,
+      color: 'rgba(255,255,255,0.78)',
+      letterSpacing: letterSpacing.widest,
     },
     senhaNumero: {
       fontFamily: fontFamily.extrabold,
       fontSize: fontSize['3xl'] - 2,
       color: c.primaryText,
-      letterSpacing: 4,
+      letterSpacing: 2,
       marginTop: 2,
     },
     cardHeaderInfo: {
@@ -255,9 +263,8 @@ const createStyles = (c: ThemeColors) =>
     },
     cardData: {
       fontFamily: fontFamily.medium,
-      fontSize: fontSize.sm,
+      fontSize: fontSize.md,
       color: c.textMuted,
-      letterSpacing: letterSpacing.normal,
     },
     statusBadge: {
       flexDirection: 'row',
@@ -270,17 +277,11 @@ const createStyles = (c: ThemeColors) =>
     },
     statusLabel: {
       fontFamily: fontFamily.bold,
-      fontSize: 10,
-      letterSpacing: letterSpacing.wide,
-    },
-    statusBar: {
-      height: 3,
-      borderRadius: 2,
-      marginVertical: spacing.md + 2,
-      opacity: 0.7,
+      fontSize: fontSize.xs,
+      letterSpacing: letterSpacing.wider,
     },
     resumoLinha: {
-      fontFamily: fontFamily.regular,
+      fontFamily: fontFamily.medium,
       fontSize: fontSize.md,
       color: c.textMuted,
       lineHeight: 20,
@@ -289,13 +290,12 @@ const createStyles = (c: ThemeColors) =>
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      marginTop: spacing.md,
     },
     totalLabel: {
       fontFamily: fontFamily.semibold,
-      fontSize: fontSize.sm,
+      fontSize: fontSize.xs,
       color: c.textSubtle,
-      letterSpacing: letterSpacing.wide,
+      letterSpacing: letterSpacing.widest,
     },
     totalValor: {
       fontFamily: fontFamily.extrabold,
@@ -307,18 +307,16 @@ const createStyles = (c: ThemeColors) =>
       alignItems: 'center',
       justifyContent: 'center',
       gap: spacing.sm,
-      marginTop: spacing.md,
       paddingVertical: spacing.md,
       borderRadius: radius.full,
-      backgroundColor: c.cardElevated,
+      backgroundColor: c.surfaceElevated,
       borderWidth: 1,
       borderColor: c.border,
     },
     acaoBotaoTexto: {
-      fontFamily: fontFamily.bold,
-      fontSize: fontSize.xs,
+      fontFamily: fontFamily.semibold,
+      fontSize: fontSize.md,
       color: c.text,
-      letterSpacing: letterSpacing.wide,
     },
     ctaWrapper: {
       paddingHorizontal: spacing.xl,
@@ -328,11 +326,15 @@ const createStyles = (c: ThemeColors) =>
       paddingVertical: spacing.lg,
       borderRadius: radius.full,
       alignItems: 'center',
+      ...shadow.primary,
     },
     ctaBotaoTexto: {
       fontFamily: fontFamily.bold,
       color: c.primaryText,
       fontSize: fontSize.md,
-      letterSpacing: letterSpacing.wide,
+    },
+    pressedSoft: {
+      opacity: 0.85,
+      transform: [{ scale: 0.98 }],
     },
   });
