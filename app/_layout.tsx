@@ -30,6 +30,10 @@ function RootStack() {
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="(tabs)" />
         <Stack.Screen
+          name="carrinho"
+          options={{ animation: 'slide_from_bottom' }}
+        />
+        <Stack.Screen
           name="confirmacao"
           options={{ animation: 'slide_from_bottom' }}
         />

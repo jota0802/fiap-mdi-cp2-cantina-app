@@ -151,16 +151,29 @@ c60b129 feat(orders): cria OrdersContext com persistencia por usuario
 
 O usuário aprovou implementação **completa do top 8** do roadmap. Detalhes em [`docs/ROADMAP.md`](./ROADMAP.md). Resumo:
 
-| # | Feature | Esforço | Sugestão de autor |
-|---|---|---|---|
-| 1 | Tela de Carrinho dedicada (`app/carrinho.tsx`) | 🟡 ~1h | Rodrigo (menos commits) |
-| 2 | Saudação + card pedido ativo na Home | 🟢 30min | Ruan |
-| 3 | "Pedir de novo" no histórico | 🟡 30min | Lucca |
-| 4 | Onboarding 3 slides | 🟡 45min | João |
-| 5 | Imagens reais (`expo-image`) | 🟡 30min | Ruan |
-| 6 | Filtro de categoria horizontal (chips) | 🟢 30min | Rodrigo |
-| 7 | Editar perfil (nome/email) | 🟢 30min | João |
-| 8 | QR Code da senha (`react-native-qrcode-svg`) | 🟢 20min | Lucca |
+| # | Feature | Esforço | Sugestão de autor | Status |
+|---|---|---|---|---|
+| 1 | Tela de Carrinho dedicada (`app/carrinho.tsx`) | 🟡 ~1h | Rodrigo (menos commits) | 🟡 **WIP — tela criada, falta wire no cardápio** |
+| 2 | Saudação + card pedido ativo na Home | 🟢 30min | Ruan | ⏳ |
+| 3 | "Pedir de novo" no histórico | 🟡 30min | Lucca | ⏳ |
+| 4 | Onboarding 3 slides | 🟡 45min | João | ⏳ |
+| 5 | Imagens reais (`expo-image`) | 🟡 30min | Ruan | ⏳ |
+| 6 | Filtro de categoria horizontal (chips) | 🟢 30min | Rodrigo | ⏳ |
+| 7 | Editar perfil (nome/email) | 🟢 30min | João | ⏳ |
+| 8 | QR Code da senha (`react-native-qrcode-svg`) | 🟢 20min | Lucca | ⏳ |
+
+### ⚠️ Estado WIP do #1 (Carrinho) — o que já está feito e o que falta
+
+**Já feito:**
+- `app/carrinho.tsx` criado (~370 linhas) — Stack screen com lista de items, controles de quantidade (+/-), botão limpar, totais, aviso de retirada, barra inferior fixa "CONFIRMAR PEDIDO" → `/confirmacao`. Empty state quando vazio com CTA pra cardápio.
+- `app/_layout.tsx` registra `Stack.Screen name="carrinho"` com `slide_from_bottom`.
+- TypeScript strict passa.
+
+**Falta:**
+- **Integrar com o cardápio**: em `app/(tabs)/cardapio.tsx`, o botão "CONFIRMAR" da barra inferior deve virar **"REVISAR PEDIDO"** e fazer `router.push('/carrinho')` em vez de ir direto pra `/confirmacao`. O badge do header também deve abrir o carrinho ao tocar.
+- **Testar manualmente** o fluxo: Cardápio → Carrinho → Confirmação.
+- **Atualizar README.md** com a tela nova (na tabela "Telas principais" e na seção de fluxo).
+- **Commit final** quando terminar a integração (autor: Rodrigo continuar).
 
 **Sequência recomendada:** 1 → 6 → 5 → 2 → 3 → 7 → 8 → 4
 
