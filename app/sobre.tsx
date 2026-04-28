@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -27,11 +28,12 @@ const TECNOLOGIAS = [
 export default function Sobre() {
   const { colors } = useTheme();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
   return (
     <View style={styles.container}>
-      <View style={styles.headerNav}>
+      <View style={[styles.headerNav, { paddingTop: insets.top + spacing.sm }]}>
         <Pressable
           onPress={() => router.back()}
           hitSlop={12}
@@ -143,7 +145,6 @@ const createStyles = (c: ThemeColors) =>
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      paddingTop: 56,
       paddingBottom: spacing.md,
       paddingHorizontal: spacing.xl,
     },

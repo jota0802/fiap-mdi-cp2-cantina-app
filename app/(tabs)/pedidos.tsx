@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -90,6 +91,7 @@ function PedidoCard({ order, styles, colors, onMarcarRetirado }: CardProps) {
 export default function PedidosScreen() {
   const router = useRouter();
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const { orders, isHydrated, refresh, markRetirado } = useOrders();
   const [refreshing, setRefreshing] = useState(false);
@@ -120,7 +122,7 @@ export default function PedidosScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + spacing.lg }]}>
         <Text style={styles.titulo}>PEDIDOS</Text>
         <Text style={styles.subtitulo}>
           {totalAtivos > 0
@@ -177,7 +179,6 @@ const createStyles = (c: ThemeColors) =>
   StyleSheet.create({
     container: { flex: 1, backgroundColor: c.bg },
     header: {
-      paddingTop: 60,
       paddingHorizontal: spacing.xl,
       paddingBottom: spacing.lg,
     },

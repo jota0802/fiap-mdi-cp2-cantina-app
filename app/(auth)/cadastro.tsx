@@ -9,6 +9,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Link, useRouter } from 'expo-router';
 
 import Button from '@/components/Button';
@@ -52,6 +53,7 @@ function validar(values: FormValues): Errors {
 
 export default function CadastroScreen() {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const router = useRouter();
   const { signUp } = useAuth();
@@ -110,7 +112,10 @@ export default function CadastroScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView
-        contentContainerStyle={styles.scroll}
+        contentContainerStyle={[
+          styles.scroll,
+          { paddingTop: insets.top + spacing['3xl'], paddingBottom: insets.bottom + spacing['3xl'] },
+        ]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
@@ -199,8 +204,6 @@ const createStyles = (c: ThemeColors) =>
     scroll: {
       flexGrow: 1,
       paddingHorizontal: spacing['2xl'],
-      paddingTop: spacing['6xl'],
-      paddingBottom: spacing['4xl'],
       justifyContent: 'center',
     },
     header: {

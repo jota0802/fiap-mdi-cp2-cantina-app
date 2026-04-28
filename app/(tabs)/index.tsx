@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Animated } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 
 import FiapLogo from '@/components/FiapLogo';
@@ -14,6 +15,7 @@ const DESTAQUES = CARDAPIO.filter((item) => [1, 5, 6, 8].includes(item.id));
 export default function Home() {
   const router = useRouter();
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const { opacity, translateY } = useFadeIn(500);
 
@@ -23,7 +25,12 @@ export default function Home() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <Animated.View style={[styles.header, { opacity, transform: [{ translateY }] }]}>
+        <Animated.View
+          style={[
+            styles.header,
+            { paddingTop: insets.top + spacing.xl, opacity, transform: [{ translateY }] },
+          ]}
+        >
           <FiapLogo width={100} color={colors.primary} />
           <Text style={styles.titulo}>CANTINA</Text>
           <Text style={styles.subtitulo}>SEU PEDIDO SEM FILA</Text>
@@ -84,7 +91,6 @@ const createStyles = (c: ThemeColors) =>
     scrollContent: { paddingBottom: spacing['4xl'] },
     header: {
       alignItems: 'center',
-      paddingTop: spacing['6xl'],
       paddingBottom: spacing['4xl'],
       gap: spacing.sm,
     },

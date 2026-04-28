@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -24,6 +25,7 @@ import type { Categoria, ThemeColors } from '@/types';
 export default function Cardapio() {
   const router = useRouter();
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
   const {
@@ -82,7 +84,7 @@ export default function Cardapio() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + spacing.lg }]}>
         <View style={styles.tituloRow}>
           <View style={styles.tituloCol}>
             <Text style={styles.titulo}>CARDÁPIO</Text>
@@ -191,7 +193,6 @@ const createStyles = (c: ThemeColors) =>
   StyleSheet.create({
     container: { flex: 1, backgroundColor: c.bg },
     header: {
-      paddingTop: 60,
       paddingHorizontal: spacing.xl,
       paddingBottom: spacing.md,
     },
