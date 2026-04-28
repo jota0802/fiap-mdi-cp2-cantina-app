@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import {
+  Alert,
   FlatList,
   Pressable,
   RefreshControl,
@@ -41,13 +42,28 @@ type CardProps = {
   colors: ThemeColors;
   onMarcarRetirado: () => void;
   onPedirNovo: () => void;
+  onCancelar: () => void;
+  onAbrirDetalhes: () => void;
 };
 
-function PedidoCard({ order, styles, colors, onMarcarRetirado, onPedirNovo }: CardProps) {
+function PedidoCard({
+  order,
+  styles,
+  colors,
+  onMarcarRetirado,
+  onPedirNovo,
+  onCancelar,
+  onAbrirDetalhes,
+}: CardProps) {
   const status = statusPalette[order.status];
 
   return (
-    <View style={styles.card}>
+    <Pressable
+      style={({ pressed }) => [styles.card, pressed && styles.pressedSoft]}
+      onPress={onAbrirDetalhes}
+      accessibilityRole="button"
+      accessibilityLabel={`Ver detalhes do pedido senha ${order.senha}, status ${status.label.toLowerCase()}, total R$ ${order.total.toFixed(2)}`}
+    >
       <View style={styles.cardHeader}>
         <View style={styles.senhaBox}>
           <Text style={styles.senhaLabel}>SENHA</Text>
@@ -74,42 +90,61 @@ function PedidoCard({ order, styles, colors, onMarcarRetirado, onPedirNovo }: Ca
         <Text style={styles.totalValor}>R$ {order.total.toFixed(2)}</Text>
       </View>
 
-      {order.status !== 'retirado' ? (
-        <Pressable
-          style={({ pressed }) => [
-            styles.acaoBotao,
-            order.status === 'pronto' && {
-              backgroundColor: status.bg,
-              borderColor: status.border,
-            },
-            pressed && styles.pressedSoft,
-          ]}
-          onPress={onMarcarRetirado}
-        >
-          <Ionicons
-            name="checkmark-circle-outline"
-            size={16}
-            color={order.status === 'pronto' ? status.color : colors.text}
-          />
-          <Text
-            style={[
-              styles.acaoBotaoTexto,
-              order.status === 'pronto' && { color: status.color },
+      {order.status === 'pendente' || order.status === 'pronto' ? (
+        <View style={styles.acoesRow}>
+          <Pressable
+            style={({ pressed }) => [
+              styles.acaoBotao,
+              styles.acaoFlex,
+              order.status === 'pronto' && {
+                backgroundColor: status.bg,
+                borderColor: status.border,
+              },
+              pressed && styles.pressedSoft,
             ]}
+            onPress={onMarcarRetirado}
+            accessibilityRole="button"
+            accessibilityLabel={`Marcar pedido senha ${order.senha} como retirado`}
           >
-            Marcar como retirado
-          </Text>
-        </Pressable>
-      ) : (
+            <Ionicons
+              name="checkmark-circle-outline"
+              size={16}
+              color={order.status === 'pronto' ? status.color : colors.text}
+            />
+            <Text
+              style={[
+                styles.acaoBotaoTexto,
+                order.status === 'pronto' && { color: status.color },
+              ]}
+            >
+              Retirado
+            </Text>
+          </Pressable>
+
+          {order.status === 'pendente' ? (
+            <Pressable
+              style={({ pressed }) => [styles.acaoCancelar, pressed && styles.pressedSoft]}
+              onPress={onCancelar}
+              accessibilityRole="button"
+              accessibilityLabel={`Cancelar pedido senha ${order.senha}`}
+            >
+              <Ionicons name="close-outline" size={16} color={colors.error} />
+              <Text style={styles.acaoCancelarTexto}>Cancelar</Text>
+            </Pressable>
+          ) : null}
+        </View>
+      ) : order.status === 'retirado' ? (
         <Pressable
           style={({ pressed }) => [styles.acaoPedirNovo, pressed && styles.pressedSoft]}
           onPress={onPedirNovo}
+          accessibilityRole="button"
+          accessibilityLabel={`Refazer pedido senha ${order.senha}`}
         >
           <Ionicons name="refresh" size={16} color={colors.primary} />
           <Text style={styles.acaoPedirNovoTexto}>Pedir de novo</Text>
         </Pressable>
-      )}
-    </View>
+      ) : null}
+    </Pressable>
   );
 }
 
@@ -118,7 +153,7 @@ export default function PedidosScreen() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const styles = useMemo(() => createStyles(colors), [colors]);
-  const { orders, isHydrated, refresh, markRetirado } = useOrders();
+  const { orders, isHydrated, refresh, markRetirado, markCancelado } = useOrders();
   const { clear, setQuantidade } = useCart();
   const [refreshing, setRefreshing] = useState(false);
 
@@ -134,6 +169,27 @@ export default function PedidosScreen() {
     [clear, setQuantidade, router],
   );
 
+  const handleCancelar = useCallback(
+    (order: Order) => {
+      Alert.alert(
+        'Cancelar pedido?',
+        `O pedido com a senha ${order.senha} será cancelado e não poderá ser recuperado.`,
+        [
+          { text: 'Manter pedido', style: 'cancel' },
+          {
+            text: 'Cancelar',
+            style: 'destructive',
+            onPress: async () => {
+              haptic.warning();
+              await markCancelado(order.id);
+            },
+          },
+        ],
+      );
+    },
+    [markCancelado],
+  );
+
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
     await refresh();
@@ -147,7 +203,7 @@ export default function PedidosScreen() {
       <View style={styles.container}>
         <View style={[styles.header, { paddingTop: insets.top + spacing.lg }]}>
           <Text style={styles.tituloPagina}>Pedidos</Text>
-          <Text style={styles.subtitulo}>Carregando histórico</Text>
+          <Text style={styles.subtitulo}>Carregando seus pedidos</Text>
         </View>
         <View style={styles.listContent}>
           <SkeletonOrderCard />
@@ -181,6 +237,8 @@ export default function PedidosScreen() {
             colors={colors}
             onMarcarRetirado={() => markRetirado(item.id)}
             onPedirNovo={() => handlePedirNovo(item)}
+            onCancelar={() => handleCancelar(item)}
+            onAbrirDetalhes={() => router.push(`/pedido/${item.id}`)}
           />
         )}
         ListEmptyComponent={
@@ -188,12 +246,14 @@ export default function PedidosScreen() {
             <EmptyState
               emoji="🧾"
               title="Nenhum pedido ainda"
-              subtitle="Faça seu primeiro pedido pelo cardápio para acompanhar aqui"
+              subtitle="Faça seu primeiro pedido e acompanhe ele aqui"
             />
             <View style={styles.ctaWrapper}>
               <Pressable
                 style={({ pressed }) => [styles.ctaBotao, pressed && styles.pressedSoft]}
                 onPress={() => router.push('/cardapio')}
+                accessibilityRole="button"
+                accessibilityLabel="Ir para o cardápio"
               >
                 <Text style={styles.ctaBotaoTexto}>Ir para o cardápio</Text>
               </Pressable>
@@ -318,6 +378,13 @@ const createStyles = (c: ThemeColors) =>
       fontSize: fontSize.xl,
       color: c.primary,
     },
+    acoesRow: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+    },
+    acaoFlex: {
+      flex: 1,
+    },
     acaoBotao: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -333,6 +400,23 @@ const createStyles = (c: ThemeColors) =>
       fontFamily: fontFamily.semibold,
       fontSize: fontSize.md,
       color: c.text,
+    },
+    acaoCancelar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.xs + 2,
+      paddingVertical: spacing.md,
+      paddingHorizontal: spacing.lg,
+      borderRadius: radius.full,
+      backgroundColor: 'rgba(248, 113, 113, 0.10)',
+      borderWidth: 1,
+      borderColor: 'rgba(248, 113, 113, 0.30)',
+    },
+    acaoCancelarTexto: {
+      fontFamily: fontFamily.semibold,
+      fontSize: fontSize.md,
+      color: c.error,
     },
     acaoPedirNovo: {
       flexDirection: 'row',

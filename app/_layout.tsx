@@ -80,6 +80,10 @@ function RootStack() {
           name="perfil-editar"
           options={{ animation: 'slide_from_right' }}
         />
+        <Stack.Screen
+          name="pedido/[id]"
+          options={{ animation: 'slide_from_right' }}
+        />
       </Stack>
     </>
   );
