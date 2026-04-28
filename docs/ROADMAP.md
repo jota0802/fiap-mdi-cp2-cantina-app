@@ -3,18 +3,29 @@
 > Backlog priorizado de UX/UI/funcionalidades para evoluir o CP2.
 > Notação: 💎 alto impacto · 🔥 médio · ✨ refinamento · 🟢 fácil · 🟡 médio · 🔴 trabalhoso
 
-## 🥇 Top 8 — implementar primeiro (≈5-6h total)
+## 🥇 Top 8 — status atual
 
-| # | Item | Esforço | Arquivo principal | Critério de aceitação |
+| # | Item | Esforço | Arquivo principal | Status |
 |---|---|---|---|---|
-| 1 | **Tela de Carrinho dedicada** | 🟡 ~1h | `app/carrinho.tsx` (novo) | Stack screen acessada do cardápio; lista items com edição de quantidade; mostra subtotal/total; botão "CONFIRMAR PEDIDO" envia pra `/confirmacao`; `slide_from_bottom` |
-| 2 | **Saudação + card pedido ativo na Home** | 🟢 30min | `app/(tabs)/index.tsx` | Substitui "CANTINA · SEU PEDIDO SEM FILA" por "Bom dia/tarde/noite, {nome}"; se há pedido `pendente`/`pronto`, card grande no topo com senha + status + CTA "Acompanhar" |
-| 3 | **"Pedir de novo" no histórico** | 🟡 30min | `app/(tabs)/pedidos.tsx` + `CartContext` | Botão em cada pedido `retirado` chama `cart.clear()` + popula com `order.items` + navega pra `/carrinho` |
-| 4 | **Onboarding 3 slides** | 🟡 45min | `app/onboarding.tsx` (novo) + `AsyncStorage` flag | Primeira abertura mostra 3 slides ("Monte seu pedido | Pague no app | Retire na hora"); salva `@cantina:onboarded=true`; pula nas próximas |
-| 5 | **Imagens reais nos itens** | 🟡 30min | `data/cardapio.ts` + `expo-image` | Adicionar campo `imagem` (URL Unsplash); `<Image>` substituído por `<expo-image/>` no `ItemCardapio`; placeholder blur enquanto carrega |
-| 6 | **Filtro de categoria horizontal (chips)** | 🟢 30min | `app/(tabs)/cardapio.tsx` | ScrollView horizontal com chips `Todas | Bebidas | Lanches | Sobremesas`; filtro combina com busca em tempo real |
-| 7 | **Editar perfil (nome/email)** | 🟢 30min | `app/perfil-editar.tsx` (novo) | Stack screen acessada via Perfil; form com Input + validation lib; chama `updateUser`; toast de sucesso |
-| 8 | **QR Code da senha** | 🟢 20min | `app/confirmacao.tsx` | Instalar `react-native-qrcode-svg`; renderizar QR com payload `{senha, pedidoId}` abaixo do número |
+| 1 | **Tela de Carrinho dedicada** | 🟡 ~1h | `app/carrinho.tsx` | ✅ **PRONTO** — Stack screen com edição de quantidade, totais, aviso de retirada, integrado ao cardápio (botão "Revisar pedido") |
+| 2 | **Saudação + card pedido ativo na Home** | 🟢 30min | `app/(tabs)/index.tsx` | ✅ **PRONTO** — Saudação dinâmica por hora ("Bom dia/tarde/noite"); bento grid com pedido ativo, quick actions e destaques |
+| 3 | **"Pedir de novo" no histórico** | 🟡 30min | `app/(tabs)/pedidos.tsx` + `CartContext` | ⏳ Botão em cada pedido `retirado` chama `cart.clear()` + popula com `order.items` + navega pra `/carrinho` |
+| 4 | **Onboarding 3 slides** | 🟡 45min | `app/onboarding.tsx` (novo) + `AsyncStorage` flag | ⏳ Primeira abertura mostra 3 slides; salva `@cantina:onboarded=true` |
+| 5 | **Imagens reais nos itens** | 🟡 30min | `data/cardapio.ts` + `expo-image` | ⏳ Campo `imagem` (URL Unsplash); `<expo-image/>` no `ItemCardapio` com blur placeholder |
+| 6 | **Filtro de categoria horizontal (chips)** | 🟢 30min | `app/(tabs)/cardapio.tsx` | ✅ **PRONTO** — ScrollView horizontal com chips `Todas/Bebidas/Lanches/Sobremesas`, ícones Ionicons, combina com busca em tempo real |
+| 7 | **Editar perfil (nome/email)** | 🟢 30min | `app/perfil-editar.tsx` (novo) | ⏳ Stack screen com form chamando `updateUser`; toast de sucesso |
+| 8 | **QR Code da senha** | 🟢 20min | `app/confirmacao.tsx` | ⏳ Instalar `react-native-qrcode-svg`; renderizar QR abaixo do número |
+
+## 🎨 Design System aplicado (28/04/2026)
+
+Pós-redesign premium minimalista, todas as telas seguem agora:
+
+- **Tipografia hierárquica:** eyebrow `xs/widest/UPPER` → título `extrabold/3xl/sentence` → body `medium/md`. Sem `letterSpacing.ultra` em títulos longos.
+- **Cores menos pretas:** `bg #0E0E16`, `surface #181826`, `surfaceElevated #1F1F30` no dark; `#F7F7F8` / `#FFFFFF` no light.
+- **Tokens novos:** `surface`, `surfaceElevated`, `surfaceHover`, `borderStrong`, `separator`, `primarySoft`, `primaryDeep`, `bgElevated`.
+- **Shadow tokens:** `shadow.sm/md/lg/primary` prontos pra spread.
+- **Bento grids:** Home (cardápio big + carrinho/histórico stacked), Perfil (3 stat cards), Confirmação (itens/total bento).
+- **Pressed soft:** `opacity 0.85 + scale 0.98` em Pressables.
 
 ---
 

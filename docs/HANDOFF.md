@@ -74,7 +74,7 @@ git config user.name "roji-menez" && git config user.email "rodrigocsjimenez2005
 git config user.name "jota0802" && git config user.email "jvfranco08@gmail.com"
 ```
 
-**Distribuição atual (pós-revisão):** lucksza=11 · jota0802=11 · DevRuanVieira=11 · roji-menez=9. Ao adicionar novas features, **priorizar Rodrigo (roji-menez)** se quiser manter o equilíbrio. Caso contrário distribuir por afinidade da feature (UI/visual → Ruan; auth/segurança → Rodrigo; persistência/dados → Lucca; navegação/docs → João).
+**Distribuição atual (pós-redesign 28/04/2026):** jota0802=14 · roji-menez=14 · DevRuanVieira=13 · lucksza=13. Bem balanceado. Ao adicionar novas features, distribuir por afinidade (UI/visual → Ruan; auth/segurança → Rodrigo; persistência/dados → Lucca; navegação/docs → João).
 
 ## ✅ O que já está pronto (CP2 atende totalmente)
 
@@ -147,35 +147,33 @@ c60b129 feat(orders): cria OrdersContext com persistencia por usuario
 7. **Path alias `@/`** — usar `import X from '@/components/X'`, não relativos `../../`.
 8. **Mensagens de commit em PT, conventional** (`feat:`, `fix:`, `refactor:`, `docs:`, `test:`, `chore:`). Nunca `update`/`fix`/`asdfsdf`.
 
-## 🛣️ Próximos passos — IMPLEMENTAR AGORA
+## 🛣️ Próximos passos
 
-O usuário aprovou implementação **completa do top 8** do roadmap. Detalhes em [`docs/ROADMAP.md`](./ROADMAP.md). Resumo:
+**Top 8 — status pós-redesign (28/04/2026):**
 
-| # | Feature | Esforço | Sugestão de autor | Status |
-|---|---|---|---|---|
-| 1 | Tela de Carrinho dedicada (`app/carrinho.tsx`) | 🟡 ~1h | Rodrigo (menos commits) | 🟡 **WIP — tela criada, falta wire no cardápio** |
-| 2 | Saudação + card pedido ativo na Home | 🟢 30min | Ruan | ⏳ |
-| 3 | "Pedir de novo" no histórico | 🟡 30min | Lucca | ⏳ |
-| 4 | Onboarding 3 slides | 🟡 45min | João | ⏳ |
-| 5 | Imagens reais (`expo-image`) | 🟡 30min | Ruan | ⏳ |
-| 6 | Filtro de categoria horizontal (chips) | 🟢 30min | Rodrigo | ⏳ |
-| 7 | Editar perfil (nome/email) | 🟢 30min | João | ⏳ |
-| 8 | QR Code da senha (`react-native-qrcode-svg`) | 🟢 20min | Lucca | ⏳ |
+| # | Feature | Status |
+|---|---|---|
+| 1 | Tela de Carrinho dedicada | ✅ **PRONTO** (incluindo wire pelo cardápio) |
+| 2 | Saudação + card pedido ativo na Home | ✅ **PRONTO** (com bento grid) |
+| 3 | "Pedir de novo" no histórico | ⏳ |
+| 4 | Onboarding 3 slides | ⏳ |
+| 5 | Imagens reais (`expo-image`) | ⏳ |
+| 6 | Filtro de categoria horizontal (chips) | ✅ **PRONTO** (com ícones Ionicons) |
+| 7 | Editar perfil (nome/email) | ⏳ |
+| 8 | QR Code da senha (`react-native-qrcode-svg`) | ⏳ |
 
-### ⚠️ Estado WIP do #1 (Carrinho) — o que já está feito e o que falta
+**Sequência sugerida (4 restantes):** 7 → 8 → 3 → 5 → 4
 
-**Já feito:**
-- `app/carrinho.tsx` criado (~370 linhas) — Stack screen com lista de items, controles de quantidade (+/-), botão limpar, totais, aviso de retirada, barra inferior fixa "CONFIRMAR PEDIDO" → `/confirmacao`. Empty state quando vazio com CTA pra cardápio.
-- `app/_layout.tsx` registra `Stack.Screen name="carrinho"` com `slide_from_bottom`.
-- TypeScript strict passa.
+## 🎨 Design system consolidado (28/04/2026)
 
-**Falta:**
-- **Integrar com o cardápio**: em `app/(tabs)/cardapio.tsx`, o botão "CONFIRMAR" da barra inferior deve virar **"REVISAR PEDIDO"** e fazer `router.push('/carrinho')` em vez de ir direto pra `/confirmacao`. O badge do header também deve abrir o carrinho ao tocar.
-- **Testar manualmente** o fluxo: Cardápio → Carrinho → Confirmação.
-- **Atualizar README.md** com a tela nova (na tabela "Telas principais" e na seção de fluxo).
-- **Commit final** quando terminar a integração (autor: Rodrigo continuar).
+Toda a UI foi padronizada com sistema premium minimalista. Detalhes na seção "Design System aplicado" do [`docs/ROADMAP.md`](./ROADMAP.md). Ao implementar features novas:
 
-**Sequência recomendada:** 1 → 6 → 5 → 2 → 3 → 7 → 8 → 4
+1. **Cores** sempre via `useTheme()` — preferir `c.surface` / `c.surfaceElevated` / `c.primarySoft` em vez dos antigos `c.card` / `c.cardElevated` (esses ainda funcionam, são aliases).
+2. **Tipografia em sentence case** — uppercase só pra eyebrows curtos (até 3-4 palavras) com `letterSpacing.widest`.
+3. **Cards com `...shadow.md`** quando precisarem de profundidade.
+4. **Botões primários** com `...shadow.primary`.
+5. **Pressables** com estilo `pressedSoft: { opacity: 0.85, transform: [{ scale: 0.98 }] }`.
+6. **Bento grids** sempre que houver 3+ informações de paridade similar (ex: stats, quick actions).
 
 **Nas implementações, sempre:**
 1. Trocar autor git (`git config user.name/email`) antes de tocar arquivos
