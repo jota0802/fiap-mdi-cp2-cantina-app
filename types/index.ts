@@ -6,6 +6,7 @@ export type ItemCardapio = {
   preco: number;
   descricao: string;
   emoji: string;
+  imagem?: string;
   categoria: Categoria;
 };
 

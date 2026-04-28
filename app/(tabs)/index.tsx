@@ -12,6 +12,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import CARDAPIO from '@/data/cardapio';
+import ItemThumbnail from '@/components/ItemThumbnail';
 import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
 import { useOrders } from '@/context/OrdersContext';
@@ -175,8 +176,14 @@ export default function Home() {
               style={({ pressed }) => [styles.destaqueCard, pressed && styles.pressedSoft]}
               onPress={() => router.push('/cardapio')}
             >
-              <View style={styles.destaqueEmojiWrap}>
-                <Text style={styles.destaqueEmoji}>{item.emoji}</Text>
+              <View style={styles.destaqueImagemWrap}>
+                <ItemThumbnail
+                  emoji={item.emoji}
+                  imagem={item.imagem}
+                  size={108}
+                  borderRadius={radius.md}
+                  bgColor={colors.surfaceElevated}
+                />
               </View>
               <Text style={styles.destaqueNome} numberOfLines={1}>
                 {item.nome}
@@ -495,16 +502,9 @@ const createStyles = (c: ThemeColors) =>
       borderWidth: 1,
       borderColor: c.border,
     },
-    destaqueEmojiWrap: {
-      width: 48,
-      height: 48,
-      borderRadius: radius.md,
-      backgroundColor: c.surfaceElevated,
-      alignItems: 'center',
-      justifyContent: 'center',
+    destaqueImagemWrap: {
       marginBottom: spacing.md,
     },
-    destaqueEmoji: { fontSize: 24 },
     destaqueNome: {
       fontFamily: fontFamily.semibold,
       fontSize: fontSize.md,

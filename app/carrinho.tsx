@@ -12,6 +12,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import EmptyState from '@/components/EmptyState';
+import ItemThumbnail from '@/components/ItemThumbnail';
 import { useCart } from '@/context/CartContext';
 import { useTheme } from '@/context/ThemeContext';
 import CARDAPIO from '@/data/cardapio';
@@ -50,9 +51,13 @@ function LinhaItem({
 
   return (
     <View style={styles.linha}>
-      <View style={styles.emojiBox}>
-        <Text style={styles.emoji}>{item.emoji}</Text>
-      </View>
+      <ItemThumbnail
+        emoji={item.emoji}
+        imagem={item.imagem}
+        size={56}
+        borderRadius={12}
+        bgColor={colors.surfaceElevated}
+      />
 
       <View style={styles.linhaInfo}>
         <View style={styles.linhaTopo}>
@@ -389,15 +394,6 @@ const createStyles = (c: ThemeColors) =>
       borderWidth: 1,
       borderColor: c.border,
     },
-    emojiBox: {
-      width: 56,
-      height: 56,
-      borderRadius: radius.md,
-      backgroundColor: c.surfaceElevated,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    emoji: { fontSize: 28 },
     linhaInfo: {
       flex: 1,
       justifyContent: 'space-between',

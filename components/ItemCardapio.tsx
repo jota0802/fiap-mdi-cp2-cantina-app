@@ -1,6 +1,7 @@
 import { useMemo, useRef } from 'react';
 import { View, Text, Pressable, StyleSheet, Animated } from 'react-native';
 
+import ItemThumbnail from '@/components/ItemThumbnail';
 import { useTheme } from '@/context/ThemeContext';
 import { haptic } from '@/lib/haptics';
 import { fontFamily, fontSize, radius, spacing } from '@/constants/theme';
@@ -28,9 +29,13 @@ export default function ItemCardapio({ item, quantidade, onAdicionar, onRemover 
 
   return (
     <View style={[styles.container, ativo && styles.containerAtivo]}>
-      <View style={styles.emojiContainer}>
-        <Text style={styles.emoji}>{item.emoji}</Text>
-      </View>
+      <ItemThumbnail
+        emoji={item.emoji}
+        imagem={item.imagem}
+        size={52}
+        borderRadius={radius.md}
+        bgColor={colors.surfaceElevated}
+      />
 
       <View style={styles.info}>
         <Text style={styles.nome} numberOfLines={1}>
@@ -96,15 +101,6 @@ const createStyles = (c: ThemeColors) =>
       borderColor: c.primary,
       backgroundColor: c.primarySoft,
     },
-    emojiContainer: {
-      width: 52,
-      height: 52,
-      borderRadius: radius.md,
-      backgroundColor: c.surfaceElevated,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    emoji: { fontSize: 26 },
     info: {
       flex: 1,
     },

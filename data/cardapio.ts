@@ -1,12 +1,15 @@
 import type { ItemCardapio } from '@/types';
 
+const UNSPLASH_PARAMS = '?w=240&h=240&fit=crop&q=80';
+
 const CARDAPIO: ItemCardapio[] = [
   {
     id: 1,
     nome: 'Café Espresso',
     preco: 5.0,
     descricao: 'Café forte e encorpado',
-    emoji: '\u2615',
+    emoji: '☕',
+    imagem: `https://images.unsplash.com/photo-1510707577719-ae7c14805e3a${UNSPLASH_PARAMS}`,
     categoria: 'Bebidas',
   },
   {
@@ -14,7 +17,8 @@ const CARDAPIO: ItemCardapio[] = [
     nome: 'Cappuccino',
     preco: 8.0,
     descricao: 'Com espuma cremosa',
-    emoji: '\u2615',
+    emoji: '☕',
+    imagem: `https://images.unsplash.com/photo-1572442388796-11668a67e53d${UNSPLASH_PARAMS}`,
     categoria: 'Bebidas',
   },
   {
@@ -22,7 +26,8 @@ const CARDAPIO: ItemCardapio[] = [
     nome: 'Suco Natural',
     preco: 7.0,
     descricao: 'Laranja, limão ou maracujá',
-    emoji: '\uD83E\uDDC3',
+    emoji: '🧃',
+    imagem: `https://images.unsplash.com/photo-1546549032-9571cd6b27df${UNSPLASH_PARAMS}`,
     categoria: 'Bebidas',
   },
   {
@@ -30,7 +35,8 @@ const CARDAPIO: ItemCardapio[] = [
     nome: 'Pão de Queijo',
     preco: 4.5,
     descricao: 'Quentinho e crocante',
-    emoji: '\uD83E\uDDC0',
+    emoji: '🧀',
+    imagem: `https://images.unsplash.com/photo-1518779578993-ec3579fee39f${UNSPLASH_PARAMS}`,
     categoria: 'Lanches',
   },
   {
@@ -38,7 +44,8 @@ const CARDAPIO: ItemCardapio[] = [
     nome: 'Coxinha',
     preco: 6.0,
     descricao: 'Frango com catupiry',
-    emoji: '\uD83C\uDF57',
+    emoji: '🍗',
+    imagem: `https://images.unsplash.com/photo-1559847844-5315695dadae${UNSPLASH_PARAMS}`,
     categoria: 'Lanches',
   },
   {
@@ -46,7 +53,8 @@ const CARDAPIO: ItemCardapio[] = [
     nome: 'X-Burger',
     preco: 12.0,
     descricao: 'Hambúrguer artesanal completo',
-    emoji: '\uD83C\uDF54',
+    emoji: '🍔',
+    imagem: `https://images.unsplash.com/photo-1568901346375-23c9450c58cd${UNSPLASH_PARAMS}`,
     categoria: 'Lanches',
   },
   {
@@ -54,7 +62,8 @@ const CARDAPIO: ItemCardapio[] = [
     nome: 'Misto Quente',
     preco: 8.5,
     descricao: 'Presunto e queijo na chapa',
-    emoji: '\uD83E\uDD6A',
+    emoji: '🥪',
+    imagem: `https://images.unsplash.com/photo-1528736235302-52922df5c122${UNSPLASH_PARAMS}`,
     categoria: 'Lanches',
   },
   {
@@ -62,7 +71,8 @@ const CARDAPIO: ItemCardapio[] = [
     nome: 'Açaí Bowl',
     preco: 15.0,
     descricao: 'Com granola e banana',
-    emoji: '\uD83C\uDF47',
+    emoji: '🍇',
+    imagem: `https://images.unsplash.com/photo-1490474418585-ba9bad8fd0ea${UNSPLASH_PARAMS}`,
     categoria: 'Sobremesas',
   },
 ];
