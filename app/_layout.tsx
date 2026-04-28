@@ -46,7 +46,7 @@ function RootStack() {
   const { onboarded, markOnboarded } = useOnboarded();
 
   if (isHydrating || onboarded === null) {
-    return <LoadingScreen label="APP CANTINA" subtitle="VERIFICANDO SESSÃO" />;
+    return <LoadingScreen label="App Cantina" subtitle="Verificando sessão" />;
   }
 
   if (!onboarded) {
@@ -86,7 +86,7 @@ function RootStack() {
 }
 
 function ThemedSplash() {
-  return <LoadingScreen label="APP CANTINA" subtitle="PREPARANDO O AMBIENTE" />;
+  return <LoadingScreen label="App Cantina" subtitle="Preparando o ambiente" />;
 }
 
 export default function RootLayout() {
