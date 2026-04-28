@@ -10,6 +10,7 @@ import {
 } from '@expo-google-fonts/manrope';
 
 import { AuthProvider, useAuth } from '@/context/AuthContext';
+import { CartProvider } from '@/context/CartContext';
 import { ThemeProvider, useTheme } from '@/context/ThemeContext';
 import LoadingScreen from '@/components/LoadingScreen';
 
@@ -52,7 +53,9 @@ export default function RootLayout() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        {fontsLoaded ? <RootStack /> : <ThemedSplash />}
+        <CartProvider>
+          {fontsLoaded ? <RootStack /> : <ThemedSplash />}
+        </CartProvider>
       </AuthProvider>
     </ThemeProvider>
   );
