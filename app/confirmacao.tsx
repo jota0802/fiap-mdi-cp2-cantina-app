@@ -1,6 +1,18 @@
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { useState, useEffect } from 'react';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Animated,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+
+import LoadingScreen from '@/components/LoadingScreen';
+import { useTheme } from '@/context/ThemeContext';
+import { fontFamily, fontSize, letterSpacing, radius, spacing } from '@/constants/theme';
+import type { ThemeColors } from '@/types';
 
 type ConfirmacaoParams = {
   total?: string;
@@ -10,9 +22,16 @@ type ConfirmacaoParams = {
 
 export default function Confirmacao() {
   const router = useRouter();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const { total, itens, resumo } = useLocalSearchParams<ConfirmacaoParams>();
   const [senha, setSenha] = useState<number | null>(null);
   const [carregando, setCarregando] = useState<boolean>(true);
+
+  const senhaScale = useRef(new Animated.Value(0)).current;
+  const senhaOpacity = useRef(new Animated.Value(0)).current;
+  const checkScale = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -24,31 +43,58 @@ export default function Confirmacao() {
     return () => clearTimeout(timer);
   }, []);
 
+  useEffect(() => {
+    if (senha === null) return;
+    Animated.sequence([
+      Animated.spring(checkScale, {
+        toValue: 1,
+        useNativeDriver: true,
+        speed: 14,
+        bounciness: 8,
+      }),
+      Animated.parallel([
+        Animated.spring(senhaScale, {
+          toValue: 1,
+          useNativeDriver: true,
+          speed: 12,
+          bounciness: 6,
+        }),
+        Animated.timing(senhaOpacity, {
+          toValue: 1,
+          duration: 280,
+          useNativeDriver: true,
+        }),
+      ]),
+    ]).start();
+  }, [senha, senhaScale, senhaOpacity, checkScale]);
+
   if (carregando) {
-    return (
-      <View style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <Text style={styles.loadingDot}>{'\u25CF'}</Text>
-          <Text style={styles.loadingTexto}>PROCESSANDO</Text>
-          <Text style={styles.loadingSubtexto}>AGUARDE UM MOMENTO</Text>
-        </View>
-      </View>
-    );
+    return <LoadingScreen label="PROCESSANDO" subtitle="AGUARDE UM MOMENTO" />;
   }
 
   return (
     <View style={styles.container}>
       <View style={styles.content}>
+        <Animated.View style={[styles.checkCircle, { transform: [{ scale: checkScale }] }]}>
+          <Ionicons name="checkmark" size={32} color={colors.primaryText} />
+        </Animated.View>
+
         <Text style={styles.confirmado}>PEDIDO CONFIRMADO</Text>
 
-        <View style={styles.senhaContainer}>
+        <Animated.View
+          style={[
+            styles.senhaContainer,
+            {
+              opacity: senhaOpacity,
+              transform: [{ scale: senhaScale }],
+            },
+          ]}
+        >
           <Text style={styles.senhaLabel}>SUA SENHA</Text>
           <Text style={styles.senhaNumero}>{senha}</Text>
-        </View>
+        </Animated.View>
 
-        <Text style={styles.senhaInstrucao}>
-          APRESENTE ESTE NÚMERO NO BALCÃO
-        </Text>
+        <Text style={styles.senhaInstrucao}>APRESENTE ESTE NÚMERO NO BALCÃO</Text>
 
         <View style={styles.resumoCard}>
           <View style={styles.resumoLinha}>
@@ -69,14 +115,13 @@ export default function Confirmacao() {
         </View>
 
         <View style={styles.avisoContainer}>
-          <Text style={styles.avisoTexto}>
-            AGUARDE SEU NÚMERO NO PAINEL DA CANTINA
-          </Text>
+          <Text style={styles.avisoTexto}>AGUARDE SEU NÚMERO NO PAINEL DA CANTINA</Text>
         </View>
 
         <TouchableOpacity
           style={styles.botaoPrimario}
           onPress={() => router.replace('/')}
+          activeOpacity={0.85}
         >
           <Text style={styles.botaoPrimarioTexto}>VOLTAR AO INÍCIO</Text>
         </TouchableOpacity>
@@ -84,6 +129,7 @@ export default function Confirmacao() {
         <TouchableOpacity
           style={styles.botaoSecundario}
           onPress={() => router.replace('/cardapio')}
+          activeOpacity={0.85}
         >
           <Text style={styles.botaoSecundarioTexto}>NOVO PEDIDO</Text>
         </TouchableOpacity>
@@ -92,161 +138,153 @@ export default function Confirmacao() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#0A0A0A',
-    justifyContent: 'center',
-  },
-  loadingContainer: {
-    alignItems: 'center',
-    padding: 40,
-  },
-  loadingDot: {
-    fontSize: 24,
-    color: '#ED145B',
-    marginBottom: 20,
-  },
-  loadingTexto: {
-    fontFamily: 'Manrope_800ExtraBold',
-    fontSize: 16,
-    color: '#FFFFFF',
-    letterSpacing: 4,
-  },
-  loadingSubtexto: {
-    fontFamily: 'Manrope_500Medium',
-    fontSize: 11,
-    color: '#444444',
-    letterSpacing: 3,
-    marginTop: 8,
-  },
-  content: {
-    alignItems: 'center',
-    paddingHorizontal: 24,
-  },
-  confirmado: {
-    fontFamily: 'Manrope_800ExtraBold',
-    fontSize: 14,
-    color: '#FFFFFF',
-    letterSpacing: 4,
-    marginBottom: 32,
-  },
-  senhaContainer: {
-    backgroundColor: '#ED145B',
-    borderRadius: 24,
-    paddingVertical: 32,
-    paddingHorizontal: 48,
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  senhaLabel: {
-    fontFamily: 'Manrope_600SemiBold',
-    fontSize: 10,
-    color: 'rgba(255,255,255,0.6)',
-    letterSpacing: 4,
-    marginBottom: 8,
-  },
-  senhaNumero: {
-    fontFamily: 'Manrope_800ExtraBold',
-    fontSize: 72,
-    color: '#FFFFFF',
-    letterSpacing: 12,
-  },
-  senhaInstrucao: {
-    fontFamily: 'Manrope_500Medium',
-    fontSize: 10,
-    color: '#555555',
-    letterSpacing: 2,
-    marginBottom: 32,
-  },
-  resumoCard: {
-    backgroundColor: '#111111',
-    borderRadius: 16,
-    padding: 20,
-    width: '100%',
-    marginBottom: 16,
-  },
-  resumoLinha: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  resumoLabel: {
-    fontFamily: 'Manrope_600SemiBold',
-    fontSize: 11,
-    color: '#555555',
-    letterSpacing: 2,
-  },
-  resumoValor: {
-    fontFamily: 'Manrope_700Bold',
-    fontSize: 14,
-    color: '#FFFFFF',
-  },
-  divisor: {
-    height: 1,
-    backgroundColor: '#1A1A1A',
-    marginVertical: 14,
-  },
-  resumoDetalhe: {
-    fontFamily: 'Manrope_400Regular',
-    fontSize: 13,
-    color: '#666666',
-    lineHeight: 22,
-  },
-  totalLabel: {
-    fontFamily: 'Manrope_700Bold',
-    fontSize: 13,
-    color: '#FFFFFF',
-    letterSpacing: 2,
-  },
-  totalValor: {
-    fontFamily: 'Manrope_800ExtraBold',
-    fontSize: 22,
-    color: '#ED145B',
-  },
-  avisoContainer: {
-    backgroundColor: '#111111',
-    borderRadius: 12,
-    padding: 14,
-    width: '100%',
-    marginBottom: 28,
-    borderLeftWidth: 3,
-    borderLeftColor: '#ED145B',
-  },
-  avisoTexto: {
-    fontFamily: 'Manrope_600SemiBold',
-    fontSize: 10,
-    color: '#666666',
-    letterSpacing: 2,
-    lineHeight: 18,
-  },
-  botaoPrimario: {
-    backgroundColor: '#ED145B',
-    paddingVertical: 16,
-    borderRadius: 100,
-    alignItems: 'center',
-    width: '100%',
-    marginBottom: 10,
-  },
-  botaoPrimarioTexto: {
-    fontFamily: 'Manrope_700Bold',
-    color: '#FFFFFF',
-    fontSize: 12,
-    letterSpacing: 2,
-  },
-  botaoSecundario: {
-    backgroundColor: 'transparent',
-    paddingVertical: 14,
-    borderRadius: 100,
-    alignItems: 'center',
-    width: '100%',
-    borderWidth: 1,
-    borderColor: '#1A1A1A',
-  },
-  botaoSecundarioTexto: {
-    fontFamily: 'Manrope_600SemiBold',
-    color: '#555555',
-    fontSize: 12,
-    letterSpacing: 2,
-  },
-});
+const createStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: c.bg,
+      justifyContent: 'center',
+    },
+    content: {
+      alignItems: 'center',
+      paddingHorizontal: spacing['2xl'],
+    },
+    checkCircle: {
+      width: 64,
+      height: 64,
+      borderRadius: 32,
+      backgroundColor: c.success,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: spacing.xl,
+    },
+    confirmado: {
+      fontFamily: fontFamily.extrabold,
+      fontSize: fontSize.base,
+      color: c.text,
+      letterSpacing: letterSpacing.widest,
+      marginBottom: spacing['3xl'],
+    },
+    senhaContainer: {
+      backgroundColor: c.primary,
+      borderRadius: radius['2xl'],
+      paddingVertical: spacing['3xl'],
+      paddingHorizontal: spacing['5xl'],
+      alignItems: 'center',
+      marginBottom: spacing.md,
+    },
+    senhaLabel: {
+      fontFamily: fontFamily.semibold,
+      fontSize: fontSize.xs,
+      color: 'rgba(255,255,255,0.7)',
+      letterSpacing: letterSpacing.widest,
+      marginBottom: spacing.sm,
+    },
+    senhaNumero: {
+      fontFamily: fontFamily.extrabold,
+      fontSize: fontSize['6xl'],
+      color: c.primaryText,
+      letterSpacing: 12,
+    },
+    senhaInstrucao: {
+      fontFamily: fontFamily.medium,
+      fontSize: fontSize.xs,
+      color: c.textSubtle,
+      letterSpacing: letterSpacing.wide,
+      marginBottom: spacing['3xl'],
+    },
+    resumoCard: {
+      backgroundColor: c.card,
+      borderRadius: radius.lg,
+      padding: spacing.xl,
+      width: '100%',
+      marginBottom: spacing.lg,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    resumoLinha: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    resumoLabel: {
+      fontFamily: fontFamily.semibold,
+      fontSize: fontSize.sm,
+      color: c.textSubtle,
+      letterSpacing: letterSpacing.wide,
+    },
+    resumoValor: {
+      fontFamily: fontFamily.bold,
+      fontSize: fontSize.base,
+      color: c.text,
+    },
+    divisor: {
+      height: 1,
+      backgroundColor: c.border,
+      marginVertical: spacing.md + 2,
+    },
+    resumoDetalhe: {
+      fontFamily: fontFamily.regular,
+      fontSize: fontSize.md,
+      color: c.textMuted,
+      lineHeight: 22,
+    },
+    totalLabel: {
+      fontFamily: fontFamily.bold,
+      fontSize: fontSize.md,
+      color: c.text,
+      letterSpacing: letterSpacing.wide,
+    },
+    totalValor: {
+      fontFamily: fontFamily.extrabold,
+      fontSize: fontSize['2xl'],
+      color: c.primary,
+    },
+    avisoContainer: {
+      backgroundColor: c.card,
+      borderRadius: radius.md,
+      padding: spacing.md + 2,
+      width: '100%',
+      marginBottom: spacing['2xl'] + 4,
+      borderLeftWidth: 3,
+      borderLeftColor: c.primary,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    avisoTexto: {
+      fontFamily: fontFamily.semibold,
+      fontSize: fontSize.xs,
+      color: c.textMuted,
+      letterSpacing: letterSpacing.wide,
+      lineHeight: 18,
+    },
+    botaoPrimario: {
+      backgroundColor: c.primary,
+      paddingVertical: spacing.lg,
+      borderRadius: radius.full,
+      alignItems: 'center',
+      width: '100%',
+      marginBottom: spacing.sm + 2,
+    },
+    botaoPrimarioTexto: {
+      fontFamily: fontFamily.bold,
+      color: c.primaryText,
+      fontSize: fontSize.md,
+      letterSpacing: letterSpacing.wide,
+    },
+    botaoSecundario: {
+      backgroundColor: 'transparent',
+      paddingVertical: spacing.md + 2,
+      borderRadius: radius.full,
+      alignItems: 'center',
+      width: '100%',
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    botaoSecundarioTexto: {
+      fontFamily: fontFamily.semibold,
+      color: c.textMuted,
+      fontSize: fontSize.md,
+      letterSpacing: letterSpacing.wide,
+    },
+  });

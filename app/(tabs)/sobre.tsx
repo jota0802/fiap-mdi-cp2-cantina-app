@@ -1,160 +1,119 @@
+import { useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
-import FiapLogo from '../../components/FiapLogo';
+
+import FiapLogo from '@/components/FiapLogo';
+import { useTheme } from '@/context/ThemeContext';
+import { fontFamily, fontSize, letterSpacing, radius, spacing } from '@/constants/theme';
+import type { ThemeColors } from '@/types';
+
+const INTEGRANTES = [
+  { iniciais: 'LB', nome: 'LUCCA BORGES', rm: 'RM 554608' },
+  { iniciais: 'RM', nome: 'RUAN MELO', rm: 'RM 557599' },
+  { iniciais: 'RJ', nome: 'RODRIGO JIMENEZ', rm: 'RM 558148' },
+  { iniciais: 'JV', nome: 'JOÃO VICTOR FRANCO', rm: 'RM 556790' },
+] as const;
+
+const TECNOLOGIAS = [
+  'REACT NATIVE',
+  'EXPO',
+  'EXPO ROUTER',
+  'TYPESCRIPT',
+  'CONTEXT API',
+  'ASYNCSTORAGE',
+] as const;
 
 export default function Sobre() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   return (
     <View style={styles.container}>
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <View style={styles.logoContainer}>
-            <FiapLogo width={60} color="#ED145B" />
+            <FiapLogo width={60} color={colors.primary} />
           </View>
-          <Text style={styles.appNome}>CANTINA FIAP</Text>
-          <Text style={styles.versao}>V 1.0.0</Text>
+          <Text style={styles.appNome}>APP CANTINA</Text>
+          <Text style={styles.versao}>V 2.0.0</Text>
         </View>
 
         <View style={styles.card}>
           <Text style={styles.cardTitulo}>SOBRE O PROJETO</Text>
           <Text style={styles.cardTexto}>
-            Aplicativo mobile para pedidos na cantina da FIAP. Faça seu pedido
-            pelo celular e receba uma senha para retirar no balcão, eliminando
-            filas e tempo de espera.
+            Aplicativo mobile para pedidos na cantina da FIAP. Faça seu pedido pelo celular e receba uma
+            senha para retirar no balcão, eliminando filas e tempo de espera.
           </Text>
         </View>
 
         <View style={styles.card}>
           <Text style={styles.cardTitulo}>PROBLEMA</Text>
           <Text style={styles.cardTexto}>
-            Filas longas na cantina durante intervalos geram perda de tempo e
-            incerteza sobre disponibilidade dos itens. Alunos frequentemente
-            desistem de comprar por falta de tempo entre aulas.
+            Filas longas na cantina durante intervalos geram perda de tempo e incerteza sobre disponibilidade
+            dos itens. Alunos frequentemente desistem de comprar por falta de tempo entre aulas.
           </Text>
         </View>
 
         <View style={styles.card}>
           <Text style={styles.cardTitulo}>SOLUÇÃO</Text>
-          <View style={styles.listaItem}>
-            <View style={styles.bullet} />
-            <Text style={styles.listaTexto}>
-              Cardápio digital com preços atualizados
-            </Text>
-          </View>
-          <View style={styles.listaItem}>
-            <View style={styles.bullet} />
-            <Text style={styles.listaTexto}>
-              Pedidos pelo app sem enfrentar fila
-            </Text>
-          </View>
-          <View style={styles.listaItem}>
-            <View style={styles.bullet} />
-            <Text style={styles.listaTexto}>
-              Sistema de senha para retirada organizada
-            </Text>
-          </View>
-          <View style={styles.listaItem}>
-            <View style={styles.bullet} />
-            <Text style={styles.listaTexto}>
-              Resumo do pedido com valor total
-            </Text>
-          </View>
+          {[
+            'Cardápio digital com preços atualizados',
+            'Pedidos pelo app sem enfrentar fila',
+            'Sistema de senha para retirada organizada',
+            'Resumo do pedido com valor total',
+          ].map((texto) => (
+            <View key={texto} style={styles.listaItem}>
+              <View style={styles.bullet} />
+              <Text style={styles.listaTexto}>{texto}</Text>
+            </View>
+          ))}
         </View>
 
         <View style={styles.card}>
           <Text style={styles.cardTitulo}>INTEGRANTES</Text>
-          <View style={styles.integranteRow}>
-            <View style={styles.integranteAvatarPlaceholder}>
-              <Text style={styles.integranteInicial}>LB</Text>
+          {INTEGRANTES.map((p, idx) => (
+            <View key={p.rm}>
+              <View style={styles.integranteRow}>
+                <View style={styles.integranteAvatarPlaceholder}>
+                  <Text style={styles.integranteInicial}>{p.iniciais}</Text>
+                </View>
+                <View style={styles.integranteInfo}>
+                  <Text style={styles.integranteNome}>{p.nome}</Text>
+                  <Text style={styles.integranteRM}>{p.rm}</Text>
+                </View>
+              </View>
+              {idx < INTEGRANTES.length - 1 ? <View style={styles.integranteDivisor} /> : null}
             </View>
-            <View style={styles.integranteInfo}>
-              <Text style={styles.integranteNome}>LUCCA BORGES</Text>
-              <Text style={styles.integranteRM}>RM 554608</Text>
-            </View>
-          </View>
-          <View style={styles.integranteDivisor} />
-          <View style={styles.integranteRow}>
-            <View style={styles.integranteAvatarPlaceholder}>
-              <Text style={styles.integranteInicial}>RM</Text>
-            </View>
-            <View style={styles.integranteInfo}>
-              <Text style={styles.integranteNome}>RUAN MELO</Text>
-              <Text style={styles.integranteRM}>RM 557599</Text>
-            </View>
-          </View>
-          <View style={styles.integranteDivisor} />
-          <View style={styles.integranteRow}>
-            <View style={styles.integranteAvatarPlaceholder}>
-              <Text style={styles.integranteInicial}>RJ</Text>
-            </View>
-            <View style={styles.integranteInfo}>
-              <Text style={styles.integranteNome}>RODRIGO JIMENEZ</Text>
-              <Text style={styles.integranteRM}>RM 558148</Text>
-            </View>
-          </View>
-          <View style={styles.integranteDivisor} />
-          <View style={styles.integranteRow}>
-            <View style={styles.integranteAvatarPlaceholder}>
-              <Text style={styles.integranteInicial}>JV</Text>
-            </View>
-            <View style={styles.integranteInfo}>
-              <Text style={styles.integranteNome}>JOÃO VICTOR FRANCO</Text>
-              <Text style={styles.integranteRM}>RM 556790</Text>
-            </View>
-          </View>
+          ))}
         </View>
 
         <View style={styles.card}>
           <Text style={styles.cardTitulo}>TECNOLOGIAS</Text>
           <View style={styles.techGrid}>
-            <View style={styles.techBadge}>
-              <Text style={styles.techTexto}>REACT NATIVE</Text>
-            </View>
-            <View style={styles.techBadge}>
-              <Text style={styles.techTexto}>EXPO</Text>
-            </View>
-            <View style={styles.techBadge}>
-              <Text style={styles.techTexto}>EXPO ROUTER</Text>
-            </View>
-            <View style={styles.techBadge}>
-              <Text style={styles.techTexto}>JAVASCRIPT</Text>
-            </View>
+            {TECNOLOGIAS.map((t) => (
+              <View key={t} style={styles.techBadge}>
+                <Text style={styles.techTexto}>{t}</Text>
+              </View>
+            ))}
           </View>
         </View>
 
         <View style={styles.card}>
           <Text style={styles.cardTitulo}>DECISÕES TÉCNICAS</Text>
-          <View style={styles.listaItem}>
-            <View style={styles.bullet} />
-            <Text style={styles.listaTexto}>
-              Expo Router com Tabs + Stack para navegação híbrida
-            </Text>
-          </View>
-          <View style={styles.listaItem}>
-            <View style={styles.bullet} />
-            <Text style={styles.listaTexto}>
-              useState para gerenciar o carrinho de pedidos
-            </Text>
-          </View>
-          <View style={styles.listaItem}>
-            <View style={styles.bullet} />
-            <Text style={styles.listaTexto}>
-              useEffect para gerar a senha na confirmação
-            </Text>
-          </View>
-          <View style={styles.listaItem}>
-            <View style={styles.bullet} />
-            <Text style={styles.listaTexto}>
-              Componentes reutilizáveis (ItemCardapio, FiapLogo)
-            </Text>
-          </View>
+          {[
+            'Expo Router com Tabs + Stack para navegação híbrida',
+            'TypeScript strict em todo o projeto para segurança de tipos',
+            'Context API para estado global (tema, autenticação, carrinho)',
+            'Componentes reutilizáveis com paleta dinâmica via useTheme',
+          ].map((texto) => (
+            <View key={texto} style={styles.listaItem}>
+              <View style={styles.bullet} />
+              <Text style={styles.listaTexto}>{texto}</Text>
+            </View>
+          ))}
         </View>
 
         <View style={styles.footer}>
-          <Text style={styles.footerTexto}>
-            FIAP — ENGENHARIA DE SOFTWARE — 3º ANO
-          </Text>
+          <Text style={styles.footerTexto}>FIAP — ENGENHARIA DE SOFTWARE — 3º ANO</Text>
           <Text style={styles.footerTexto}>MOBILE DEVELOPMENT & IOT — 2026</Text>
         </View>
       </ScrollView>
@@ -162,147 +121,145 @@ export default function Sobre() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#0A0A0A',
-  },
-  scrollContent: {
-    paddingBottom: 40,
-  },
-  header: {
-    alignItems: 'center',
-    paddingTop: 64,
-    paddingBottom: 36,
-    gap: 6,
-  },
-  logoContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 20,
-    backgroundColor: '#111111',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 12,
-  },
-  appNome: {
-    fontFamily: 'Manrope_800ExtraBold',
-    fontSize: 22,
-    color: '#FFFFFF',
-    letterSpacing: 5,
-  },
-  versao: {
-    fontFamily: 'Manrope_500Medium',
-    fontSize: 10,
-    color: '#444444',
-    letterSpacing: 3,
-  },
-  card: {
-    backgroundColor: '#111111',
-    marginHorizontal: 20,
-    marginBottom: 10,
-    borderRadius: 16,
-    padding: 20,
-  },
-  cardTitulo: {
-    fontFamily: 'Manrope_800ExtraBold',
-    fontSize: 11,
-    color: '#ED145B',
-    letterSpacing: 3,
-    marginBottom: 12,
-  },
-  cardTexto: {
-    fontFamily: 'Manrope_400Regular',
-    fontSize: 14,
-    color: '#666666',
-    lineHeight: 22,
-  },
-  listaItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
-    gap: 12,
-  },
-  bullet: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: '#ED145B',
-  },
-  listaTexto: {
-    fontFamily: 'Manrope_400Regular',
-    fontSize: 13,
-    color: '#666666',
-    flex: 1,
-    lineHeight: 20,
-  },
-  integranteRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-  },
-  integranteAvatarPlaceholder: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#1A1A1A',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  integranteInicial: {
-    fontFamily: 'Manrope_700Bold',
-    fontSize: 14,
-    color: '#ED145B',
-    letterSpacing: 1,
-  },
-  integranteDivisor: {
-    height: 1,
-    backgroundColor: '#1A1A1A',
-    marginVertical: 12,
-  },
-  integranteInfo: {
-    flex: 1,
-  },
-  integranteNome: {
-    fontFamily: 'Manrope_700Bold',
-    fontSize: 13,
-    color: '#FFFFFF',
-    letterSpacing: 1,
-  },
-  integranteRM: {
-    fontFamily: 'Manrope_500Medium',
-    fontSize: 11,
-    color: '#555555',
-    letterSpacing: 1,
-    marginTop: 2,
-  },
-  techGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  techBadge: {
-    backgroundColor: '#1A1A1A',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 100,
-  },
-  techTexto: {
-    fontFamily: 'Manrope_600SemiBold',
-    fontSize: 10,
-    color: '#888888',
-    letterSpacing: 1,
-  },
-  footer: {
-    alignItems: 'center',
-    paddingTop: 28,
-    paddingBottom: 10,
-    gap: 4,
-  },
-  footerTexto: {
-    fontFamily: 'Manrope_500Medium',
-    fontSize: 10,
-    color: '#333333',
-    letterSpacing: 2,
-  },
-});
+const createStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: c.bg },
+    scrollContent: { paddingBottom: spacing['4xl'] },
+    header: {
+      alignItems: 'center',
+      paddingTop: spacing['6xl'],
+      paddingBottom: spacing['4xl'] - 4,
+      gap: spacing.xs + 2,
+    },
+    logoContainer: {
+      width: 80,
+      height: 80,
+      borderRadius: radius.xl,
+      backgroundColor: c.card,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: spacing.md,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    appNome: {
+      fontFamily: fontFamily.extrabold,
+      fontSize: fontSize['2xl'],
+      color: c.text,
+      letterSpacing: 5,
+    },
+    versao: {
+      fontFamily: fontFamily.medium,
+      fontSize: fontSize.xs,
+      color: c.textSubtle,
+      letterSpacing: letterSpacing.wider,
+    },
+    card: {
+      backgroundColor: c.card,
+      marginHorizontal: spacing.xl,
+      marginBottom: spacing.sm + 2,
+      borderRadius: radius.lg,
+      padding: spacing.xl,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    cardTitulo: {
+      fontFamily: fontFamily.extrabold,
+      fontSize: fontSize.sm,
+      color: c.primary,
+      letterSpacing: letterSpacing.wider,
+      marginBottom: spacing.md,
+    },
+    cardTexto: {
+      fontFamily: fontFamily.regular,
+      fontSize: fontSize.base,
+      color: c.textMuted,
+      lineHeight: 22,
+    },
+    listaItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: spacing.sm + 2,
+      gap: spacing.md,
+    },
+    bullet: {
+      width: 4,
+      height: 4,
+      borderRadius: 2,
+      backgroundColor: c.primary,
+    },
+    listaTexto: {
+      fontFamily: fontFamily.regular,
+      fontSize: fontSize.md,
+      color: c.textMuted,
+      flex: 1,
+      lineHeight: 20,
+    },
+    integranteRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md + 2,
+    },
+    integranteAvatarPlaceholder: {
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      backgroundColor: c.cardElevated,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    integranteInicial: {
+      fontFamily: fontFamily.bold,
+      fontSize: fontSize.base,
+      color: c.primary,
+      letterSpacing: letterSpacing.normal,
+    },
+    integranteDivisor: {
+      height: 1,
+      backgroundColor: c.border,
+      marginVertical: spacing.md,
+    },
+    integranteInfo: { flex: 1 },
+    integranteNome: {
+      fontFamily: fontFamily.bold,
+      fontSize: fontSize.md,
+      color: c.text,
+      letterSpacing: letterSpacing.normal,
+    },
+    integranteRM: {
+      fontFamily: fontFamily.medium,
+      fontSize: fontSize.sm,
+      color: c.textSubtle,
+      letterSpacing: letterSpacing.normal,
+      marginTop: 2,
+    },
+    techGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: spacing.sm,
+    },
+    techBadge: {
+      backgroundColor: c.cardElevated,
+      paddingHorizontal: spacing.md + 2,
+      paddingVertical: spacing.sm,
+      borderRadius: radius.full,
+    },
+    techTexto: {
+      fontFamily: fontFamily.semibold,
+      fontSize: fontSize.xs,
+      color: c.textMuted,
+      letterSpacing: letterSpacing.normal,
+    },
+    footer: {
+      alignItems: 'center',
+      paddingTop: spacing['2xl'] + 4,
+      paddingBottom: spacing.sm + 2,
+      gap: spacing.xs,
+    },
+    footerTexto: {
+      fontFamily: fontFamily.medium,
+      fontSize: fontSize.xs,
+      color: c.textSubtle,
+      letterSpacing: letterSpacing.wide,
+    },
+  });

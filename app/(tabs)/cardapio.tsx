@@ -1,14 +1,27 @@
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+} from 'react-native';
 import { useRouter } from 'expo-router';
+
 import CARDAPIO from '@/data/cardapio';
 import ItemCardapio from '@/components/ItemCardapio';
-import type { Categoria } from '@/types';
+import EmptyState from '@/components/EmptyState';
+import { useTheme } from '@/context/ThemeContext';
+import { fontFamily, fontSize, letterSpacing, radius, spacing } from '@/constants/theme';
+import type { Categoria, ThemeColors } from '@/types';
 
 type Quantidades = Record<number, number>;
 
 export default function Cardapio() {
   const router = useRouter();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const [quantidades, setQuantidades] = useState<Quantidades>({});
 
   const adicionarItem = (id: number) => {
@@ -30,10 +43,7 @@ export default function Cardapio() {
     });
   };
 
-  const totalItens = Object.values(quantidades).reduce<number>(
-    (acc, qty) => acc + qty,
-    0
-  );
+  const totalItens = Object.values(quantidades).reduce<number>((acc, qty) => acc + qty, 0);
 
   const totalPreco = Object.entries(quantidades).reduce<number>((acc, [id, qty]) => {
     const item = CARDAPIO.find((i) => i.id === Number(id));
@@ -41,7 +51,7 @@ export default function Cardapio() {
   }, 0);
 
   const categorias: Categoria[] = Array.from(
-    new Set(CARDAPIO.map((item) => item.categoria))
+    new Set(CARDAPIO.map((item) => item.categoria)),
   );
 
   const confirmarPedido = () => {
@@ -78,33 +88,30 @@ export default function Cardapio() {
         {categorias.map((categoria) => (
           <View key={categoria} style={styles.categoriaSection}>
             <Text style={styles.categoriaTitulo}>{categoria.toUpperCase()}</Text>
-            {CARDAPIO.filter((item) => item.categoria === categoria).map(
-              (item) => (
-                <ItemCardapio
-                  key={item.id}
-                  item={item}
-                  quantidade={quantidades[item.id] ?? 0}
-                  onAdicionar={adicionarItem}
-                  onRemover={removerItem}
-                />
-              )
-            )}
+            {CARDAPIO.filter((item) => item.categoria === categoria).map((item) => (
+              <ItemCardapio
+                key={item.id}
+                item={item}
+                quantidade={quantidades[item.id] ?? 0}
+                onAdicionar={adicionarItem}
+                onRemover={removerItem}
+              />
+            ))}
           </View>
         ))}
 
-        {totalItens === 0 && (
-          <View style={styles.estadoVazio}>
-            <Text style={styles.estadoVazioEmoji}>{'\uD83D\uDC47'}</Text>
-            <Text style={styles.estadoVazioTexto}>
-              TOQUE NO + PARA ADICIONAR ITENS
-            </Text>
-          </View>
-        )}
+        {totalItens === 0 ? (
+          <EmptyState
+            emoji={'👇'}
+            title="Toque no + para adicionar itens"
+            subtitle="Monte seu pedido para liberar a confirmação"
+          />
+        ) : null}
 
         <View style={styles.espacoFinal} />
       </ScrollView>
 
-      {totalItens > 0 && (
+      {totalItens > 0 ? (
         <View style={styles.barraInferior}>
           <View style={styles.resumo}>
             <Text style={styles.resumoItens}>
@@ -115,109 +122,88 @@ export default function Cardapio() {
           <TouchableOpacity
             style={styles.botaoConfirmar}
             onPress={confirmarPedido}
+            activeOpacity={0.85}
           >
             <Text style={styles.botaoConfirmarTexto}>CONFIRMAR</Text>
           </TouchableOpacity>
         </View>
-      )}
+      ) : null}
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#0A0A0A',
-  },
-  header: {
-    paddingTop: 60,
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-  },
-  titulo: {
-    fontFamily: 'Manrope_800ExtraBold',
-    fontSize: 28,
-    color: '#FFFFFF',
-    letterSpacing: 6,
-  },
-  subtitulo: {
-    fontFamily: 'Manrope_500Medium',
-    fontSize: 11,
-    color: '#555555',
-    letterSpacing: 3,
-    marginTop: 4,
-  },
-  scrollContent: {
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-  },
-  categoriaSection: {
-    marginBottom: 12,
-  },
-  categoriaTitulo: {
-    fontFamily: 'Manrope_800ExtraBold',
-    fontSize: 11,
-    color: '#ED145B',
-    letterSpacing: 3,
-    marginBottom: 12,
-    marginTop: 8,
-  },
-  estadoVazio: {
-    alignItems: 'center',
-    paddingVertical: 48,
-  },
-  estadoVazioEmoji: {
-    fontSize: 32,
-    marginBottom: 12,
-  },
-  estadoVazioTexto: {
-    fontFamily: 'Manrope_600SemiBold',
-    fontSize: 11,
-    color: '#444444',
-    letterSpacing: 2,
-  },
-  espacoFinal: {
-    height: 100,
-  },
-  barraInferior: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: '#111111',
-    borderTopWidth: 1,
-    borderTopColor: '#1A1A1A',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  resumo: {
-    flex: 1,
-  },
-  resumoItens: {
-    fontFamily: 'Manrope_600SemiBold',
-    fontSize: 10,
-    color: '#555555',
-    letterSpacing: 2,
-  },
-  resumoTotal: {
-    fontFamily: 'Manrope_800ExtraBold',
-    fontSize: 22,
-    color: '#FFFFFF',
-    marginTop: 2,
-  },
-  botaoConfirmar: {
-    backgroundColor: '#ED145B',
-    paddingHorizontal: 28,
-    paddingVertical: 14,
-    borderRadius: 100,
-  },
-  botaoConfirmarTexto: {
-    fontFamily: 'Manrope_700Bold',
-    color: '#FFFFFF',
-    fontSize: 12,
-    letterSpacing: 2,
-  },
-});
+const createStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: c.bg },
+    header: {
+      paddingTop: 60,
+      paddingHorizontal: spacing.xl,
+      paddingBottom: spacing.xl,
+    },
+    titulo: {
+      fontFamily: fontFamily.extrabold,
+      fontSize: fontSize['3xl'],
+      color: c.text,
+      letterSpacing: letterSpacing.ultra,
+    },
+    subtitulo: {
+      fontFamily: fontFamily.medium,
+      fontSize: fontSize.sm,
+      color: c.textSubtle,
+      letterSpacing: letterSpacing.wider,
+      marginTop: spacing.xs,
+    },
+    scrollContent: {
+      paddingHorizontal: spacing.xl,
+      paddingBottom: spacing.xl,
+    },
+    categoriaSection: { marginBottom: spacing.md },
+    categoriaTitulo: {
+      fontFamily: fontFamily.extrabold,
+      fontSize: fontSize.sm,
+      color: c.primary,
+      letterSpacing: letterSpacing.wider,
+      marginBottom: spacing.md,
+      marginTop: spacing.sm,
+    },
+    espacoFinal: { height: 100 },
+    barraInferior: {
+      position: 'absolute',
+      bottom: 0,
+      left: 0,
+      right: 0,
+      backgroundColor: c.card,
+      borderTopWidth: 1,
+      borderTopColor: c.border,
+      paddingHorizontal: spacing.xl,
+      paddingVertical: spacing.lg,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    resumo: { flex: 1 },
+    resumoItens: {
+      fontFamily: fontFamily.semibold,
+      fontSize: fontSize.xs,
+      color: c.textSubtle,
+      letterSpacing: letterSpacing.wide,
+    },
+    resumoTotal: {
+      fontFamily: fontFamily.extrabold,
+      fontSize: fontSize['2xl'],
+      color: c.text,
+      marginTop: 2,
+    },
+    botaoConfirmar: {
+      backgroundColor: c.primary,
+      paddingHorizontal: spacing['2xl'] + 4,
+      paddingVertical: spacing.md + 2,
+      borderRadius: radius.full,
+    },
+    botaoConfirmarTexto: {
+      fontFamily: fontFamily.bold,
+      color: c.primaryText,
+      fontSize: fontSize.md,
+      letterSpacing: letterSpacing.wide,
+    },
+  });
