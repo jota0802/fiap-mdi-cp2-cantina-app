@@ -21,7 +21,6 @@ import { haptic } from '@/lib/haptics';
 import {
   fontFamily,
   fontSize,
-  letterSpacing,
   radius,
   shadow,
   spacing,
@@ -168,7 +167,6 @@ export default function CarrinhoScreen() {
           <Ionicons name="chevron-back" size={20} color={colors.text} />
         </Pressable>
         <View style={styles.headerCenter}>
-          <Text style={styles.headerEyebrow}>SEU PEDIDO</Text>
           <Text style={styles.headerTitulo}>Carrinho</Text>
         </View>
         {items.length > 0 ? (
@@ -319,17 +317,10 @@ const createStyles = (c: ThemeColors) =>
       alignItems: 'center',
       flex: 1,
     },
-    headerEyebrow: {
-      fontFamily: fontFamily.semibold,
-      fontSize: fontSize.xs,
-      color: c.textSubtle,
-      letterSpacing: letterSpacing.widest,
-    },
     headerTitulo: {
       fontFamily: fontFamily.bold,
       fontSize: fontSize.xl,
       color: c.text,
-      marginTop: 2,
     },
     scrollContent: {
       paddingHorizontal: spacing.xl,

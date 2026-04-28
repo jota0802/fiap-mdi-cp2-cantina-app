@@ -21,7 +21,7 @@ import { useFadeIn } from '@/hooks/useFadeIn';
 import { useShake } from '@/hooks/useShake';
 import { haptic } from '@/lib/haptics';
 import { validateEmail, validateSenha } from '@/lib/validation';
-import { fontFamily, fontSize, letterSpacing, spacing } from '@/constants/theme';
+import { fontFamily, fontSize, spacing } from '@/constants/theme';
 import type { ThemeColors } from '@/types';
 
 type Errors = {
@@ -97,7 +97,6 @@ export default function LoginScreen() {
       >
         <Animated.View style={[styles.header, { opacity, transform: [{ translateY }] }]}>
           <FiapLogo width={64} color={colors.primary} />
-          <Text style={styles.eyebrow}>CANTINA FIAP</Text>
           <Text style={styles.titulo}>Bem-vindo</Text>
           <Text style={styles.subtitulo}>Entre para fazer seus pedidos</Text>
         </Animated.View>
@@ -168,18 +167,11 @@ const createStyles = (c: ThemeColors) =>
       alignItems: 'center',
       marginBottom: spacing['2xl'],
     },
-    eyebrow: {
-      fontFamily: fontFamily.semibold,
-      fontSize: fontSize.xs,
-      color: c.textSubtle,
-      letterSpacing: letterSpacing.widest,
-      marginTop: spacing.lg,
-    },
     titulo: {
       fontFamily: fontFamily.extrabold,
       fontSize: fontSize['3xl'],
       color: c.text,
-      marginTop: spacing.xs,
+      marginTop: spacing.lg,
     },
     subtitulo: {
       fontFamily: fontFamily.medium,

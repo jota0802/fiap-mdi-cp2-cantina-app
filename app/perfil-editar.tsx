@@ -24,7 +24,6 @@ import { validateEmail, validateNome } from '@/lib/validation';
 import {
   fontFamily,
   fontSize,
-  letterSpacing,
   radius,
   spacing,
 } from '@/constants/theme';
@@ -113,7 +112,6 @@ export default function PerfilEditarScreen() {
           <Ionicons name="chevron-back" size={20} color={colors.text} />
         </Pressable>
         <View style={styles.headerCenter}>
-          <Text style={styles.headerEyebrow}>SEUS DADOS</Text>
           <Text style={styles.headerTitulo}>Editar perfil</Text>
         </View>
         <View style={styles.iconButtonSpacer} />
@@ -210,17 +208,10 @@ const createStyles = (c: ThemeColors) =>
       alignItems: 'center',
       flex: 1,
     },
-    headerEyebrow: {
-      fontFamily: fontFamily.semibold,
-      fontSize: fontSize.xs,
-      color: c.textSubtle,
-      letterSpacing: letterSpacing.widest,
-    },
     headerTitulo: {
       fontFamily: fontFamily.bold,
       fontSize: fontSize.xl,
       color: c.text,
-      marginTop: 2,
     },
     scroll: {
       paddingHorizontal: spacing.xl,

@@ -102,7 +102,6 @@ export default function Cardapio() {
       <View style={[styles.header, { paddingTop: insets.top + spacing.md }]}>
         <View style={styles.tituloRow}>
           <View style={styles.tituloCol}>
-            <Text style={styles.eyebrow}>O QUE VAMOS PEDIR HOJE</Text>
             <Text style={styles.titulo}>Cardápio</Text>
           </View>
 
@@ -262,17 +261,10 @@ const createStyles = (c: ThemeColors) =>
       marginBottom: spacing.lg,
     },
     tituloCol: { flex: 1 },
-    eyebrow: {
-      fontFamily: fontFamily.semibold,
-      fontSize: fontSize.xs,
-      color: c.textSubtle,
-      letterSpacing: letterSpacing.widest,
-    },
     titulo: {
       fontFamily: fontFamily.extrabold,
       fontSize: fontSize['3xl'],
       color: c.text,
-      marginTop: spacing.xs,
     },
     badge: {
       flexDirection: 'row',

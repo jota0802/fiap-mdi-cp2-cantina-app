@@ -26,7 +26,7 @@ import {
   validateNome,
   validateSenha,
 } from '@/lib/validation';
-import { fontFamily, fontSize, letterSpacing, spacing } from '@/constants/theme';
+import { fontFamily, fontSize, spacing } from '@/constants/theme';
 import type { ThemeColors } from '@/types';
 
 type FormValues = {
@@ -121,7 +121,6 @@ export default function CadastroScreen() {
       >
         <Animated.View style={[styles.header, { opacity, transform: [{ translateY }] }]}>
           <FiapLogo width={64} color={colors.primary} />
-          <Text style={styles.eyebrow}>CANTINA FIAP</Text>
           <Text style={styles.titulo}>Criar conta</Text>
           <Text style={styles.subtitulo}>Cadastre-se para começar a usar</Text>
         </Animated.View>
@@ -211,18 +210,11 @@ const createStyles = (c: ThemeColors) =>
       alignItems: 'center',
       marginBottom: spacing['2xl'],
     },
-    eyebrow: {
-      fontFamily: fontFamily.semibold,
-      fontSize: fontSize.xs,
-      color: c.textSubtle,
-      letterSpacing: letterSpacing.widest,
-      marginTop: spacing.lg,
-    },
     titulo: {
       fontFamily: fontFamily.extrabold,
       fontSize: fontSize['3xl'],
       color: c.text,
-      marginTop: spacing.xs,
+      marginTop: spacing.lg,
     },
     subtitulo: {
       fontFamily: fontFamily.medium,

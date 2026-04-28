@@ -22,7 +22,6 @@ import { pickFromCamera, pickFromLibrary } from '@/lib/image-picker';
 import {
   fontFamily,
   fontSize,
-  letterSpacing,
   radius,
   shadow,
   spacing,
@@ -55,7 +54,7 @@ export default function PerfilScreen() {
   }>({ visible: false, message: '', variant: 'success' });
 
   if (!user) {
-    return <LoadingScreen label="CARREGANDO PERFIL" />;
+    return <LoadingScreen label="Carregando perfil" />;
   }
 
   const totalPedidos = orders.length;
@@ -120,7 +119,6 @@ export default function PerfilScreen() {
       >
         {/* Header compacto */}
         <View style={styles.header}>
-          <Text style={styles.eyebrow}>SUA CONTA</Text>
           <Text style={styles.tituloPagina}>Perfil</Text>
         </View>
 
@@ -341,17 +339,10 @@ const createStyles = (c: ThemeColors) =>
       paddingHorizontal: spacing.xl,
       marginBottom: spacing.lg,
     },
-    eyebrow: {
-      fontFamily: fontFamily.semibold,
-      fontSize: fontSize.xs,
-      color: c.textSubtle,
-      letterSpacing: letterSpacing.widest,
-    },
     tituloPagina: {
       fontFamily: fontFamily.extrabold,
       fontSize: fontSize['3xl'],
       color: c.text,
-      marginTop: spacing.xs,
     },
 
     /* User card */

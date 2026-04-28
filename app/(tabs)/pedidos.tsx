@@ -146,7 +146,6 @@ export default function PedidosScreen() {
     return (
       <View style={styles.container}>
         <View style={[styles.header, { paddingTop: insets.top + spacing.lg }]}>
-          <Text style={styles.eyebrow}>HISTÓRICO</Text>
           <Text style={styles.tituloPagina}>Pedidos</Text>
           <Text style={styles.subtitulo}>Carregando histórico</Text>
         </View>
@@ -162,7 +161,6 @@ export default function PedidosScreen() {
   return (
     <View style={styles.container}>
       <View style={[styles.header, { paddingTop: insets.top + spacing.lg }]}>
-        <Text style={styles.eyebrow}>HISTÓRICO</Text>
         <Text style={styles.tituloPagina}>Pedidos</Text>
         <Text style={styles.subtitulo}>
           {totalAtivos > 0
@@ -222,17 +220,10 @@ const createStyles = (c: ThemeColors) =>
       paddingHorizontal: spacing.xl,
       paddingBottom: spacing.lg,
     },
-    eyebrow: {
-      fontFamily: fontFamily.semibold,
-      fontSize: fontSize.xs,
-      color: c.textSubtle,
-      letterSpacing: letterSpacing.widest,
-    },
     tituloPagina: {
       fontFamily: fontFamily.extrabold,
       fontSize: fontSize['3xl'],
       color: c.text,
-      marginTop: spacing.xs,
     },
     subtitulo: {
       fontFamily: fontFamily.medium,
