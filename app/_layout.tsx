@@ -1,8 +1,25 @@
-import { useCallback, useEffect, useState } from 'react';
-import { LogBox, Platform } from 'react-native';
+import {
+  useFonts,
+  Manrope_400Regular,
+  Manrope_500Medium,
+  Manrope_600SemiBold,
+  Manrope_700Bold,
+  Manrope_800ExtraBold,
+} from '@expo-google-fonts/manrope';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useCallback, useEffect, useState } from 'react';
+import { LogBox, Platform } from 'react-native';
+
+import LoadingScreen from '@/components/LoadingScreen';
+import Onboarding from '@/components/Onboarding';
+import { STORAGE_KEYS } from '@/constants/storage-keys';
+import { AuthProvider, useAuth } from '@/context/AuthContext';
+import { CartProvider } from '@/context/CartContext';
+import { FavoritesProvider } from '@/context/FavoritesContext';
+import { OrdersProvider } from '@/context/OrdersContext';
+import { ThemeProvider, useTheme } from '@/context/ThemeContext';
 
 if (Platform.OS === 'web') {
   // RN Web emite warnings deprecation/runtime sem impacto funcional.
@@ -28,23 +45,6 @@ if (Platform.OS === 'web') {
     origWarn(...args);
   };
 }
-import {
-  useFonts,
-  Manrope_400Regular,
-  Manrope_500Medium,
-  Manrope_600SemiBold,
-  Manrope_700Bold,
-  Manrope_800ExtraBold,
-} from '@expo-google-fonts/manrope';
-
-import { AuthProvider, useAuth } from '@/context/AuthContext';
-import { CartProvider } from '@/context/CartContext';
-import { FavoritesProvider } from '@/context/FavoritesContext';
-import { OrdersProvider } from '@/context/OrdersContext';
-import { ThemeProvider, useTheme } from '@/context/ThemeContext';
-import LoadingScreen from '@/components/LoadingScreen';
-import Onboarding from '@/components/Onboarding';
-import { STORAGE_KEYS } from '@/constants/storage-keys';
 
 function useOnboarded() {
   const [onboarded, setOnboarded] = useState<boolean | null>(null);
@@ -116,10 +116,6 @@ function RootStack() {
   );
 }
 
-function ThemedSplash() {
-  return <LoadingScreen/>;
-}
-
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
     Manrope_400Regular,
@@ -135,7 +131,7 @@ export default function RootLayout() {
         <CartProvider>
           <OrdersProvider>
             <FavoritesProvider>
-              {fontsLoaded ? <RootStack /> : <ThemedSplash />}
+              {fontsLoaded ? <RootStack /> : <LoadingScreen />}
             </FavoritesProvider>
           </OrdersProvider>
         </CartProvider>

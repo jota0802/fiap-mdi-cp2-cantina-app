@@ -1,3 +1,6 @@
+import { Ionicons } from '@expo/vector-icons';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
+import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import {
   Pressable,
@@ -8,18 +11,10 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 
 import LoadingScreen from '@/components/LoadingScreen';
 import ProfileAvatar from '@/components/ProfileAvatar';
 import Toast from '@/components/Toast';
-import { useAuth } from '@/context/AuthContext';
-import { useOrders } from '@/context/OrdersContext';
-import { useTheme } from '@/context/ThemeContext';
-import { haptic } from '@/lib/haptics';
-import { pickFromCamera, pickFromLibrary } from '@/lib/image-picker';
 import {
   fontFamily,
   fontSize,
@@ -27,6 +22,11 @@ import {
   shadow,
   spacing,
 } from '@/constants/theme';
+import { useAuth } from '@/context/AuthContext';
+import { useOrders } from '@/context/OrdersContext';
+import { useTheme } from '@/context/ThemeContext';
+import { haptic } from '@/lib/haptics';
+import { pickFromCamera, pickFromLibrary } from '@/lib/image-picker';
 import type { ThemeColors } from '@/types';
 
 function formatarDataMembro(iso: string): string {
@@ -106,6 +106,8 @@ export default function PerfilScreen() {
     try {
       await updateUser({ fotoUri: undefined });
       showToast('Foto removida');
+    } catch {
+      showToast('Não foi possível remover a foto', 'error');
     } finally {
       setUpdatingPhoto(false);
     }
@@ -222,7 +224,7 @@ export default function PerfilScreen() {
               accessibilityRole="button"
               accessibilityLabel="Remover foto de perfil"
             >
-              <View style={[styles.fotoIconWrap, { backgroundColor: 'rgba(248, 113, 113, 0.14)' }]}>
+              <View style={[styles.fotoIconWrap, { backgroundColor: colors.errorSoft }]}>
                 <Ionicons name="trash-outline" size={18} color={colors.error} />
               </View>
               <Text style={[styles.fotoBotaoTexto, { color: colors.error }]}>Remover</Text>
@@ -311,7 +313,7 @@ export default function PerfilScreen() {
             accessibilityLabel="Sair da conta"
           >
             <View style={styles.linhaAcaoEsquerda}>
-              <View style={[styles.linhaAcaoIconWrap, { backgroundColor: 'rgba(248, 113, 113, 0.14)' }]}>
+              <View style={[styles.linhaAcaoIconWrap, { backgroundColor: colors.errorSoft }]}>
                 <Ionicons name="log-out-outline" size={18} color={colors.error} />
               </View>
               <View>

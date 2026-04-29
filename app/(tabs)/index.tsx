@@ -1,3 +1,6 @@
+import { Ionicons } from '@expo/vector-icons';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
+import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import {
   Animated,
@@ -8,25 +11,8 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 
-import CARDAPIO from '@/data/cardapio';
 import ItemThumbnail from '@/components/ItemThumbnail';
-import { useAuth } from '@/context/AuthContext';
-import { useCart } from '@/context/CartContext';
-import { useFavorites } from '@/context/FavoritesContext';
-import { useOrders } from '@/context/OrdersContext';
-import { useTheme } from '@/context/ThemeContext';
-import { useFadeIn } from '@/hooks/useFadeIn';
-import { haptic } from '@/lib/haptics';
-import {
-  getCombosDisponiveis,
-  getPeriodoAtual,
-  precoCombo,
-  type Combo,
-} from '@/lib/recomendacao';
 import {
   fontFamily,
   fontSize,
@@ -36,6 +22,20 @@ import {
   spacing,
   statusPalette,
 } from '@/constants/theme';
+import { useAuth } from '@/context/AuthContext';
+import { useCart } from '@/context/CartContext';
+import { useFavorites } from '@/context/FavoritesContext';
+import { useOrders } from '@/context/OrdersContext';
+import { useTheme } from '@/context/ThemeContext';
+import CARDAPIO from '@/data/cardapio';
+import { useFadeIn } from '@/hooks/useFadeIn';
+import { haptic } from '@/lib/haptics';
+import {
+  getCombosDisponiveis,
+  getPeriodoAtual,
+  precoCombo,
+  type Combo,
+} from '@/lib/recomendacao';
 import type { ItemCardapio, Order, ThemeColors } from '@/types';
 
 const DESTAQUES = CARDAPIO.filter((item) => [1, 5, 6, 8].includes(item.id));
@@ -134,6 +134,7 @@ export default function Home() {
   };
 
   const handleTrocarCombo = () => {
+    if (combosDisponiveis.length === 0) return;
     haptic.selection();
     setComboIndice((i) => (i + 1) % combosDisponiveis.length);
   };
@@ -374,7 +375,6 @@ export default function Home() {
                   key={order.id}
                   order={order}
                   styles={styles}
-                  colors={colors}
                   onPress={() => router.push(`/pedido/${order.id}`)}
                 />
               ))}
@@ -485,11 +485,10 @@ function ComboCard({
 type UltimoPedidoCardProps = {
   order: Order;
   styles: ReturnType<typeof createStyles>;
-  colors: ThemeColors;
   onPress: () => void;
 };
 
-function UltimoPedidoCard({ order, styles, colors, onPress }: UltimoPedidoCardProps) {
+function UltimoPedidoCard({ order, styles, onPress }: UltimoPedidoCardProps) {
   const palette = statusPalette[order.status];
 
   return (

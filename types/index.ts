@@ -68,6 +68,7 @@ export type ThemeColors = {
   primarySoft: string;
   success: string;
   error: string;
+  errorSoft: string;
   overlay: string;
   tabBar: string;
   inputBg: string;
