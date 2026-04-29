@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import {
   Animated,
   Pressable,
@@ -22,7 +22,7 @@ import { useTheme } from '@/context/ThemeContext';
 import { useFadeIn } from '@/hooks/useFadeIn';
 import { haptic } from '@/lib/haptics';
 import {
-  getComboRecomendado,
+  getCombosDisponiveis,
   getPeriodoAtual,
   precoCombo,
   type Combo,
@@ -72,7 +72,7 @@ export default function Home() {
 
   const { user } = useAuth();
   const { orders } = useOrders();
-  const { totalItens, addItem } = useCart();
+  const { items: cartItems, totalItens, addItem } = useCart();
   const { favoritos } = useFavorites();
 
   const itensFavoritos = useMemo(
@@ -97,28 +97,45 @@ export default function Home() {
   );
 
   const periodoAtual = useMemo(() => getPeriodoAtual(), []);
-  const combo = useMemo(
-    () => getComboRecomendado(periodoAtual, orders),
-    [periodoAtual, orders],
+  const cartItemIds = useMemo(() => cartItems.map((ci) => ci.itemId), [cartItems]);
+  const combosDisponiveis = useMemo(
+    () => getCombosDisponiveis(periodoAtual, orders, cartItemIds),
+    [periodoAtual, orders, cartItemIds],
   );
+
+  const [comboIndice, setComboIndice] = useState(0);
+  const comboAtual = combosDisponiveis[comboIndice % combosDisponiveis.length] ?? combosDisponiveis[0];
+  const podeTrocar = combosDisponiveis.length > 1;
+
   const comboItems = useMemo(
     () =>
-      combo.itemIds
-        .map((id) => CARDAPIO.find((i) => i.id === id))
-        .filter((x): x is ItemCardapio => !!x),
-    [combo],
+      comboAtual
+        ? comboAtual.itemIds
+            .map((id) => CARDAPIO.find((i) => i.id === id))
+            .filter((x): x is ItemCardapio => !!x)
+        : [],
+    [comboAtual],
   );
-  const comboPreco = useMemo(() => precoCombo(combo, CARDAPIO), [combo]);
+  const comboPreco = useMemo(
+    () => (comboAtual ? precoCombo(comboAtual, CARDAPIO) : 0),
+    [comboAtual],
+  );
 
   const saudacao = getSaudacao();
   const nome = user ? primeiroNome(user.nome) : '';
 
   const handleAdicionarCombo = () => {
-    for (const id of combo.itemIds) {
+    if (!comboAtual) return;
+    for (const id of comboAtual.itemIds) {
       addItem(id);
     }
     haptic.success();
     router.push('/carrinho');
+  };
+
+  const handleTrocarCombo = () => {
+    haptic.selection();
+    setComboIndice((i) => (i + 1) % combosDisponiveis.length);
   };
 
   return (
@@ -228,14 +245,15 @@ export default function Home() {
         </View>
 
         {/* Combo recomendado */}
-        {comboItems.length === 2 ? (
+        {comboAtual && comboItems.length === 2 ? (
           <ComboCard
-            combo={combo}
+            combo={comboAtual}
             items={comboItems}
             preco={comboPreco}
             colors={colors}
             styles={styles}
             onAdicionar={handleAdicionarCombo}
+            onTrocar={podeTrocar ? handleTrocarCombo : undefined}
           />
         ) : null}
 
@@ -375,21 +393,30 @@ type ComboCardProps = {
   colors: ThemeColors;
   styles: ReturnType<typeof createStyles>;
   onAdicionar: () => void;
+  onTrocar?: () => void;
 };
 
-function ComboCard({ combo, items, preco, colors, styles, onAdicionar }: ComboCardProps) {
+function ComboCard({
+  combo,
+  items,
+  preco,
+  colors,
+  styles,
+  onAdicionar,
+  onTrocar,
+}: ComboCardProps) {
   const personalizado = combo.fonte === 'historico';
+  const alternativo = combo.fonte === 'alternativo';
   const accent = personalizado ? colors.primary : '#F59E0B';
   const accentBg = personalizado ? colors.primarySoft : 'rgba(245, 158, 11, 0.14)';
-  const eyebrow = personalizado ? 'PERSONALIZADO' : 'SUGESTÃO';
+  const eyebrow = personalizado
+    ? 'PERSONALIZADO'
+    : alternativo
+      ? 'ALTERNATIVA'
+      : 'SUGESTÃO';
 
   return (
-    <Pressable
-      style={({ pressed }) => [styles.comboCard, pressed && styles.pressedSoft]}
-      onPress={onAdicionar}
-      accessibilityRole="button"
-      accessibilityLabel={`Adicionar combo ${combo.titulo} ao carrinho por R$ ${preco.toFixed(2)}`}
-    >
+    <View style={styles.comboCard}>
       <View style={styles.comboHeaderRow}>
         <View style={[styles.comboChip, { backgroundColor: accentBg }]}>
           <Ionicons
@@ -399,10 +426,30 @@ function ComboCard({ combo, items, preco, colors, styles, onAdicionar }: ComboCa
           />
           <Text style={[styles.comboChipTexto, { color: accent }]}>{eyebrow}</Text>
         </View>
-        <Text style={styles.comboPrecoTotal}>R$ {preco.toFixed(2)}</Text>
+
+        <View style={styles.comboHeaderDireita}>
+          <Text style={styles.comboPrecoTotal}>R$ {preco.toFixed(2)}</Text>
+          {onTrocar ? (
+            <Pressable
+              onPress={onTrocar}
+              hitSlop={10}
+              style={({ pressed }) => [
+                styles.comboTrocarBtn,
+                pressed && styles.pressedSoft,
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel="Trocar sugestão de combo"
+            >
+              <Ionicons name="refresh" size={14} color={colors.textMuted} />
+            </Pressable>
+          ) : null}
+        </View>
       </View>
 
       <Text style={styles.comboTitulo}>{combo.titulo}</Text>
+      <Text style={styles.comboSubtitulo} numberOfLines={1}>
+        {combo.subtitulo}
+      </Text>
 
       <View style={styles.comboItensInline}>
         {items.map((item, idx) => (
@@ -422,11 +469,16 @@ function ComboCard({ combo, items, preco, colors, styles, onAdicionar }: ComboCa
         ))}
       </View>
 
-      <View style={styles.comboCta}>
+      <Pressable
+        style={({ pressed }) => [styles.comboCta, pressed && styles.pressedSoft]}
+        onPress={onAdicionar}
+        accessibilityRole="button"
+        accessibilityLabel={`Adicionar combo ${combo.titulo} ao carrinho por R$ ${preco.toFixed(2)}`}
+      >
         <Text style={styles.comboCtaTexto}>Adicionar ao carrinho</Text>
         <Ionicons name="arrow-forward" size={14} color={colors.primary} />
-      </View>
-    </Pressable>
+      </Pressable>
+    </View>
   );
 }
 
@@ -762,15 +814,36 @@ const createStyles = (c: ThemeColors) =>
       fontSize: fontSize.xs,
       letterSpacing: letterSpacing.widest,
     },
+    comboHeaderDireita: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+    },
     comboPrecoTotal: {
       fontFamily: fontFamily.extrabold,
       fontSize: fontSize.lg,
       color: c.text,
     },
+    comboTrocarBtn: {
+      width: 28,
+      height: 28,
+      borderRadius: 14,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: c.surfaceElevated,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
     comboTitulo: {
       fontFamily: fontFamily.bold,
       fontSize: fontSize.base,
       color: c.text,
+    },
+    comboSubtitulo: {
+      fontFamily: fontFamily.medium,
+      fontSize: fontSize.sm,
+      color: c.textMuted,
+      marginTop: -spacing.xs,
     },
     comboItensInline: {
       flexDirection: 'row',
