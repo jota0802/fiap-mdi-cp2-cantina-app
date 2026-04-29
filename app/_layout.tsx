@@ -18,6 +18,7 @@ import { STORAGE_KEYS } from '@/constants/storage-keys';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { CartProvider } from '@/context/CartContext';
 import { FavoritesProvider } from '@/context/FavoritesContext';
+import { LocaleProvider } from '@/context/LocaleContext';
 import { OrdersProvider } from '@/context/OrdersContext';
 import { ThemeProvider, useTheme } from '@/context/ThemeContext';
 
@@ -127,15 +128,17 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider>
-      <AuthProvider>
-        <CartProvider>
-          <OrdersProvider>
-            <FavoritesProvider>
-              {fontsLoaded ? <RootStack /> : <LoadingScreen />}
-            </FavoritesProvider>
-          </OrdersProvider>
-        </CartProvider>
-      </AuthProvider>
+      <LocaleProvider>
+        <AuthProvider>
+          <CartProvider>
+            <OrdersProvider>
+              <FavoritesProvider>
+                {fontsLoaded ? <RootStack /> : <LoadingScreen />}
+              </FavoritesProvider>
+            </OrdersProvider>
+          </CartProvider>
+        </AuthProvider>
+      </LocaleProvider>
     </ThemeProvider>
   );
 }

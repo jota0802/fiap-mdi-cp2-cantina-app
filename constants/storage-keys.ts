@@ -7,6 +7,7 @@ export const STORAGE_KEYS = {
   PROFILE_PHOTO: '@cantina:profile_photo',
   ONBOARDED: '@cantina:onboarded',
   FAVORITES: '@cantina:favorites',
+  LOCALE: '@cantina:locale',
 } as const;
 
 export const SECURE_KEYS = {
