@@ -427,23 +427,20 @@ function ComboCard({
           <Text style={[styles.comboChipTexto, { color: accent }]}>{eyebrow}</Text>
         </View>
 
-        <View style={styles.comboHeaderDireita}>
-          <Text style={styles.comboPrecoTotal}>R$ {preco.toFixed(2)}</Text>
-          {onTrocar ? (
-            <Pressable
-              onPress={onTrocar}
-              hitSlop={10}
-              style={({ pressed }) => [
-                styles.comboTrocarBtn,
-                pressed && styles.pressedSoft,
-              ]}
-              accessibilityRole="button"
-              accessibilityLabel="Trocar sugestão de combo"
-            >
-              <Ionicons name="refresh" size={14} color={colors.textMuted} />
-            </Pressable>
-          ) : null}
-        </View>
+        {onTrocar ? (
+          <Pressable
+            onPress={onTrocar}
+            hitSlop={10}
+            style={({ pressed }) => [
+              styles.comboTrocarBtn,
+              pressed && styles.pressedSoft,
+            ]}
+            accessibilityRole="button"
+            accessibilityLabel="Trocar sugestão de combo"
+          >
+            <Ionicons name="refresh" size={14} color={colors.textMuted} />
+          </Pressable>
+        ) : null}
       </View>
 
       <Text style={styles.comboTitulo}>{combo.titulo}</Text>
@@ -470,13 +467,18 @@ function ComboCard({
       </View>
 
       <Pressable
-        style={({ pressed }) => [styles.comboCta, pressed && styles.pressedSoft]}
+        style={({ pressed }) => [styles.comboCta, pressed && styles.comboCtaPressed]}
         onPress={onAdicionar}
         accessibilityRole="button"
         accessibilityLabel={`Adicionar combo ${combo.titulo} ao carrinho por R$ ${preco.toFixed(2)}`}
       >
+        <View style={styles.comboCtaIconWrap}>
+          <Ionicons name="bag-add" size={16} color={colors.primaryText} />
+        </View>
         <Text style={styles.comboCtaTexto}>Adicionar ao carrinho</Text>
-        <Ionicons name="arrow-forward" size={14} color={colors.primary} />
+        <View style={styles.comboCtaPrecoChip}>
+          <Text style={styles.comboCtaPrecoTexto}>R$ {preco.toFixed(2)}</Text>
+        </View>
       </Pressable>
     </View>
   );
@@ -813,16 +815,6 @@ const createStyles = (c: ThemeColors) =>
       fontSize: fontSize.xs,
       letterSpacing: letterSpacing.widest,
     },
-    comboHeaderDireita: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: spacing.sm,
-    },
-    comboPrecoTotal: {
-      fontFamily: fontFamily.extrabold,
-      fontSize: fontSize.lg,
-      color: c.text,
-    },
     comboTrocarBtn: {
       width: 28,
       height: 28,
@@ -870,18 +862,42 @@ const createStyles = (c: ThemeColors) =>
     comboCta: {
       flexDirection: 'row',
       alignItems: 'center',
+      gap: spacing.sm,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm + 2,
+      marginTop: spacing.sm,
+      backgroundColor: c.primary,
+      borderRadius: radius.full,
+      ...shadow.primary,
+    },
+    comboCtaPressed: {
+      opacity: 0.92,
+      transform: [{ scale: 0.98 }],
+    },
+    comboCtaIconWrap: {
+      width: 26,
+      height: 26,
+      borderRadius: 13,
+      alignItems: 'center',
       justifyContent: 'center',
-      gap: spacing.xs + 2,
-      paddingTop: spacing.xs,
-      borderTopWidth: 1,
-      borderTopColor: c.separator,
-      marginTop: spacing.xs,
-      paddingVertical: spacing.sm,
+      backgroundColor: 'rgba(255,255,255,0.2)',
     },
     comboCtaTexto: {
-      fontFamily: fontFamily.semibold,
+      flex: 1,
+      fontFamily: fontFamily.bold,
       fontSize: fontSize.md,
-      color: c.primary,
+      color: c.primaryText,
+    },
+    comboCtaPrecoChip: {
+      paddingHorizontal: spacing.sm + 2,
+      paddingVertical: 4,
+      borderRadius: radius.full,
+      backgroundColor: 'rgba(255,255,255,0.22)',
+    },
+    comboCtaPrecoTexto: {
+      fontFamily: fontFamily.extrabold,
+      fontSize: fontSize.sm,
+      color: c.primaryText,
     },
 
     /* Últimos pedidos */
