@@ -22,6 +22,7 @@ import {
   spacing,
 } from '@/constants/theme';
 import { useCart } from '@/context/CartContext';
+import { useLocale } from '@/context/LocaleContext';
 import { useOrders } from '@/context/OrdersContext';
 import { useTheme } from '@/context/ThemeContext';
 import { confirmar } from '@/lib/confirm';
@@ -33,6 +34,7 @@ import type { Order, ThemeColors } from '@/types';
 export default function Confirmacao() {
   const router = useRouter();
   const { colors } = useTheme();
+  const { t } = useLocale();
   const insets = useSafeAreaInsets();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
@@ -242,10 +244,10 @@ export default function Confirmacao() {
             style={({ pressed }) => [styles.botaoCancelar, pressed && styles.pressedSoft]}
             onPress={() => {
               confirmar({
-                titulo: 'Cancelar este pedido?',
-                mensagem: `O pedido com a senha ${order.senha} será cancelado e não poderá ser recuperado.`,
-                confirmText: 'Cancelar pedido',
-                cancelText: 'Manter pedido',
+                titulo: t('order.cancel_confirm_title'),
+                mensagem: t('order.cancel_confirm_message', { senha: order.senha }),
+                confirmText: t('cta.cancel_order'),
+                cancelText: t('cta.keep_order'),
                 destrutivo: true,
                 onConfirm: async () => {
                   haptic.warning();
@@ -259,7 +261,7 @@ export default function Confirmacao() {
             accessibilityLabel="Cancelar este pedido"
           >
             <Ionicons name="close-outline" size={14} color={colors.error} />
-            <Text style={styles.botaoCancelarTexto}>Cancelar pedido</Text>
+            <Text style={styles.botaoCancelarTexto}>{t('cta.cancel_order')}</Text>
           </Pressable>
         ) : null}
       </ScrollView>

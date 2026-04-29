@@ -25,6 +25,7 @@ import {
 import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
 import { useFavorites } from '@/context/FavoritesContext';
+import { useLocale } from '@/context/LocaleContext';
 import { useOrders } from '@/context/OrdersContext';
 import { useTheme } from '@/context/ThemeContext';
 import CARDAPIO from '@/data/cardapio';
@@ -40,11 +41,11 @@ import type { ItemCardapio, Order, ThemeColors } from '@/types';
 
 const DESTAQUES = CARDAPIO.filter((item) => [1, 5, 6, 8].includes(item.id));
 
-function getSaudacao(): string {
+function getSaudacaoKey(): 'greeting.morning' | 'greeting.afternoon' | 'greeting.evening' {
   const h = new Date().getHours();
-  if (h >= 5 && h < 12) return 'Bom dia';
-  if (h >= 12 && h < 18) return 'Boa tarde';
-  return 'Boa noite';
+  if (h >= 5 && h < 12) return 'greeting.morning';
+  if (h >= 12 && h < 18) return 'greeting.afternoon';
+  return 'greeting.evening';
 }
 
 function primeiroNome(nome: string): string {
@@ -70,6 +71,7 @@ export default function Home() {
   const styles = useMemo(() => createStyles(colors), [colors]);
   const { opacity, translateY } = useFadeIn(450);
 
+  const { t } = useLocale();
   const { user } = useAuth();
   const { orders } = useOrders();
   const { items: cartItems, totalItens, addItem } = useCart();
@@ -121,8 +123,8 @@ export default function Home() {
     [comboAtual],
   );
 
-  const saudacao = getSaudacao();
-  const nome = user ? primeiroNome(user.nome) : '';
+  const saudacao = t(getSaudacaoKey());
+  const nome = user ? primeiroNome(user.nome) : t('greeting.guest');
 
   const handleAdicionarCombo = () => {
     if (!comboAtual) return;
@@ -154,7 +156,7 @@ export default function Home() {
         >
           <Text style={styles.saudacao}>
             {saudacao},{'\n'}
-            <Text style={styles.saudacaoNome}>{nome || 'visitante'}</Text>
+            <Text style={styles.saudacaoNome}>{nome}</Text>
             <Text style={styles.wave}> 👋</Text>
           </Text>
         </Animated.View>
@@ -182,7 +184,7 @@ export default function Home() {
             </View>
             <View style={styles.bentoBigContent}>
               <View>
-                <Text style={styles.bentoBigEyebrow}>NOVO PEDIDO</Text>
+                <Text style={styles.bentoBigEyebrow}>{t('home.new_order')}</Text>
                 <Text style={styles.bentoBigTitulo}>Ver{'\n'}cardápio</Text>
               </View>
               <View style={styles.bentoBigArrow}>
@@ -213,11 +215,11 @@ export default function Home() {
                 ) : null}
               </View>
               <View>
-                <Text style={styles.bentoSmallTitulo}>Carrinho</Text>
+                <Text style={styles.bentoSmallTitulo}>{t('home.cart')}</Text>
                 <Text style={styles.bentoSmallSub}>
                   {totalItens > 0
                     ? `${totalItens} ${totalItens === 1 ? 'item' : 'itens'}`
-                    : 'Vazio'}
+                    : t('home.empty_cart')}
                 </Text>
               </View>
             </Pressable>
@@ -234,11 +236,11 @@ export default function Home() {
                 </View>
               </View>
               <View>
-                <Text style={styles.bentoSmallTitulo}>Histórico</Text>
+                <Text style={styles.bentoSmallTitulo}>{t('home.history')}</Text>
                 <Text style={styles.bentoSmallSub}>
                   {orders.length > 0
                     ? `${orders.length} ${orders.length === 1 ? 'pedido' : 'pedidos'}`
-                    : 'Nenhum ainda'}
+                    : t('home.no_orders')}
                 </Text>
               </View>
             </Pressable>
@@ -264,7 +266,7 @@ export default function Home() {
             <View style={styles.secaoHeader}>
               <View style={styles.secaoHeaderEsquerda}>
                 <Ionicons name="heart" size={16} color={colors.error} />
-                <Text style={styles.secaoTitulo}>Seus favoritos</Text>
+                <Text style={styles.secaoTitulo}>{t('home.your_favorites')}</Text>
               </View>
               <Pressable
                 hitSlop={10}
@@ -272,7 +274,7 @@ export default function Home() {
                 accessibilityRole="link"
                 accessibilityLabel="Ver todos os favoritos no cardápio"
               >
-                <Text style={styles.secaoLink}>Ver tudo</Text>
+                <Text style={styles.secaoLink}>{t('home.see_all')}</Text>
               </Pressable>
             </View>
 
@@ -310,7 +312,7 @@ export default function Home() {
 
         {/* Destaques */}
         <View style={styles.secaoHeader}>
-          <Text style={styles.secaoTitulo}>Destaques</Text>
+          <Text style={styles.secaoTitulo}>{t('home.featured')}</Text>
           <Pressable
             hitSlop={10}
             onPress={() => router.push('/cardapio')}
@@ -355,14 +357,14 @@ export default function Home() {
         {ultimosPedidos.length > 0 ? (
           <>
             <View style={styles.secaoHeader}>
-              <Text style={styles.secaoTitulo}>Últimos pedidos</Text>
+              <Text style={styles.secaoTitulo}>{t('home.recent_orders')}</Text>
               <Pressable
                 hitSlop={10}
                 onPress={() => router.push('/pedidos')}
                 accessibilityRole="link"
                 accessibilityLabel="Ver todos os pedidos"
               >
-                <Text style={styles.secaoLink}>Ver tudo</Text>
+                <Text style={styles.secaoLink}>{t('home.see_all')}</Text>
               </Pressable>
             </View>
             <ScrollView
@@ -405,15 +407,16 @@ function ComboCard({
   onAdicionar,
   onTrocar,
 }: ComboCardProps) {
+  const { t } = useLocale();
   const personalizado = combo.fonte === 'historico';
   const alternativo = combo.fonte === 'alternativo';
   const accent = personalizado ? colors.primary : '#F59E0B';
   const accentBg = personalizado ? colors.primarySoft : 'rgba(245, 158, 11, 0.14)';
   const eyebrow = personalizado
-    ? 'PERSONALIZADO'
+    ? t('home.personalized')
     : alternativo
-      ? 'ALTERNATIVA'
-      : 'SUGESTÃO';
+      ? t('home.alternative')
+      : t('home.suggestion');
 
   return (
     <View style={styles.comboCard}>
@@ -475,7 +478,7 @@ function ComboCard({
         <View style={styles.comboCtaIconWrap}>
           <Ionicons name="bag-add" size={16} color={colors.primaryText} />
         </View>
-        <Text style={styles.comboCtaTexto}>Adicionar ao carrinho</Text>
+        <Text style={styles.comboCtaTexto}>{t('cta.add_to_cart')}</Text>
         <View style={styles.comboCtaPrecoChip}>
           <Text style={styles.comboCtaPrecoTexto}>R$ {preco.toFixed(2)}</Text>
         </View>

@@ -23,6 +23,7 @@ import {
   statusPalette,
 } from '@/constants/theme';
 import { useCart } from '@/context/CartContext';
+import { useLocale } from '@/context/LocaleContext';
 import { useOrders } from '@/context/OrdersContext';
 import { useTheme } from '@/context/ThemeContext';
 import CARDAPIO from '@/data/cardapio';
@@ -49,6 +50,7 @@ export default function PedidoDetalhesScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { colors } = useTheme();
+  const { t } = useLocale();
   const insets = useSafeAreaInsets();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
@@ -117,10 +119,10 @@ export default function PedidoDetalhesScreen() {
 
   const handleCancelar = () => {
     confirmar({
-      titulo: 'Cancelar pedido?',
-      mensagem: `O pedido com a senha ${order.senha} será cancelado e não poderá ser recuperado.`,
-      confirmText: 'Cancelar pedido',
-      cancelText: 'Manter pedido',
+      titulo: t('order.cancel_confirm_title'),
+      mensagem: t('order.cancel_confirm_message', { senha: order.senha }),
+      confirmText: t('cta.cancel_order'),
+      cancelText: t('cta.keep_order'),
       destrutivo: true,
       onConfirm: async () => {
         haptic.warning();

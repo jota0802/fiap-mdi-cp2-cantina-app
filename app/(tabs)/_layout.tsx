@@ -5,11 +5,13 @@ import { Platform, StyleSheet } from 'react-native';
 
 import { fontFamily } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
+import { useLocale } from '@/context/LocaleContext';
 import { useTheme } from '@/context/ThemeContext';
 
 export default function TabsLayout() {
   const { colors, mode } = useTheme();
   const { user } = useAuth();
+  const { t } = useLocale();
 
   if (!user) {
     return <Redirect href="/login" />;
@@ -48,7 +50,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'INÍCIO',
+          title: t('tab.home').toUpperCase(),
           tabBarIcon: ({ color }: { color: string }) => (
             <Ionicons name="home-outline" size={22} color={color} />
           ),
@@ -57,7 +59,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="cardapio"
         options={{
-          title: 'CARDÁPIO',
+          title: t('tab.menu').toUpperCase(),
           tabBarIcon: ({ color }: { color: string }) => (
             <Ionicons name="restaurant-outline" size={22} color={color} />
           ),
@@ -66,7 +68,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="pedidos"
         options={{
-          title: 'PEDIDOS',
+          title: t('tab.orders').toUpperCase(),
           tabBarIcon: ({ color }: { color: string }) => (
             <Ionicons name="receipt-outline" size={22} color={color} />
           ),
@@ -75,7 +77,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="perfil"
         options={{
-          title: 'PERFIL',
+          title: t('tab.profile').toUpperCase(),
           tabBarIcon: ({ color }: { color: string }) => (
             <Ionicons name="person-outline" size={22} color={color} />
           ),

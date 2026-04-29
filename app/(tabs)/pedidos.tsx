@@ -24,6 +24,7 @@ import {
   statusPalette,
 } from '@/constants/theme';
 import { useCart } from '@/context/CartContext';
+import { useLocale } from '@/context/LocaleContext';
 import { useOrders } from '@/context/OrdersContext';
 import { useTheme } from '@/context/ThemeContext';
 import { confirmar } from '@/lib/confirm';
@@ -56,7 +57,9 @@ function PedidoCard({
   onCancelar,
   onAbrirDetalhes,
 }: CardProps) {
+  const { t } = useLocale();
   const status = statusPalette[order.status];
+  const statusLabel = t(`status.${order.status}`);
 
   return (
     <View style={styles.card}>
@@ -65,7 +68,7 @@ function PedidoCard({
         style={({ pressed }) => [styles.cardCabecaPressable, pressed && styles.pressedSoft]}
         onPress={onAbrirDetalhes}
         accessibilityRole="button"
-        accessibilityLabel={`Ver detalhes do pedido senha ${order.senha}, status ${status.label.toLowerCase()}, total R$ ${order.total.toFixed(2)}`}
+        accessibilityLabel={`Ver detalhes do pedido senha ${order.senha}, status ${statusLabel.toLowerCase()}, total R$ ${order.total.toFixed(2)}`}
       >
         <View style={styles.cardHeader}>
           <View style={styles.senhaBox}>
@@ -81,7 +84,9 @@ function PedidoCard({
               ]}
             >
               <Ionicons name={status.icon} size={12} color={status.color} />
-              <Text style={[styles.statusLabel, { color: status.color }]}>{status.label}</Text>
+              <Text style={[styles.statusLabel, { color: status.color }]}>
+                {statusLabel.toUpperCase()}
+              </Text>
             </View>
           </View>
         </View>
@@ -159,6 +164,7 @@ function PedidoCard({
 export default function PedidosScreen() {
   const router = useRouter();
   const { colors } = useTheme();
+  const { t } = useLocale();
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -181,10 +187,10 @@ export default function PedidosScreen() {
   const handleCancelar = useCallback(
     (order: Order) => {
       confirmar({
-        titulo: 'Cancelar pedido?',
-        mensagem: `O pedido com a senha ${order.senha} será cancelado e não poderá ser recuperado.`,
-        confirmText: 'Cancelar pedido',
-        cancelText: 'Manter pedido',
+        titulo: t('order.cancel_confirm_title'),
+        mensagem: t('order.cancel_confirm_message', { senha: order.senha }),
+        confirmText: t('cta.cancel_order'),
+        cancelText: t('cta.keep_order'),
         destrutivo: true,
         onConfirm: async () => {
           haptic.warning();
@@ -192,7 +198,7 @@ export default function PedidosScreen() {
         },
       });
     },
-    [markCancelado],
+    [markCancelado, t],
   );
 
   const handleRefresh = useCallback(async () => {
@@ -207,8 +213,8 @@ export default function PedidosScreen() {
     return (
       <View style={styles.container}>
         <View style={[styles.header, { paddingTop: insets.top + spacing.lg }]}>
-          <Text style={styles.tituloPagina}>Pedidos</Text>
-          <Text style={styles.subtitulo}>Carregando seus pedidos</Text>
+          <Text style={styles.tituloPagina}>{t('orders.title')}</Text>
+          <Text style={styles.subtitulo}>{t('orders.loading')}</Text>
         </View>
         <View style={styles.listContent}>
           <SkeletonOrderCard />
@@ -222,7 +228,7 @@ export default function PedidosScreen() {
   return (
     <View style={styles.container}>
       <View style={[styles.header, { paddingTop: insets.top + spacing.lg }]}>
-        <Text style={styles.tituloPagina}>Pedidos</Text>
+        <Text style={styles.tituloPagina}>{t('orders.title')}</Text>
         <Text style={styles.subtitulo}>
           {totalAtivos > 0
             ? `${totalAtivos} ${totalAtivos === 1 ? 'pedido ativo' : 'pedidos ativos'}`
