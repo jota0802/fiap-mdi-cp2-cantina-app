@@ -5,7 +5,7 @@ import {
   Animated,
   Platform,
   Pressable,
-  type ScrollView,
+  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -102,19 +102,18 @@ function SlideView({
     (index + 1) * slideWidth,
   ];
 
-  // Parallax sutil — hero translada até ±24px enquanto o slide entra/sai
   const heroTranslate = scrollX.interpolate({
     inputRange,
     outputRange: [24, 0, -24],
     extrapolate: 'clamp',
   });
 
-  // Texto sobe levemente conforme entra
   const copyTranslate = scrollX.interpolate({
     inputRange,
     outputRange: [16, 0, -16],
     extrapolate: 'clamp',
   });
+
   const copyOpacity = scrollX.interpolate({
     inputRange,
     outputRange: [0.4, 1, 0.4],
@@ -190,9 +189,9 @@ function Dot({ index, scrollX, slideWidth, accent, baseColor, onPress }: DotProp
     extrapolate: 'clamp',
   });
 
-  const opacity = scrollX.interpolate({
+  const backgroundColor = scrollX.interpolate({
     inputRange,
-    outputRange: [0.5, 1, 0.5],
+    outputRange: [baseColor, accent, baseColor],
     extrapolate: 'clamp',
   });
 
@@ -208,20 +207,7 @@ function Dot({ index, scrollX, slideWidth, accent, baseColor, onPress }: DotProp
           width,
           height: DOT_BASE,
           borderRadius: DOT_BASE / 2,
-          backgroundColor: accent,
-          opacity,
-        }}
-      />
-      <View
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          width: DOT_BASE,
-          height: DOT_BASE,
-          borderRadius: DOT_BASE / 2,
-          backgroundColor: baseColor,
-          zIndex: -1,
+          backgroundColor,
         }}
       />
     </Pressable>
@@ -234,33 +220,50 @@ export default function Onboarding({ onComplete }: Props) {
   const { width, height } = useWindowDimensions();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
-  // Cap a largura no web (desktop ficaria com slide gigante)
+  // Cap a largura no web — em desktop o slide ficaria gigante
   const slideWidth = Platform.OS === 'web' ? Math.min(width, MAX_CONTENT_WIDTH) : width;
   const heroHeight = Math.min(Math.round(height * 0.5), 460);
 
   const scrollRef = useRef<ScrollView>(null);
   const scrollX = useRef(new Animated.Value(0)).current;
   const [indice, setIndice] = useState(0);
+  const indiceRef = useRef(0);
 
-  // Re-ancora o scroll quando largura muda (rotação / resize web)
+  // Mantém indiceRef sincronizado para uso no useEffect de re-anchor
   useEffect(() => {
-    scrollRef.current?.scrollTo({ x: indice * slideWidth, animated: false });
-  }, [slideWidth, indice]);
+    indiceRef.current = indice;
+  }, [indice]);
 
+  // Re-ancora SOMENTE quando o slideWidth muda (rotação / resize web).
+  // Crucialmente NÃO depende de `indice` — re-ancorar a cada mudança de
+  // índice mata o gesto do usuário no meio do drag.
+  useEffect(() => {
+    scrollRef.current?.scrollTo({
+      x: indiceRef.current * slideWidth,
+      animated: false,
+    });
+  }, [slideWidth]);
+
+  // onScroll só alimenta scrollX pra animações; índice atualiza no
+  // momentumEnd pra não interromper o drag do usuário.
   const handleScroll = Animated.event(
     [{ nativeEvent: { contentOffset: { x: scrollX } } }],
-    {
-      useNativeDriver: false,
-      listener: (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-        const offset = e.nativeEvent.contentOffset.x;
-        const novoIndice = Math.round(offset / slideWidth);
-        if (novoIndice !== indice && novoIndice >= 0 && novoIndice < SLIDES.length) {
-          setIndice(novoIndice);
-          haptic.light();
-        }
-      },
-    },
+    { useNativeDriver: false },
   );
+
+  const handleMomentumEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    if (slideWidth <= 0) return;
+    const offset = e.nativeEvent.contentOffset.x;
+    const novoIndice = Math.round(offset / slideWidth);
+    if (
+      novoIndice !== indiceRef.current &&
+      novoIndice >= 0 &&
+      novoIndice < SLIDES.length
+    ) {
+      setIndice(novoIndice);
+      haptic.light();
+    }
+  };
 
   const irPara = (i: number) => {
     scrollRef.current?.scrollTo({ x: i * slideWidth, animated: true });
@@ -303,17 +306,16 @@ export default function Onboarding({ onComplete }: Props) {
           )}
         </View>
 
-        <Animated.ScrollView
-          ref={scrollRef as never}
+        <ScrollView
+          ref={scrollRef}
           horizontal
           pagingEnabled
           showsHorizontalScrollIndicator={false}
           onScroll={handleScroll}
+          onMomentumScrollEnd={handleMomentumEnd}
           scrollEventThrottle={16}
           bounces={false}
           decelerationRate="fast"
-          snapToInterval={slideWidth}
-          snapToAlignment="start"
         >
           {SLIDES.map((slide, i) => (
             <SlideView
@@ -326,7 +328,7 @@ export default function Onboarding({ onComplete }: Props) {
               styles={styles}
             />
           ))}
-        </Animated.ScrollView>
+        </ScrollView>
 
         <View style={styles.dotsRow}>
           {SLIDES.map((_, i) => (
