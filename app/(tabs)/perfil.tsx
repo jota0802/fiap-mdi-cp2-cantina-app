@@ -23,9 +23,11 @@ import {
   spacing,
 } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
+import { useLocale } from '@/context/LocaleContext';
 import { useOrders } from '@/context/OrdersContext';
 import { useTheme } from '@/context/ThemeContext';
 import { haptic } from '@/lib/haptics';
+import { LOCALES, LOCALE_FLAG, LOCALE_LABEL, type Locale } from '@/lib/i18n';
 import { pickFromCamera, pickFromLibrary } from '@/lib/image-picker';
 import type { ThemeColors } from '@/types';
 
@@ -45,6 +47,7 @@ function primeiroNome(nome: string): string {
 export default function PerfilScreen() {
   const router = useRouter();
   const { colors, mode, toggleTheme } = useTheme();
+  const { t, locale, setLocale } = useLocale();
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -130,7 +133,7 @@ export default function PerfilScreen() {
       >
         {/* Header com subtítulo */}
         <View style={styles.header}>
-          <Text style={styles.tituloPagina}>Perfil</Text>
+          <Text style={styles.tituloPagina}>{t('tab.profile')}</Text>
           <Text style={styles.subtitulo}>
             Olá, {primeiroNome(user.nome)} · membro desde{' '}
             {formatarDataMembro(user.criadoEm)}
@@ -188,7 +191,7 @@ export default function PerfilScreen() {
         </View>
 
         {/* Foto de perfil — apenas botões secundários */}
-        <Text style={styles.sectionTitle}>Foto de perfil</Text>
+        <Text style={styles.sectionTitle}>{t('profile.photo')}</Text>
         <View style={styles.fotoBento}>
           <Pressable
             style={({ pressed }) => [styles.fotoBotao, pressed && styles.pressedSoft]}
@@ -232,8 +235,40 @@ export default function PerfilScreen() {
           ) : null}
         </View>
 
+        {/* Idioma */}
+        <Text style={styles.sectionTitle}>{t('profile.language')}</Text>
+        <View style={styles.localeRow}>
+          {LOCALES.map((loc: Locale) => (
+            <Pressable
+              key={loc}
+              onPress={() => {
+                if (locale !== loc) haptic.selection();
+                setLocale(loc);
+              }}
+              style={({ pressed }) => [
+                styles.localeChip,
+                locale === loc && styles.localeChipAtivo,
+                pressed && styles.pressedSoft,
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel={`Mudar idioma para ${LOCALE_LABEL[loc]}`}
+              accessibilityState={{ selected: locale === loc }}
+            >
+              <Text style={styles.localeFlag}>{LOCALE_FLAG[loc]}</Text>
+              <Text
+                style={[
+                  styles.localeTexto,
+                  locale === loc && styles.localeTextoAtivo,
+                ]}
+              >
+                {LOCALE_LABEL[loc]}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+
         {/* Aparência */}
-        <Text style={styles.sectionTitle}>Aparência</Text>
+        <Text style={styles.sectionTitle}>{t('profile.appearance')}</Text>
         <View style={styles.themeCard}>
           <View style={styles.themeInfo}>
             <View style={styles.themeIconWrap}>
@@ -245,7 +280,7 @@ export default function PerfilScreen() {
             </View>
             <View style={styles.themeTextos}>
               <Text style={styles.themeLabel}>
-                {mode === 'dark' ? 'Tema escuro' : 'Tema claro'}
+                {mode === 'dark' ? t('profile.dark_mode') : t('profile.light_mode')}
               </Text>
               <Text style={styles.themeSub}>
                 {mode === 'dark'
@@ -264,7 +299,7 @@ export default function PerfilScreen() {
         </View>
 
         {/* Ações */}
-        <Text style={styles.sectionTitle}>Conta</Text>
+        <Text style={styles.sectionTitle}>{t('profile.account')}</Text>
         <View style={styles.acoesCard}>
           <Pressable
             style={({ pressed }) => [styles.linhaAcao, pressed && styles.pressedSoft]}
@@ -510,6 +545,43 @@ const createStyles = (c: ThemeColors) =>
       fontFamily: fontFamily.semibold,
       fontSize: fontSize.md,
       color: c.text,
+    },
+
+    /* Locale picker */
+    localeRow: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+      marginHorizontal: spacing.xl,
+      marginBottom: spacing.lg,
+    },
+    localeChip: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.xs + 2,
+      backgroundColor: c.surface,
+      borderRadius: radius.full,
+      paddingVertical: spacing.sm + 2,
+      paddingHorizontal: spacing.sm,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    localeChipAtivo: {
+      backgroundColor: c.primarySoft,
+      borderColor: c.primary,
+    },
+    localeFlag: {
+      fontSize: fontSize.md,
+    },
+    localeTexto: {
+      fontFamily: fontFamily.semibold,
+      fontSize: fontSize.sm,
+      color: c.textMuted,
+    },
+    localeTextoAtivo: {
+      color: c.primary,
+      fontFamily: fontFamily.bold,
     },
 
     /* Theme card */
