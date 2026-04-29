@@ -1,11 +1,13 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Dimensions,
+  Animated,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
+  useWindowDimensions,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
 } from 'react-native';
@@ -67,8 +69,9 @@ const SLIDES: readonly Slide[] = [
   },
 ] as const;
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-const HERO_HEIGHT = Math.min(Math.round(SCREEN_HEIGHT * 0.52), 480);
+const MAX_CONTENT_WIDTH = 480;
+const DOT_BASE = 6;
+const DOT_ACTIVE = 24;
 
 type Props = {
   onComplete: () => void;
@@ -76,36 +79,81 @@ type Props = {
 
 type SlideViewProps = {
   slide: Slide;
+  index: number;
+  scrollX: Animated.Value;
+  slideWidth: number;
+  heroHeight: number;
   styles: ReturnType<typeof createStyles>;
-  colors: ThemeColors;
 };
 
-function SlideView({ slide, styles, colors }: SlideViewProps) {
+function SlideView({
+  slide,
+  index,
+  scrollX,
+  slideWidth,
+  heroHeight,
+  styles,
+}: SlideViewProps) {
   const [erro, setErro] = useState(false);
 
+  const inputRange = [
+    (index - 1) * slideWidth,
+    index * slideWidth,
+    (index + 1) * slideWidth,
+  ];
+
+  // Parallax sutil — hero translada até ±24px enquanto o slide entra/sai
+  const heroTranslate = scrollX.interpolate({
+    inputRange,
+    outputRange: [24, 0, -24],
+    extrapolate: 'clamp',
+  });
+
+  // Texto sobe levemente conforme entra
+  const copyTranslate = scrollX.interpolate({
+    inputRange,
+    outputRange: [16, 0, -16],
+    extrapolate: 'clamp',
+  });
+  const copyOpacity = scrollX.interpolate({
+    inputRange,
+    outputRange: [0.4, 1, 0.4],
+    extrapolate: 'clamp',
+  });
+
   return (
-    <View style={[styles.slide, { width: SCREEN_WIDTH }]}>
-      <View style={styles.heroWrap}>
-        {/* fallback colorido com ícone grande */}
+    <View style={[styles.slide, { width: slideWidth }]}>
+      <View style={[styles.heroWrap, { height: heroHeight }]}>
         <View style={[styles.heroFallback, { backgroundColor: slide.accentSoft }]}>
           <Ionicons name={slide.iconeFallback} size={88} color={slide.accent} />
         </View>
 
         {!erro ? (
-          <Image
-            source={{ uri: slide.imagem }}
-            style={styles.heroImage}
-            contentFit="cover"
-            transition={350}
-            onError={() => setErro(true)}
-          />
+          <Animated.View
+            style={[
+              StyleSheet.absoluteFillObject,
+              { transform: [{ translateX: heroTranslate }] },
+            ]}
+          >
+            <Image
+              source={{ uri: slide.imagem }}
+              style={styles.heroImage}
+              contentFit="cover"
+              transition={350}
+              onError={() => setErro(true)}
+            />
+          </Animated.View>
         ) : null}
 
-        {/* gradient overlay sutil pra contraste com texto, caso fique embaixo */}
         <View style={styles.heroVignette} pointerEvents="none" />
       </View>
 
-      <View style={styles.copy}>
+      <Animated.View
+        style={[
+          styles.copy,
+          { opacity: copyOpacity, transform: [{ translateY: copyTranslate }] },
+        ]}
+      >
         <View style={[styles.accentChip, { backgroundColor: slide.accentSoft }]}>
           <View style={[styles.accentDot, { backgroundColor: slide.accent }]} />
           <Text style={[styles.accentChipTexto, { color: slide.accent }]}>
@@ -115,30 +163,107 @@ function SlideView({ slide, styles, colors }: SlideViewProps) {
 
         <Text style={styles.titulo}>{slide.titulo}</Text>
         <Text style={styles.texto}>{slide.texto}</Text>
-      </View>
+      </Animated.View>
     </View>
+  );
+}
+
+type DotProps = {
+  index: number;
+  scrollX: Animated.Value;
+  slideWidth: number;
+  accent: string;
+  baseColor: string;
+  onPress: () => void;
+};
+
+function Dot({ index, scrollX, slideWidth, accent, baseColor, onPress }: DotProps) {
+  const inputRange = [
+    (index - 1) * slideWidth,
+    index * slideWidth,
+    (index + 1) * slideWidth,
+  ];
+
+  const width = scrollX.interpolate({
+    inputRange,
+    outputRange: [DOT_BASE, DOT_ACTIVE, DOT_BASE],
+    extrapolate: 'clamp',
+  });
+
+  const opacity = scrollX.interpolate({
+    inputRange,
+    outputRange: [0.5, 1, 0.5],
+    extrapolate: 'clamp',
+  });
+
+  return (
+    <Pressable
+      onPress={onPress}
+      hitSlop={8}
+      accessibilityRole="button"
+      accessibilityLabel={`Ir para o slide ${index + 1} de ${SLIDES.length}`}
+    >
+      <Animated.View
+        style={{
+          width,
+          height: DOT_BASE,
+          borderRadius: DOT_BASE / 2,
+          backgroundColor: accent,
+          opacity,
+        }}
+      />
+      <View
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: DOT_BASE,
+          height: DOT_BASE,
+          borderRadius: DOT_BASE / 2,
+          backgroundColor: baseColor,
+          zIndex: -1,
+        }}
+      />
+    </Pressable>
   );
 }
 
 export default function Onboarding({ onComplete }: Props) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
+  const { width, height } = useWindowDimensions();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
+  // Cap a largura no web (desktop ficaria com slide gigante)
+  const slideWidth = Platform.OS === 'web' ? Math.min(width, MAX_CONTENT_WIDTH) : width;
+  const heroHeight = Math.min(Math.round(height * 0.5), 460);
+
   const scrollRef = useRef<ScrollView>(null);
+  const scrollX = useRef(new Animated.Value(0)).current;
   const [indice, setIndice] = useState(0);
 
-  const handleScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const offset = e.nativeEvent.contentOffset.x;
-    const novoIndice = Math.round(offset / SCREEN_WIDTH);
-    if (novoIndice !== indice) {
-      setIndice(novoIndice);
-      haptic.light();
-    }
-  };
+  // Re-ancora o scroll quando largura muda (rotação / resize web)
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ x: indice * slideWidth, animated: false });
+  }, [slideWidth, indice]);
+
+  const handleScroll = Animated.event(
+    [{ nativeEvent: { contentOffset: { x: scrollX } } }],
+    {
+      useNativeDriver: false,
+      listener: (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+        const offset = e.nativeEvent.contentOffset.x;
+        const novoIndice = Math.round(offset / slideWidth);
+        if (novoIndice !== indice && novoIndice >= 0 && novoIndice < SLIDES.length) {
+          setIndice(novoIndice);
+          haptic.light();
+        }
+      },
+    },
+  );
 
   const irPara = (i: number) => {
-    scrollRef.current?.scrollTo({ x: i * SCREEN_WIDTH, animated: true });
+    scrollRef.current?.scrollTo({ x: i * slideWidth, animated: true });
   };
 
   const handleProximo = () => {
@@ -160,76 +285,84 @@ export default function Onboarding({ onComplete }: Props) {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      <View style={styles.headerRow}>
-        <View />
-        {!ultimoSlide ? (
-          <Pressable
-            onPress={handlePular}
-            hitSlop={12}
-            style={styles.pularButton}
-            accessibilityRole="button"
-            accessibilityLabel="Pular onboarding"
-          >
-            <Text style={styles.pularTexto}>Pular</Text>
-          </Pressable>
-        ) : (
-          <View style={styles.pularButton} />
-        )}
-      </View>
+      <View style={[styles.contentWrap, { maxWidth: MAX_CONTENT_WIDTH }]}>
+        <View style={styles.headerRow}>
+          <View />
+          {!ultimoSlide ? (
+            <Pressable
+              onPress={handlePular}
+              hitSlop={12}
+              style={styles.pularButton}
+              accessibilityRole="button"
+              accessibilityLabel="Pular onboarding"
+            >
+              <Text style={styles.pularTexto}>Pular</Text>
+            </Pressable>
+          ) : (
+            <View style={styles.pularButton} />
+          )}
+        </View>
 
-      <ScrollView
-        ref={scrollRef}
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        onScroll={handleScroll}
-        scrollEventThrottle={16}
-        bounces={false}
-      >
-        {SLIDES.map((slide, i) => (
-          <SlideView key={i} slide={slide} styles={styles} colors={colors} />
-        ))}
-      </ScrollView>
+        <Animated.ScrollView
+          ref={scrollRef as never}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          onScroll={handleScroll}
+          scrollEventThrottle={16}
+          bounces={false}
+          decelerationRate="fast"
+          snapToInterval={slideWidth}
+          snapToAlignment="start"
+        >
+          {SLIDES.map((slide, i) => (
+            <SlideView
+              key={i}
+              slide={slide}
+              index={i}
+              scrollX={scrollX}
+              slideWidth={slideWidth}
+              heroHeight={heroHeight}
+              styles={styles}
+            />
+          ))}
+        </Animated.ScrollView>
 
-      <View style={styles.dotsRow}>
-        {SLIDES.map((_, i) => (
+        <View style={styles.dotsRow}>
+          {SLIDES.map((_, i) => (
+            <Dot
+              key={i}
+              index={i}
+              scrollX={scrollX}
+              slideWidth={slideWidth}
+              accent={accentAtivo}
+              baseColor={colors.borderStrong}
+              onPress={() => irPara(i)}
+            />
+          ))}
+        </View>
+
+        <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.lg }]}>
           <Pressable
-            key={i}
-            onPress={() => irPara(i)}
-            hitSlop={8}
+            style={({ pressed }) => [
+              styles.botao,
+              { backgroundColor: accentAtivo },
+              pressed && styles.pressedSoft,
+            ]}
+            onPress={handleProximo}
             accessibilityRole="button"
-            accessibilityLabel={`Ir para o slide ${i + 1} de ${SLIDES.length}`}
-            accessibilityState={{ selected: i === indice }}
+            accessibilityLabel={
+              ultimoSlide ? 'Começar a usar o app' : 'Ir para o próximo slide'
+            }
           >
-            <View
-              style={[
-                styles.dot,
-                i === indice && styles.dotAtivo,
-                i === indice && { backgroundColor: accentAtivo },
-              ]}
+            <Text style={styles.botaoTexto}>{ultimoSlide ? 'Começar' : 'Próximo'}</Text>
+            <Ionicons
+              name={ultimoSlide ? 'sparkles' : 'arrow-forward'}
+              size={18}
+              color="#FFFFFF"
             />
           </Pressable>
-        ))}
-      </View>
-
-      <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.lg }]}>
-        <Pressable
-          style={({ pressed }) => [
-            styles.botao,
-            { backgroundColor: accentAtivo },
-            pressed && styles.pressedSoft,
-          ]}
-          onPress={handleProximo}
-          accessibilityRole="button"
-          accessibilityLabel={ultimoSlide ? 'Começar a usar o app' : 'Ir para o próximo slide'}
-        >
-          <Text style={styles.botaoTexto}>{ultimoSlide ? 'Começar' : 'Próximo'}</Text>
-          <Ionicons
-            name={ultimoSlide ? 'sparkles' : 'arrow-forward'}
-            size={18}
-            color="#FFFFFF"
-          />
-        </Pressable>
+        </View>
       </View>
     </View>
   );
@@ -240,6 +373,11 @@ const createStyles = (c: ThemeColors) =>
     container: {
       flex: 1,
       backgroundColor: c.bg,
+      alignItems: 'center',
+    },
+    contentWrap: {
+      flex: 1,
+      width: '100%',
     },
     headerRow: {
       flexDirection: 'row',
@@ -265,7 +403,6 @@ const createStyles = (c: ThemeColors) =>
     },
     heroWrap: {
       width: '100%',
-      height: HERO_HEIGHT,
       borderRadius: radius['2xl'],
       overflow: 'hidden',
       backgroundColor: c.surfaceElevated,
@@ -277,7 +414,7 @@ const createStyles = (c: ThemeColors) =>
       justifyContent: 'center',
     },
     heroImage: {
-      ...StyleSheet.absoluteFillObject,
+      flex: 1,
     },
     heroVignette: {
       ...StyleSheet.absoluteFillObject,
@@ -325,15 +462,6 @@ const createStyles = (c: ThemeColors) =>
       justifyContent: 'center',
       gap: spacing.xs + 2,
       paddingVertical: spacing.lg,
-    },
-    dot: {
-      width: 6,
-      height: 6,
-      borderRadius: 3,
-      backgroundColor: c.borderStrong,
-    },
-    dotAtivo: {
-      width: 24,
     },
     footer: {
       paddingHorizontal: spacing.xl,
