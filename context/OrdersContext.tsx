@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   createContext,
   useCallback,
@@ -8,10 +9,9 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { useAuth } from '@/context/AuthContext';
 import { STORAGE_KEYS } from '@/constants/storage-keys';
+import { useAuth } from '@/context/AuthContext';
 import { calcularPrazoSegundos } from '@/lib/estimativa';
 import type { CartItem, Order } from '@/types';
 
@@ -68,6 +68,7 @@ export function OrdersProvider({ children }: ProviderProps) {
   const [orders, setOrders] = useState<Order[]>([]);
   const [isHydrated, setIsHydrated] = useState(false);
   const userIdRef = useRef<string | null>(null);
+  const ordersRef = useRef<Order[]>([]);
   const timeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
   // Mantém o user atual em ref para callbacks de timeout
@@ -75,12 +76,21 @@ export function OrdersProvider({ children }: ProviderProps) {
     userIdRef.current = user?.id ?? null;
   }, [user]);
 
+  // Mantém orders em ref pra leituras frescas em fluxos síncronos rápidos
+  useEffect(() => {
+    ordersRef.current = orders;
+  }, [orders]);
+
   const clearAllTimeouts = useCallback(() => {
     timeoutsRef.current.forEach((timeoutId) => clearTimeout(timeoutId));
     timeoutsRef.current.clear();
   }, []);
 
-  const promoteToPronto = useCallback((orderId: string) => {
+  const promoteToPronto = useCallback((orderId: string, ownerUserId: string) => {
+    timeoutsRef.current.delete(orderId);
+    // Se o usuário ativo trocou desde o agendamento, descarta o promote
+    // pra não persistir o pedido na conta errada.
+    if (userIdRef.current !== ownerUserId) return;
     setOrders((prev) => {
       const next = prev.map((o) =>
         o.id === orderId && o.status === 'pendente'
@@ -89,15 +99,11 @@ export function OrdersProvider({ children }: ProviderProps) {
       );
       const sameRef = next.every((o, i) => o === prev[i]);
       if (sameRef) return prev;
-      const uid = userIdRef.current;
-      if (uid) {
-        saveOrdersToStorage(uid, next).catch(() => {
-          // persistência opcional — não bloqueia UX
-        });
-      }
+      saveOrdersToStorage(ownerUserId, next).catch(() => {
+        // persistência opcional — não bloqueia UX
+      });
       return next;
     });
-    timeoutsRef.current.delete(orderId);
   }, []);
 
   const schedulePromote = useCallback(
@@ -108,15 +114,13 @@ export function OrdersProvider({ children }: ProviderProps) {
       const prontoEmMs = order.prontoEm
         ? new Date(order.prontoEm).getTime()
         : new Date(order.criadoEm).getTime() + PREP_TIME_FALLBACK_MS;
-      const remaining = prontoEmMs - Date.now();
+      const remaining = Math.max(0, prontoEmMs - Date.now());
+      const ownerUserId = order.userId;
 
-      if (remaining <= 0) {
-        const id = setTimeout(() => promoteToPronto(order.id), 0);
-        timeoutsRef.current.set(order.id, id);
-        return;
-      }
-
-      const id = setTimeout(() => promoteToPronto(order.id), remaining);
+      const id = setTimeout(
+        () => promoteToPronto(order.id, ownerUserId),
+        remaining,
+      );
       timeoutsRef.current.set(order.id, id);
     },
     [promoteToPronto],
@@ -165,7 +169,9 @@ export function OrdersProvider({ children }: ProviderProps) {
       if (!user) {
         throw new Error('Sem usuário logado para criar pedido');
       }
-      const pedidosPendentes = orders.filter((o) => o.status === 'pendente').length;
+      // Lê orders via ref pra evitar stale closure em chamadas back-to-back
+      const atuais = ordersRef.current;
+      const pedidosPendentes = atuais.filter((o) => o.status === 'pendente').length;
       const prazoSegundos = calcularPrazoSegundos(pedidosPendentes);
       const agora = new Date();
       const prontoEm = new Date(agora.getTime() + prazoSegundos * 1000);
@@ -181,18 +187,22 @@ export function OrdersProvider({ children }: ProviderProps) {
         prontoEm: prontoEm.toISOString(),
         status: 'pendente',
       };
-      const next = [novo, ...orders];
+      const next = [novo, ...atuais];
+      ordersRef.current = next;
       setOrders(next);
       await persist(next);
       schedulePromote(novo);
       return novo;
     },
-    [user, orders, persist, schedulePromote],
+    [user, persist, schedulePromote],
   );
 
   const updateStatus = useCallback(
     async (orderId: string, status: Order['status']) => {
-      const next = orders.map((o) => (o.id === orderId ? { ...o, status } : o));
+      const next = ordersRef.current.map((o) =>
+        o.id === orderId ? { ...o, status } : o,
+      );
+      ordersRef.current = next;
       setOrders(next);
       await persist(next);
       // se foi marcado como terminal (retirado/cancelado), cancela auto-promote pendente
@@ -204,7 +214,7 @@ export function OrdersProvider({ children }: ProviderProps) {
         }
       }
     },
-    [orders, persist],
+    [persist],
   );
 
   const markPronto = useCallback(

@@ -1,3 +1,5 @@
+import { Ionicons } from '@expo/vector-icons';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import {
   Pressable,
@@ -6,20 +8,11 @@ import {
   Text,
   View,
 } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
 
 import EmptyState from '@/components/EmptyState';
 import ItemThumbnail from '@/components/ItemThumbnail';
 import LoadingScreen from '@/components/LoadingScreen';
-import { useCart } from '@/context/CartContext';
-import { useOrders } from '@/context/OrdersContext';
-import { useTheme } from '@/context/ThemeContext';
-import CARDAPIO from '@/data/cardapio';
-import { confirmar } from '@/lib/confirm';
-import { formatarTempoRestante } from '@/lib/estimativa';
-import { haptic } from '@/lib/haptics';
 import {
   fontFamily,
   fontSize,
@@ -29,7 +22,14 @@ import {
   spacing,
   statusPalette,
 } from '@/constants/theme';
-import type { ItemCardapio, Order, ThemeColors } from '@/types';
+import { useCart } from '@/context/CartContext';
+import { useOrders } from '@/context/OrdersContext';
+import { useTheme } from '@/context/ThemeContext';
+import CARDAPIO from '@/data/cardapio';
+import { confirmar } from '@/lib/confirm';
+import { formatarTempoRestante } from '@/lib/estimativa';
+import { haptic } from '@/lib/haptics';
+import type { ItemCardapio, ThemeColors } from '@/types';
 
 function formatarDataCompleta(iso: string): string {
   try {
@@ -59,16 +59,19 @@ export default function PedidoDetalhesScreen() {
 
   const [tempoRestante, setTempoRestante] = useState<string>('');
 
+  const isPendente = order?.status === 'pendente';
+  const prontoEmIso = order?.prontoEm;
+
   useEffect(() => {
-    if (!order || order.status !== 'pendente' || !order.prontoEm) return;
+    if (!isPendente || !prontoEmIso) return;
     const calcular = () => {
-      const remaining = (new Date(order.prontoEm!).getTime() - Date.now()) / 1000;
+      const remaining = (new Date(prontoEmIso).getTime() - Date.now()) / 1000;
       setTempoRestante(formatarTempoRestante(remaining));
     };
     calcular();
     const interval = setInterval(calcular, 10_000);
     return () => clearInterval(interval);
-  }, [order]);
+  }, [isPendente, prontoEmIso]);
 
   if (!isHydrated) {
     return <LoadingScreen label="Carregando pedido" />;

@@ -1,3 +1,5 @@
+import { Ionicons } from '@expo/vector-icons';
+import { Redirect, useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
@@ -7,19 +9,10 @@ import {
   Text,
   View,
 } from 'react-native';
-import { Redirect, useRouter } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
 import QRCode from 'react-native-qrcode-svg';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import LoadingScreen from '@/components/LoadingScreen';
-import { useCart } from '@/context/CartContext';
-import { useOrders } from '@/context/OrdersContext';
-import { useTheme } from '@/context/ThemeContext';
-import { confirmar } from '@/lib/confirm';
-import { haptic } from '@/lib/haptics';
-import { formatarTempoRestante } from '@/lib/estimativa';
-import { notifyImmediate, scheduleNotification } from '@/lib/notifications';
 import {
   fontFamily,
   fontSize,
@@ -28,6 +21,13 @@ import {
   shadow,
   spacing,
 } from '@/constants/theme';
+import { useCart } from '@/context/CartContext';
+import { useOrders } from '@/context/OrdersContext';
+import { useTheme } from '@/context/ThemeContext';
+import { confirmar } from '@/lib/confirm';
+import { formatarTempoRestante } from '@/lib/estimativa';
+import { haptic } from '@/lib/haptics';
+import { notifyImmediate, scheduleNotification } from '@/lib/notifications';
 import type { Order, ThemeColors } from '@/types';
 
 export default function Confirmacao() {
@@ -53,6 +53,7 @@ export default function Confirmacao() {
     if (totalItens === 0) return;
     hasCreatedRef.current = true;
 
+    let cancelled = false;
     const senha = Math.floor(Math.random() * 900) + 100;
     const itemsSnapshot = [...items];
     const totalSnapshot = totalPreco;
@@ -66,6 +67,7 @@ export default function Confirmacao() {
           total: totalSnapshot,
           resumo: resumoSnapshot,
         });
+        if (cancelled) return;
         setOrder(novo);
         haptic.success();
 
@@ -85,10 +87,14 @@ export default function Confirmacao() {
         );
 
         clear();
-      } catch (e) {
-        hasCreatedRef.current = false;
+      } catch {
+        if (!cancelled) hasCreatedRef.current = false;
       }
     })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [totalItens, items, totalPreco, buildResumo, addOrder, clear]);
 
   // Animações ao receber a senha
