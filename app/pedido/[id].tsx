@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
-  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -18,6 +17,7 @@ import { useCart } from '@/context/CartContext';
 import { useOrders } from '@/context/OrdersContext';
 import { useTheme } from '@/context/ThemeContext';
 import CARDAPIO from '@/data/cardapio';
+import { confirmar } from '@/lib/confirm';
 import { formatarTempoRestante } from '@/lib/estimativa';
 import { haptic } from '@/lib/haptics';
 import {
@@ -113,21 +113,17 @@ export default function PedidoDetalhesScreen() {
     .filter((x): x is { item: ItemCardapio; quantidade: number } => x !== null);
 
   const handleCancelar = () => {
-    Alert.alert(
-      'Cancelar pedido?',
-      `O pedido com a senha ${order.senha} será cancelado e não poderá ser recuperado.`,
-      [
-        { text: 'Manter pedido', style: 'cancel' },
-        {
-          text: 'Cancelar',
-          style: 'destructive',
-          onPress: async () => {
-            haptic.warning();
-            await markCancelado(order.id);
-          },
-        },
-      ],
-    );
+    confirmar({
+      titulo: 'Cancelar pedido?',
+      mensagem: `O pedido com a senha ${order.senha} será cancelado e não poderá ser recuperado.`,
+      confirmText: 'Cancelar pedido',
+      cancelText: 'Manter pedido',
+      destrutivo: true,
+      onConfirm: async () => {
+        haptic.warning();
+        await markCancelado(order.id);
+      },
+    });
   };
 
   const handleMarcarRetirado = async () => {

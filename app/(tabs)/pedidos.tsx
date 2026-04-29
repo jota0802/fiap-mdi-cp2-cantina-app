@@ -1,6 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
 import {
-  Alert,
   FlatList,
   Pressable,
   RefreshControl,
@@ -18,6 +17,7 @@ import { SkeletonOrderCard } from '@/components/Skeleton';
 import { useCart } from '@/context/CartContext';
 import { useOrders } from '@/context/OrdersContext';
 import { useTheme } from '@/context/ThemeContext';
+import { confirmar } from '@/lib/confirm';
 import { haptic } from '@/lib/haptics';
 import {
   fontFamily,
@@ -180,21 +180,17 @@ export default function PedidosScreen() {
 
   const handleCancelar = useCallback(
     (order: Order) => {
-      Alert.alert(
-        'Cancelar pedido?',
-        `O pedido com a senha ${order.senha} será cancelado e não poderá ser recuperado.`,
-        [
-          { text: 'Manter pedido', style: 'cancel' },
-          {
-            text: 'Cancelar',
-            style: 'destructive',
-            onPress: async () => {
-              haptic.warning();
-              await markCancelado(order.id);
-            },
-          },
-        ],
-      );
+      confirmar({
+        titulo: 'Cancelar pedido?',
+        mensagem: `O pedido com a senha ${order.senha} será cancelado e não poderá ser recuperado.`,
+        confirmText: 'Cancelar pedido',
+        cancelText: 'Manter pedido',
+        destrutivo: true,
+        onConfirm: async () => {
+          haptic.warning();
+          await markCancelado(order.id);
+        },
+      });
     },
     [markCancelado],
   );

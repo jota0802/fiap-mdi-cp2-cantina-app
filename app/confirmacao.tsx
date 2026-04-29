@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Alert,
   Animated,
   Pressable,
   ScrollView,
@@ -17,6 +16,7 @@ import LoadingScreen from '@/components/LoadingScreen';
 import { useCart } from '@/context/CartContext';
 import { useOrders } from '@/context/OrdersContext';
 import { useTheme } from '@/context/ThemeContext';
+import { confirmar } from '@/lib/confirm';
 import { haptic } from '@/lib/haptics';
 import { formatarTempoRestante } from '@/lib/estimativa';
 import { notifyImmediate, scheduleNotification } from '@/lib/notifications';
@@ -235,23 +235,19 @@ export default function Confirmacao() {
           <Pressable
             style={({ pressed }) => [styles.botaoCancelar, pressed && styles.pressedSoft]}
             onPress={() => {
-              Alert.alert(
-                'Cancelar este pedido?',
-                `O pedido com a senha ${order.senha} será cancelado e não poderá ser recuperado.`,
-                [
-                  { text: 'Manter pedido', style: 'cancel' },
-                  {
-                    text: 'Cancelar',
-                    style: 'destructive',
-                    onPress: async () => {
-                      haptic.warning();
-                      await markCancelado(order.id);
-                      setCancelado(true);
-                      setTimeout(() => router.replace('/pedidos'), 600);
-                    },
-                  },
-                ],
-              );
+              confirmar({
+                titulo: 'Cancelar este pedido?',
+                mensagem: `O pedido com a senha ${order.senha} será cancelado e não poderá ser recuperado.`,
+                confirmText: 'Cancelar pedido',
+                cancelText: 'Manter pedido',
+                destrutivo: true,
+                onConfirm: async () => {
+                  haptic.warning();
+                  await markCancelado(order.id);
+                  setCancelado(true);
+                  setTimeout(() => router.replace('/pedidos'), 600);
+                },
+              });
             }}
             accessibilityRole="button"
             accessibilityLabel="Cancelar este pedido"
