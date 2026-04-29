@@ -20,7 +20,6 @@ Aplicativo mobile para pedidos na cantina da FIAP. Faça seu pedido pelo celular
 9. [Estrutura de pastas](#-estrutura-de-pastas)
 10. [Decisões técnicas](#️-decisões-técnicas)
 11. [Tecnologias](#-tecnologias)
-12. [Próximos passos](#️-próximos-passos)
 
 ---
 
@@ -67,7 +66,7 @@ Um app estilo fast-food (BK, McDonald's) onde o aluno:
 
 - Sistema completo de autenticação (cadastro + login + logout + recuperação) com sessão persistida
 - Persistência de pedidos, carrinho e favoritos no AsyncStorage **isolados por usuário**
-- 5 contexts globais (Theme, Auth, Cart, Orders, Favorites)
+- 6 contexts globais (Theme, Locale, Auth, Cart, Orders, Favorites)
 - Validação inline em todos os formulários (sem `Alert` ou modais)
 - Tab **Pedidos** com histórico, status colorido e pull-to-refresh
 - Tela **Pedido/[id]** com timeline e ações por status
@@ -214,8 +213,9 @@ A árvore de providers no [`app/_layout.tsx`](./app/_layout.tsx) é deliberada �
 ```mermaid
 graph TD
     Root[RootLayout<br/>fontsLoaded check]
-    Root --> Theme[ThemeProvider<br/>colors, mode, toggle]
-    Theme --> Auth[AuthProvider<br/>user, signIn, signUp, signOut]
+    Root --> Theme[ThemeProvider<br/>colors, mode, cross-fade]
+    Theme --> Locale[LocaleProvider<br/>pt/en/es, t&#40;&#41;]
+    Locale --> Auth[AuthProvider<br/>user, signIn, signUp, signOut]
     Auth --> Cart[CartProvider<br/>items, total, isolado por user]
     Auth --> Orders[OrdersProvider<br/>orders, status, auto-promote]
     Auth --> Fav[FavoritesProvider<br/>favoritos por user]
@@ -478,15 +478,17 @@ Microinterações em todo o app:
 
 Todas usam `useNativeDriver` quando possível para rodar fora da JS thread.
 
-### 3️⃣ Modo Escuro / Tema Dinâmico
+### 3️⃣ Modo Escuro / Tema Dinâmico — com **cross-fade**
 
 **Arquivo:** [`context/ThemeContext.tsx`](./context/ThemeContext.tsx)
-Toggle no Perfil que alterna entre `dark` e `light`. Persistido no AsyncStorage e respeita o esquema do sistema no boot. **Todas as 13 telas reagem instantaneamente** via `useTheme()` (não há cor hardcoded). Padrão usado:
+Toggle no Perfil alterna entre `dark` e `light`. Persistido no AsyncStorage e respeita o esquema do sistema no boot. **Todas as 13 telas reagem instantaneamente** via `useTheme()` (não há cor hardcoded). Padrão usado:
 
 ```ts
 const { colors } = useTheme();
 const styles = useMemo(() => createStyles(colors), [colors]);
 ```
+
+**Cross-fade ao trocar tema:** ao alternar, o provider captura a cor de fundo do tema antigo, cobre a tela com um overlay de mesma cor (opacidade 1) e dissolve esse overlay até 0 em 320ms enquanto a paleta nova entra por baixo. Resultado: transição suave em vez do flash duro de cor.
 
 ### 4️⃣ Notificações Locais (`expo-notifications`)
 
@@ -506,10 +508,21 @@ Tela Perfil tem **três** ações: "Tirar Foto" (câmera), "Galeria" (biblioteca
 **Arquivo:** [`app/(tabs)/cardapio.tsx`](./app/(tabs)/cardapio.tsx)
 `TextInput` no header filtra os 12 itens por **nome**, **descrição**, **categoria** ou **tag**. Combinado com chips de categoria.
 
-### ✨ Bônus: Feedback Tátil (`expo-haptics`)
+### ✨ Bônus 1: Feedback Tátil (`expo-haptics`)
 
 **Arquivo:** [`lib/haptics.ts`](./lib/haptics.ts)
 Vibração leve em add/remove item, confirmar pedido, login OK/erro, logout, swipe entre slides do onboarding. Aumenta sensação de qualidade premium.
+
+### ✨ Bônus 2: Internacionalização (i18n) PT/EN/ES
+
+**Arquivos:** [`lib/i18n.ts`](./lib/i18n.ts) + [`context/LocaleContext.tsx`](./context/LocaleContext.tsx)
+3 idiomas suportados (Português · English · Español). O `LocaleContext` expõe `locale`, `setLocale(l)` e `t(key, vars?)`. As strings principais (tabs, saudações, status, CTAs, validações, onboarding, perfil, home) usam `t()` em vez de literais. Idioma persiste em `@cantina:locale`. Seletor com 3 chips no Perfil — bandeira + nome do idioma — troca em runtime sem precisar reiniciar.
+
+```ts
+const { t, locale, setLocale } = useLocale();
+t('greeting.morning');                  // "Bom dia" / "Good morning" / "Buenos días"
+t('order.cancel_confirm_message', { senha: 123 }); // interpola {senha}
+```
 
 ---
 
@@ -530,7 +543,7 @@ app-cantina/
 │   │   ├── pedidos.tsx           # Histórico
 │   │   └── perfil.tsx            # Perfil
 │   ├── pedido/[id].tsx           # Detalhes do pedido
-│   ├── _layout.tsx               # Root: 5 Providers + Splash
+│   ├── _layout.tsx               # Root: 6 Providers + Splash
 │   ├── carrinho.tsx              # Stack screen
 │   ├── confirmacao.tsx           # Stack screen (slide_from_bottom)
 │   ├── perfil-editar.tsx         # Stack screen
@@ -542,8 +555,9 @@ app-cantina/
 │   ├── ItemCardapio.tsx · ItemThumbnail.tsx · ProfileAvatar.tsx · FiapLogo.tsx
 │   └── forms/                    # campos compostos
 │
-├── context/                      # 5 Contexts (Context API)
-│   ├── ThemeContext.tsx          # mode, colors, toggleTheme
+├── context/                      # 6 Contexts (Context API)
+│   ├── ThemeContext.tsx          # mode, colors, toggleTheme (com cross-fade)
+│   ├── LocaleContext.tsx         # locale (pt/en/es), setLocale, t()
 │   ├── AuthContext.tsx           # user, signUp/signIn/signOut, updateUser, resetSenha
 │   ├── CartContext.tsx           # items, totalItens, totalPreco, addItem, ...
 │   ├── OrdersContext.tsx         # orders, addOrder, markPronto/Retirado/Cancelado, auto-promote
@@ -677,22 +691,6 @@ Os ~70 commits do projeto foram divididos entre os 4 integrantes via `git config
 | **Feedback** | expo-haptics |
 | **Tipografia** | @expo-google-fonts/manrope (5 pesos) |
 | **Ícones** | @expo/vector-icons (Ionicons) |
-
----
-
-## 🛣️ Próximos Passos
-
-Funcionalidades que implementaríamos com mais tempo:
-
-- [ ] Backend real (Firebase/Supabase) para sincronizar pedidos entre devices
-- [ ] Sistema de avaliação dos itens
-- [ ] Cupons de desconto e promoções
-- [ ] Pagamento integrado (Pix / cartão)
-- [ ] Múltiplos endereços de retirada (campus diferentes)
-- [ ] Biometria pra login (FaceID/TouchID)
-- [ ] Animação cross-fade da tela inteira ao trocar tema
-- [ ] Internacionalização (i18n) PT/EN/ES
-- [ ] Testes E2E (Detox)
 
 ---
 
