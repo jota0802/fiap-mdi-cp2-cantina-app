@@ -1,12 +1,12 @@
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 
 import FiapLogo from '@/components/FiapLogo';
-import { useTheme } from '@/context/ThemeContext';
 import { fontFamily, fontSize, letterSpacing, radius, spacing } from '@/constants/theme';
+import { useTheme } from '@/context/ThemeContext';
 import type { ThemeColors } from '@/types';
 
 const INTEGRANTES = [

@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   createContext,
   useCallback,
@@ -7,10 +8,9 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { useAuth } from '@/context/AuthContext';
 import { STORAGE_KEYS } from '@/constants/storage-keys';
+import { useAuth } from '@/context/AuthContext';
 
 type FavoritesContextValue = {
   favoritos: number[];

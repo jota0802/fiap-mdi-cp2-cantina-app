@@ -1,9 +1,11 @@
+import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
   Platform,
   Pressable,
-  ScrollView,
+  type ScrollView,
   StyleSheet,
   Text,
   View,
@@ -12,11 +14,7 @@ import {
   type NativeSyntheticEvent,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Image } from 'expo-image';
-import { Ionicons } from '@expo/vector-icons';
 
-import { useTheme } from '@/context/ThemeContext';
-import { haptic } from '@/lib/haptics';
 import {
   fontFamily,
   fontSize,
@@ -25,6 +23,8 @@ import {
   shadow,
   spacing,
 } from '@/constants/theme';
+import { useTheme } from '@/context/ThemeContext';
+import { haptic } from '@/lib/haptics';
 import type { ThemeColors } from '@/types';
 
 type Slide = {

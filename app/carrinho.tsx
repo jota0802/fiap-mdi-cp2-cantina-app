@@ -1,3 +1,5 @@
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { useMemo } from 'react';
 import {
   Animated,
@@ -8,16 +10,9 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 
 import EmptyState from '@/components/EmptyState';
 import ItemThumbnail from '@/components/ItemThumbnail';
-import { useCart } from '@/context/CartContext';
-import { useTheme } from '@/context/ThemeContext';
-import CARDAPIO from '@/data/cardapio';
-import { useFadeIn } from '@/hooks/useFadeIn';
-import { haptic } from '@/lib/haptics';
 import {
   fontFamily,
   fontSize,
@@ -25,6 +20,11 @@ import {
   shadow,
   spacing,
 } from '@/constants/theme';
+import { useCart } from '@/context/CartContext';
+import { useTheme } from '@/context/ThemeContext';
+import CARDAPIO from '@/data/cardapio';
+import { useFadeIn } from '@/hooks/useFadeIn';
+import { haptic } from '@/lib/haptics';
 import type { ItemCardapio, ThemeColors } from '@/types';
 
 type LinhaItemProps = {

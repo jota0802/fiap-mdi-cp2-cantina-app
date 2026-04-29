@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useState, type ReactNode } from 'react';
 import {
   Animated,
@@ -7,10 +8,9 @@ import {
   View,
   type TextInputProps,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 
+import { fontFamily, fontSize, radius, spacing } from '@/constants/theme';
 import { useTheme } from '@/context/ThemeContext';
-import { fontFamily, fontSize, letterSpacing, radius, spacing } from '@/constants/theme';
 
 type Props = TextInputProps & {
   label?: string;

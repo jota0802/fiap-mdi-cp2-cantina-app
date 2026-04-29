@@ -1,9 +1,9 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useRef } from 'react';
 import { Animated, StyleSheet, Text } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 
-import { useTheme } from '@/context/ThemeContext';
 import { fontFamily, fontSize, letterSpacing, radius, spacing } from '@/constants/theme';
+import { useTheme } from '@/context/ThemeContext';
 
 type ToastVariant = 'success' | 'error' | 'info';
 

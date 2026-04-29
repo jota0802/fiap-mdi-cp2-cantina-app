@@ -2,8 +2,8 @@ import { useEffect, useRef } from 'react';
 import { Animated, StyleSheet, Text, View } from 'react-native';
 
 import FiapLogo from '@/components/FiapLogo';
-import { useTheme } from '@/context/ThemeContext';
 import { fontFamily, fontSize, spacing } from '@/constants/theme';
+import { useTheme } from '@/context/ThemeContext';
 
 type Props = {
   label?: string;

@@ -1,3 +1,6 @@
+import { Ionicons } from '@expo/vector-icons';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
+import { useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import {
   FlatList,
@@ -8,17 +11,9 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 
 import EmptyState from '@/components/EmptyState';
 import { SkeletonOrderCard } from '@/components/Skeleton';
-import { useCart } from '@/context/CartContext';
-import { useOrders } from '@/context/OrdersContext';
-import { useTheme } from '@/context/ThemeContext';
-import { confirmar } from '@/lib/confirm';
-import { haptic } from '@/lib/haptics';
 import {
   fontFamily,
   fontSize,
@@ -28,6 +23,11 @@ import {
   spacing,
   statusPalette,
 } from '@/constants/theme';
+import { useCart } from '@/context/CartContext';
+import { useOrders } from '@/context/OrdersContext';
+import { useTheme } from '@/context/ThemeContext';
+import { confirmar } from '@/lib/confirm';
+import { haptic } from '@/lib/haptics';
 import type { Order, ThemeColors } from '@/types';
 
 function formatarData(iso: string): string {

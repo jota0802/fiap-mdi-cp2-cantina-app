@@ -1,3 +1,4 @@
+import { Link, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import {
   Animated,
@@ -10,18 +11,17 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Link, useRouter } from 'expo-router';
 
 import Button from '@/components/Button';
 import FiapLogo from '@/components/FiapLogo';
 import Input from '@/components/Input';
+import { fontFamily, fontSize, spacing } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useFadeIn } from '@/hooks/useFadeIn';
 import { useShake } from '@/hooks/useShake';
 import { haptic } from '@/lib/haptics';
 import { validateEmail, validateSenha } from '@/lib/validation';
-import { fontFamily, fontSize, spacing } from '@/constants/theme';
 import type { ThemeColors } from '@/types';
 
 type Errors = {

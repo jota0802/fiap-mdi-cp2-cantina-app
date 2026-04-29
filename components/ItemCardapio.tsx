@@ -1,11 +1,8 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useMemo, useRef } from 'react';
 import { View, Text, Pressable, StyleSheet, Animated } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 
 import ItemThumbnail from '@/components/ItemThumbnail';
-import { useFavorites } from '@/context/FavoritesContext';
-import { useTheme } from '@/context/ThemeContext';
-import { haptic } from '@/lib/haptics';
 import {
   fontFamily,
   fontSize,
@@ -13,6 +10,9 @@ import {
   spacing,
   tagPalette,
 } from '@/constants/theme';
+import { useFavorites } from '@/context/FavoritesContext';
+import { useTheme } from '@/context/ThemeContext';
+import { haptic } from '@/lib/haptics';
 import type { ItemCardapio as ItemCardapioModel, ThemeColors } from '@/types';
 
 type Props = {

@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   createContext,
   useCallback,
@@ -8,10 +9,9 @@ import {
   type ReactNode,
 } from 'react';
 import { useColorScheme } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { palette } from '@/constants/theme';
 import { STORAGE_KEYS } from '@/constants/storage-keys';
+import { palette } from '@/constants/theme';
 import type { ThemeColors, ThemeMode } from '@/types';
 
 type ThemeContextValue = {

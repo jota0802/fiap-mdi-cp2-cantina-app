@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
 import { Image, Platform, StyleSheet, Text, View } from 'react-native';
 
-import { useTheme } from '@/context/ThemeContext';
 import { fontFamily, letterSpacing } from '@/constants/theme';
+import { useTheme } from '@/context/ThemeContext';
 import type { ThemeColors } from '@/types';
 
 type Props = {

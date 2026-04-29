@@ -1,3 +1,6 @@
+import { Ionicons } from '@expo/vector-icons';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
+import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
@@ -8,17 +11,10 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 
-import CARDAPIO from '@/data/cardapio';
 import EmptyState from '@/components/EmptyState';
 import Input from '@/components/Input';
 import ItemCardapio from '@/components/ItemCardapio';
-import { useCart } from '@/context/CartContext';
-import { useTheme } from '@/context/ThemeContext';
-import { haptic } from '@/lib/haptics';
 import {
   fontFamily,
   fontSize,
@@ -27,6 +23,10 @@ import {
   shadow,
   spacing,
 } from '@/constants/theme';
+import { useCart } from '@/context/CartContext';
+import { useTheme } from '@/context/ThemeContext';
+import CARDAPIO from '@/data/cardapio';
+import { haptic } from '@/lib/haptics';
 import type { Categoria, ThemeColors } from '@/types';
 
 const CATEGORIAS_ORDEM: ('Todas' | Categoria)[] = [

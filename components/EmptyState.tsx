@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet } from 'react-native';
 
-import { useTheme } from '@/context/ThemeContext';
 import { fontFamily, fontSize, letterSpacing, spacing } from '@/constants/theme';
+import { useTheme } from '@/context/ThemeContext';
 
 type Props = {
   emoji?: string;

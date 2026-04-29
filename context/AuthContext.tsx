@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   createContext,
   useCallback,
@@ -7,7 +8,6 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { STORAGE_KEYS, SECURE_KEYS } from '@/constants/storage-keys';
 import { hashSenha, verifySenha } from '@/lib/hash';
@@ -160,8 +160,9 @@ export function AuthProvider({ children }: ProviderProps) {
       if (!user) return;
       const users = await loadUsers();
       if (patch.email && patch.email.toLowerCase() !== user.email.toLowerCase()) {
+        const novoEmail = patch.email.toLowerCase();
         const taken = users.some(
-          (u) => u.id !== user.id && u.email.toLowerCase() === patch.email!.toLowerCase(),
+          (u) => u.id !== user.id && u.email.toLowerCase() === novoEmail,
         );
         if (taken) {
           throw new Error('E-mail já está em uso por outra conta');

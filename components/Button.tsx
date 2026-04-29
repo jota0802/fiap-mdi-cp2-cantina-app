@@ -9,8 +9,8 @@ import {
   type ViewStyle,
 } from 'react-native';
 
-import { useTheme } from '@/context/ThemeContext';
 import { fontFamily, fontSize, radius, shadow, spacing } from '@/constants/theme';
+import { useTheme } from '@/context/ThemeContext';
 
 type Variant = 'primary' | 'secondary' | 'ghost';
 type Size = 'sm' | 'md' | 'lg';

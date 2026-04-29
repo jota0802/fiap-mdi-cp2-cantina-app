@@ -1,3 +1,5 @@
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import {
   Animated,
@@ -10,12 +12,16 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 
 import Button from '@/components/Button';
 import Input from '@/components/Input';
 import Toast from '@/components/Toast';
+import {
+  fontFamily,
+  fontSize,
+  radius,
+  spacing,
+} from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useShake } from '@/hooks/useShake';
@@ -25,12 +31,6 @@ import {
   validateEmail,
   validateSenha,
 } from '@/lib/validation';
-import {
-  fontFamily,
-  fontSize,
-  radius,
-  spacing,
-} from '@/constants/theme';
 import type { ThemeColors } from '@/types';
 
 type Errors = {
