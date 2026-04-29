@@ -5,10 +5,11 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react';
-import { useColorScheme } from 'react-native';
+import { Animated, StyleSheet, useColorScheme, View } from 'react-native';
 
 import { STORAGE_KEYS } from '@/constants/storage-keys';
 import { palette } from '@/constants/theme';
@@ -24,6 +25,8 @@ type ThemeContextValue = {
 
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
+const FADE_DURATION_MS = 320;
+
 type ProviderProps = {
   children: ReactNode;
 };
@@ -32,6 +35,10 @@ export function ThemeProvider({ children }: ProviderProps) {
   const systemScheme = useColorScheme();
   const [mode, setMode] = useState<ThemeMode>(systemScheme === 'light' ? 'light' : 'dark');
   const [isHydrated, setIsHydrated] = useState(false);
+
+  // Cross-fade — overlay do tema antigo dissolve enquanto a nova paleta entra
+  const overlayOpacity = useRef(new Animated.Value(0)).current;
+  const [overlayColor, setOverlayColor] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -56,21 +63,42 @@ export function ThemeProvider({ children }: ProviderProps) {
     });
   }, []);
 
+  const animateTransition = useCallback(
+    (fromMode: ThemeMode) => {
+      // Captura a cor de fundo atual e cobre a tela com ela.
+      // Em seguida fade pra 0, revelando a paleta nova por baixo.
+      setOverlayColor(palette[fromMode].bg);
+      overlayOpacity.setValue(1);
+      Animated.timing(overlayOpacity, {
+        toValue: 0,
+        duration: FADE_DURATION_MS,
+        useNativeDriver: true,
+      }).start(({ finished }) => {
+        if (finished) setOverlayColor(null);
+      });
+    },
+    [overlayOpacity],
+  );
+
   const setTheme = useCallback(
     (next: ThemeMode) => {
-      setMode(next);
+      setMode((prev) => {
+        if (prev !== next) animateTransition(prev);
+        return next;
+      });
       persistMode(next);
     },
-    [persistMode],
+    [animateTransition, persistMode],
   );
 
   const toggleTheme = useCallback(() => {
     setMode((prev) => {
       const next: ThemeMode = prev === 'dark' ? 'light' : 'dark';
+      animateTransition(prev);
       persistMode(next);
       return next;
     });
-  }, [persistMode]);
+  }, [animateTransition, persistMode]);
 
   const value = useMemo<ThemeContextValue>(
     () => ({
@@ -83,8 +111,29 @@ export function ThemeProvider({ children }: ProviderProps) {
     [mode, isHydrated, toggleTheme, setTheme],
   );
 
-  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
+  return (
+    <ThemeContext.Provider value={value}>
+      <View style={styles.root}>
+        {children}
+        {overlayColor ? (
+          <Animated.View
+            pointerEvents="none"
+            style={[
+              StyleSheet.absoluteFillObject,
+              styles.overlay,
+              { backgroundColor: overlayColor, opacity: overlayOpacity },
+            ]}
+          />
+        ) : null}
+      </View>
+    </ThemeContext.Provider>
+  );
 }
+
+const styles = StyleSheet.create({
+  root: { flex: 1 },
+  overlay: { zIndex: 9999 },
+});
 
 export function useTheme(): ThemeContextValue {
   const ctx = useContext(ThemeContext);
