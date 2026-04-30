@@ -2,12 +2,17 @@ import type { ItemCardapio } from '@/types';
 
 const UNSPLASH_PARAMS = '?w=240&h=240&fit=crop&q=80';
 
+// Pratos brasileiros (Pão de Queijo, Coxinha, Brigadeiro, Açaí Bowl)
+// ficam só com nome PT — não traduzem. Itens internacionais ganham
+// nomeKey/descricaoKey pra exibir traducao via t().
 const CARDAPIO: ItemCardapio[] = [
   {
     id: 1,
     nome: 'Café Espresso',
+    nomeKey: 'item.espresso.name',
     preco: 5.0,
     descricao: 'Café forte e encorpado',
+    descricaoKey: 'item.espresso.desc',
     emoji: '☕',
     imagem: `https://images.unsplash.com/photo-1510707577719-ae7c14805e3a${UNSPLASH_PARAMS}`,
     categoria: 'Bebidas',
@@ -16,9 +21,10 @@ const CARDAPIO: ItemCardapio[] = [
   {
     id: 2,
     nome: 'Cappuccino',
-    preco: 8.0,
     descricao: 'Com espuma cremosa',
+    descricaoKey: 'item.cappuccino.desc',
     emoji: '☕',
+    preco: 8.0,
     imagem: `https://images.unsplash.com/photo-1572442388796-11668a67e53d${UNSPLASH_PARAMS}`,
     categoria: 'Bebidas',
     tags: ['quente', 'popular'],
@@ -26,8 +32,10 @@ const CARDAPIO: ItemCardapio[] = [
   {
     id: 3,
     nome: 'Suco Natural',
+    nomeKey: 'item.juice.name',
     preco: 7.0,
     descricao: 'Laranja, limão ou maracujá',
+    descricaoKey: 'item.juice.desc',
     emoji: '🧃',
     imagem: `https://images.unsplash.com/photo-1546549032-9571cd6b27df${UNSPLASH_PARAMS}`,
     categoria: 'Bebidas',
@@ -38,6 +46,7 @@ const CARDAPIO: ItemCardapio[] = [
     nome: 'Pão de Queijo',
     preco: 4.5,
     descricao: 'Quentinho e crocante',
+    descricaoKey: 'item.paodequeijo.desc',
     emoji: '🧀',
     imagem: `https://images.unsplash.com/photo-1518779578993-ec3579fee39f${UNSPLASH_PARAMS}`,
     categoria: 'Lanches',
@@ -48,6 +57,7 @@ const CARDAPIO: ItemCardapio[] = [
     nome: 'Coxinha',
     preco: 6.0,
     descricao: 'Frango com catupiry',
+    descricaoKey: 'item.coxinha.desc',
     emoji: '🍗',
     imagem: `https://images.unsplash.com/photo-1559847844-5315695dadae${UNSPLASH_PARAMS}`,
     categoria: 'Lanches',
@@ -56,8 +66,10 @@ const CARDAPIO: ItemCardapio[] = [
   {
     id: 6,
     nome: 'X-Burger',
+    nomeKey: 'item.burger.name',
     preco: 12.0,
     descricao: 'Hambúrguer artesanal completo',
+    descricaoKey: 'item.burger.desc',
     emoji: '🍔',
     imagem: `https://images.unsplash.com/photo-1568901346375-23c9450c58cd${UNSPLASH_PARAMS}`,
     categoria: 'Lanches',
@@ -66,8 +78,10 @@ const CARDAPIO: ItemCardapio[] = [
   {
     id: 7,
     nome: 'Misto Quente',
+    nomeKey: 'item.toast.name',
     preco: 8.5,
     descricao: 'Presunto e queijo na chapa',
+    descricaoKey: 'item.toast.desc',
     emoji: '🥪',
     imagem: `https://images.unsplash.com/photo-1528736235302-52922df5c122${UNSPLASH_PARAMS}`,
     categoria: 'Lanches',
@@ -78,6 +92,7 @@ const CARDAPIO: ItemCardapio[] = [
     nome: 'Açaí Bowl',
     preco: 15.0,
     descricao: 'Com granola e banana',
+    descricaoKey: 'item.acai.desc',
     emoji: '🍇',
     imagem: `https://images.unsplash.com/photo-1490474418585-ba9bad8fd0ea${UNSPLASH_PARAMS}`,
     categoria: 'Sobremesas',
@@ -88,6 +103,7 @@ const CARDAPIO: ItemCardapio[] = [
     nome: 'Brigadeiro Gourmet',
     preco: 4.0,
     descricao: 'Tradicional brasileiro com chocolate belga',
+    descricaoKey: 'item.brigadeiro.desc',
     emoji: '🍫',
     imagem: `https://images.unsplash.com/photo-1481391032119-d89fee407e44${UNSPLASH_PARAMS}`,
     categoria: 'Sobremesas',
@@ -96,8 +112,10 @@ const CARDAPIO: ItemCardapio[] = [
   {
     id: 10,
     nome: 'Salada Caesar',
+    nomeKey: 'item.caesar.name',
     preco: 14.0,
     descricao: 'Folhas frescas, frango grelhado e parmesão',
+    descricaoKey: 'item.caesar.desc',
     emoji: '🥗',
     imagem: `https://images.unsplash.com/photo-1546793665-c74683f339c1${UNSPLASH_PARAMS}`,
     categoria: 'Lanches',
@@ -106,8 +124,10 @@ const CARDAPIO: ItemCardapio[] = [
   {
     id: 11,
     nome: 'Refrigerante Lata',
+    nomeKey: 'item.soda.name',
     preco: 5.5,
     descricao: 'Coca, Guaraná, Sprite ou Fanta',
+    descricaoKey: 'item.soda.desc',
     emoji: '🥤',
     imagem: `https://images.unsplash.com/photo-1581636625402-29b2a704ef13${UNSPLASH_PARAMS}`,
     categoria: 'Bebidas',
@@ -116,9 +136,10 @@ const CARDAPIO: ItemCardapio[] = [
   {
     id: 12,
     nome: 'Croissant',
-    preco: 7.5,
     descricao: 'Manteiga francesa, recheio de chocolate',
+    descricaoKey: 'item.croissant.desc',
     emoji: '🥐',
+    preco: 7.5,
     imagem: `https://images.unsplash.com/photo-1555507036-ab1f4038808a${UNSPLASH_PARAMS}`,
     categoria: 'Lanches',
     tags: ['quente', 'vegetariano', 'novo'],

@@ -12,9 +12,17 @@ export type Tag =
 
 export type ItemCardapio = {
   id: number;
+  /** Nome em PT (default e fallback). Pratos brasileiros (Pão de Queijo,
+   *  Coxinha, etc.) ficam só aqui — não traduzem. */
   nome: string;
+  /** Chave i18n opcional pro nome. Se presente, telas exibem t(nomeKey).
+   *  Usar em itens internacionais (Cheeseburger, Caesar Salad, etc.). */
+  nomeKey?: string;
   preco: number;
+  /** Descrição em PT (default). */
   descricao: string;
+  /** Chave i18n opcional pra descrição. */
+  descricaoKey?: string;
   emoji: string;
   imagem?: string;
   categoria: Categoria;
