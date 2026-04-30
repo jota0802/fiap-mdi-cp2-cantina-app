@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import FiapLogo from '@/components/FiapLogo';
 import { fontFamily, fontSize, letterSpacing, radius, spacing } from '@/constants/theme';
+import { useLocale } from '@/context/LocaleContext';
 import { useTheme } from '@/context/ThemeContext';
 import type { ThemeColors } from '@/types';
 
@@ -27,6 +28,7 @@ const TECNOLOGIAS = [
 
 export default function Sobre() {
   const { colors } = useTheme();
+  const { t } = useLocale();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -38,10 +40,12 @@ export default function Sobre() {
           onPress={() => router.back()}
           hitSlop={12}
           style={({ pressed }) => [styles.backButton, pressed && styles.backButtonPressed]}
+          accessibilityRole="button"
+          accessibilityLabel={t('cta.back')}
         >
           <Ionicons name="chevron-back" size={22} color={colors.text} />
         </Pressable>
-        <Text style={styles.headerNavTitle}>SOBRE</Text>
+        <Text style={styles.headerNavTitle}>{t('about.title').toUpperCase()}</Text>
         <View style={styles.headerNavSpacer} />
       </View>
 
@@ -55,38 +59,22 @@ export default function Sobre() {
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.cardTitulo}>SOBRE O PROJETO</Text>
-          <Text style={styles.cardTexto}>
-            Aplicativo mobile para pedidos na cantina da FIAP. Faça seu pedido pelo celular e receba uma
-            senha para retirar no balcão, eliminando filas e tempo de espera.
-          </Text>
+          <Text style={styles.cardTitulo}>{t('about.project_section')}</Text>
+          <Text style={styles.cardTexto}>{t('about.project_text')}</Text>
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.cardTitulo}>PROBLEMA</Text>
-          <Text style={styles.cardTexto}>
-            Filas longas na cantina durante intervalos geram perda de tempo e incerteza sobre disponibilidade
-            dos itens. Alunos frequentemente desistem de comprar por falta de tempo entre aulas.
-          </Text>
+          <Text style={styles.cardTitulo}>{t('about.problem_section')}</Text>
+          <Text style={styles.cardTexto}>{t('about.problem_text')}</Text>
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.cardTitulo}>SOLUÇÃO</Text>
-          {[
-            'Cardápio digital com preços atualizados',
-            'Pedidos pelo app sem enfrentar fila',
-            'Sistema de senha para retirada organizada',
-            'Resumo do pedido com valor total',
-          ].map((texto) => (
-            <View key={texto} style={styles.listaItem}>
-              <View style={styles.bullet} />
-              <Text style={styles.listaTexto}>{texto}</Text>
-            </View>
-          ))}
+          <Text style={styles.cardTitulo}>{t('about.solution_section')}</Text>
+          <Text style={styles.cardTexto}>{t('about.solution_text')}</Text>
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.cardTitulo}>INTEGRANTES</Text>
+          <Text style={styles.cardTitulo}>{t('about.team_section')}</Text>
           {INTEGRANTES.map((p, idx) => (
             <View key={p.rm}>
               <View style={styles.integranteRow}>
@@ -104,34 +92,18 @@ export default function Sobre() {
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.cardTitulo}>TECNOLOGIAS</Text>
+          <Text style={styles.cardTitulo}>{t('about.tech_section')}</Text>
           <View style={styles.techGrid}>
-            {TECNOLOGIAS.map((t) => (
-              <View key={t} style={styles.techBadge}>
-                <Text style={styles.techTexto}>{t}</Text>
+            {TECNOLOGIAS.map((tech) => (
+              <View key={tech} style={styles.techBadge}>
+                <Text style={styles.techTexto}>{tech}</Text>
               </View>
             ))}
           </View>
         </View>
 
-        <View style={styles.card}>
-          <Text style={styles.cardTitulo}>DECISÕES TÉCNICAS</Text>
-          {[
-            'Expo Router com Tabs + Stack para navegação híbrida',
-            'TypeScript strict em todo o projeto para segurança de tipos',
-            'Context API para estado global (tema, autenticação, carrinho)',
-            'Componentes reutilizáveis com paleta dinâmica via useTheme',
-          ].map((texto) => (
-            <View key={texto} style={styles.listaItem}>
-              <View style={styles.bullet} />
-              <Text style={styles.listaTexto}>{texto}</Text>
-            </View>
-          ))}
-        </View>
-
         <View style={styles.footer}>
-          <Text style={styles.footerTexto}>FIAP — ENGENHARIA DE SOFTWARE — 3º ANO</Text>
-          <Text style={styles.footerTexto}>MOBILE DEVELOPMENT & IOT — 2026</Text>
+          <Text style={styles.footerTexto}>{t('about.delivery_text').toUpperCase()}</Text>
         </View>
       </ScrollView>
     </View>

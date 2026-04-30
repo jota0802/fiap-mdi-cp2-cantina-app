@@ -23,20 +23,25 @@ import {
   spacing,
 } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
+import { useLocale } from '@/context/LocaleContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useShake } from '@/hooks/useShake';
 import { haptic } from '@/lib/haptics';
-import { validateEmail, validateNome } from '@/lib/validation';
+import {
+  validateEmail,
+  validateNome,
+  type ValidationError,
+} from '@/lib/validation';
 import type { ThemeColors } from '@/types';
 
-type Errors = {
-  nome?: string;
-  email?: string;
-  geral?: string;
+type FieldErrors = {
+  nome?: ValidationError;
+  email?: ValidationError;
 };
+type Errors = FieldErrors & { geral?: string };
 
-function validar(values: { nome: string; email: string }): Errors {
-  const errors: Errors = {};
+function validar(values: { nome: string; email: string }): FieldErrors {
+  const errors: FieldErrors = {};
   const nome = validateNome(values.nome);
   if (nome) errors.nome = nome;
   const email = validateEmail(values.email);
@@ -47,10 +52,14 @@ function validar(values: { nome: string; email: string }): Errors {
 export default function PerfilEditarScreen() {
   const router = useRouter();
   const { colors } = useTheme();
+  const { t } = useLocale();
   const insets = useSafeAreaInsets();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const { user, updateUser } = useAuth();
   const { translateX, shake } = useShake();
+
+  const tErr = (e: ValidationError | undefined) =>
+    e ? t(e.key, e.vars) : undefined;
 
   const [nome, setNome] = useState(user?.nome ?? '');
   const [email, setEmail] = useState(user?.email ?? '');
@@ -64,7 +73,7 @@ export default function PerfilEditarScreen() {
 
   const errors = useMemo(() => validar({ nome, email }), [nome, email]);
   const visibleErrors: Errors = submitted
-    ? { ...errors, geral: serverError ?? undefined }
+    ? { ...errors, ...(serverError ? { geral: serverError } : {}) }
     : {};
   const hasErrors = Object.keys(errors).length > 0;
   const semMudancas = nome.trim() === user?.nome && email.trim() === user?.email;
@@ -82,11 +91,11 @@ export default function PerfilEditarScreen() {
     try {
       await updateUser({ nome: nome.trim(), email: email.trim() });
       haptic.success();
-      setToast({ visible: true, message: 'Dados atualizados' });
+      setToast({ visible: true, message: t('toast.profile_saved') });
       setTimeout(() => router.back(), 700);
     } catch (e) {
       haptic.error();
-      setServerError(e instanceof Error ? e.message : 'Não foi possível salvar');
+      setServerError(e instanceof Error ? e.message : t('toast.profile_save_failed'));
       shake();
     } finally {
       setLoading(false);
@@ -109,12 +118,12 @@ export default function PerfilEditarScreen() {
           hitSlop={12}
           style={({ pressed }) => [styles.iconButton, pressed && styles.pressedSoft]}
           accessibilityRole="button"
-          accessibilityLabel="Voltar"
+          accessibilityLabel={t('cta.back')}
         >
           <Ionicons name="chevron-back" size={20} color={colors.text} />
         </Pressable>
         <View style={styles.headerCenter}>
-          <Text style={styles.headerTitulo}>Editar perfil</Text>
+          <Text style={styles.headerTitulo}>{t('profile.edit_title')}</Text>
         </View>
         <View style={styles.iconButtonSpacer} />
       </View>
@@ -129,18 +138,18 @@ export default function PerfilEditarScreen() {
       >
         <Animated.View style={[styles.form, { transform: [{ translateX }] }]}>
           <Input
-            label="Nome completo"
-            placeholder="Seu nome"
+            label={t('auth.name')}
+            placeholder={t('auth.name_placeholder')}
             icon="person-outline"
             value={nome}
             onChangeText={setNome}
             autoCapitalize="words"
             autoComplete="name"
-            error={visibleErrors.nome}
+            error={tErr(visibleErrors.nome)}
           />
           <Input
-            label="E-mail"
-            placeholder="seu@email.com"
+            label={t('auth.email')}
+            placeholder={t('auth.email_placeholder')}
             icon="mail-outline"
             value={email}
             onChangeText={setEmail}
@@ -148,7 +157,7 @@ export default function PerfilEditarScreen() {
             autoCapitalize="none"
             autoCorrect={false}
             autoComplete="email"
-            error={visibleErrors.email}
+            error={tErr(visibleErrors.email)}
           />
 
           {visibleErrors.geral ? (
@@ -158,7 +167,7 @@ export default function PerfilEditarScreen() {
           ) : null}
 
           <Button
-            title="Salvar alterações"
+            title={t('cta.save')}
             onPress={handleSalvar}
             loading={loading}
             disabled={buttonDisabled}

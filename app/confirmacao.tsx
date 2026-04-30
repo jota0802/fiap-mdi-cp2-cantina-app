@@ -78,13 +78,16 @@ export default function Confirmacao() {
           : 180;
 
         notifyImmediate(
-          `Pedido confirmado · senha ${senha}`,
-          `Tempo estimado: ${formatarTempoRestante(prazoSegundos)}. Total: R$ ${totalSnapshot.toFixed(2)}`,
+          t('confirmation.notif_title', { senha }),
+          t('confirmation.notif_body_eta', {
+            eta: formatarTempoRestante(prazoSegundos),
+            total: totalSnapshot.toFixed(2),
+          }),
         );
 
         scheduleNotification(
-          `Senha ${senha} pronta para retirada`,
-          'Apresente sua senha no balcão da cantina.',
+          t('confirmation.ready_notif_title', { senha }),
+          t('confirmation.ready_notif_body'),
           prazoSegundos,
         );
 
@@ -97,7 +100,7 @@ export default function Confirmacao() {
     return () => {
       cancelled = true;
     };
-  }, [totalItens, items, totalPreco, buildResumo, addOrder, clear]);
+  }, [totalItens, items, totalPreco, buildResumo, addOrder, clear, t]);
 
   // Animações ao receber a senha
   useEffect(() => {
@@ -130,7 +133,7 @@ export default function Confirmacao() {
   }
 
   if (!order) {
-    return <LoadingScreen label="Processando" subtitle="Gerando sua senha" />;
+    return <LoadingScreen label={t('loading.processing')} subtitle={t('loading.generating_code')} />;
   }
 
   const itensQtd = order.items.reduce((acc, ci) => acc + ci.quantidade, 0);
@@ -149,8 +152,8 @@ export default function Confirmacao() {
           <Animated.View style={[styles.checkCircle, { transform: [{ scale: checkScale }] }]}>
             <Ionicons name="checkmark" size={28} color={colors.primaryText} />
           </Animated.View>
-          <Text style={styles.eyebrow}>PEDIDO CONFIRMADO</Text>
-          <Text style={styles.tituloPagina}>Sua senha está pronta</Text>
+          <Text style={styles.eyebrow}>{t('confirmation.eyebrow')}</Text>
+          <Text style={styles.tituloPagina}>{t('confirmation.title')}</Text>
         </View>
 
         {/* Hero senha */}
@@ -168,7 +171,7 @@ export default function Confirmacao() {
             </View>
           </View>
 
-          <Text style={styles.senhaLabel}>SUA SENHA</Text>
+          <Text style={styles.senhaLabel}>{t('confirmation.your_password')}</Text>
           <Text style={styles.senhaNumero}>{order.senha}</Text>
 
           <View style={styles.qrWrap}>
@@ -180,7 +183,7 @@ export default function Confirmacao() {
             />
           </View>
 
-          <Text style={styles.senhaInstrucao}>Apresente este número no balcão</Text>
+          <Text style={styles.senhaInstrucao}>{t('confirmation.show_at_counter')}</Text>
         </Animated.View>
 
         {/* Bento 2 cards: itens / total */}
@@ -190,7 +193,9 @@ export default function Confirmacao() {
               <Ionicons name="bag-handle-outline" size={14} color={colors.textMuted} />
             </View>
             <Text style={styles.bentoValor}>{itensQtd}</Text>
-            <Text style={styles.bentoLabel}>{itensQtd === 1 ? 'Item' : 'Itens'}</Text>
+            <Text style={styles.bentoLabel}>
+              {t(itensQtd === 1 ? 'confirmation.items_count' : 'confirmation.items_count_plural')}
+            </Text>
           </View>
           <View style={[styles.bentoCard, styles.bentoCardTotal]}>
             <View style={[styles.bentoIconWrap, { backgroundColor: 'rgba(255,255,255,0.18)' }]}>
@@ -199,13 +204,13 @@ export default function Confirmacao() {
             <Text style={[styles.bentoValor, { color: '#FFFFFF' }]}>
               R$ {order.total.toFixed(2)}
             </Text>
-            <Text style={[styles.bentoLabel, { color: 'rgba(255,255,255,0.9)' }]}>Total</Text>
+            <Text style={[styles.bentoLabel, { color: 'rgba(255,255,255,0.9)' }]}>{t('common.total')}</Text>
           </View>
         </View>
 
         {/* Detalhes do pedido */}
         <View style={styles.detalheCard}>
-          <Text style={styles.detalheLabel}>DETALHES</Text>
+          <Text style={styles.detalheLabel}>{t('confirmation.detail_label')}</Text>
           <Text style={styles.detalheTexto}>{order.resumo}</Text>
         </View>
 
@@ -214,9 +219,7 @@ export default function Confirmacao() {
           <View style={styles.avisoIconWrap}>
             <Ionicons name="notifications-outline" size={14} color={colors.primary} />
           </View>
-          <Text style={styles.avisoTexto}>
-            Você será notificado quando o pedido estiver pronto pra retirada.
-          </Text>
+          <Text style={styles.avisoTexto}>{t('confirmation.notif_hint')}</Text>
         </View>
 
         {/* Ações */}
@@ -224,9 +227,9 @@ export default function Confirmacao() {
           style={({ pressed }) => [styles.botaoPrimario, pressed && styles.pressedSoft]}
           onPress={() => router.replace('/pedidos')}
           accessibilityRole="button"
-          accessibilityLabel="Ver meus pedidos"
+          accessibilityLabel={t('cta.view_orders')}
         >
-          <Text style={styles.botaoPrimarioTexto}>Ver meus pedidos</Text>
+          <Text style={styles.botaoPrimarioTexto}>{t('cta.view_orders')}</Text>
           <Ionicons name="arrow-forward" size={16} color={colors.primaryText} />
         </Pressable>
 
@@ -234,9 +237,9 @@ export default function Confirmacao() {
           style={({ pressed }) => [styles.botaoSecundario, pressed && styles.pressedSoft]}
           onPress={() => router.replace('/cardapio')}
           accessibilityRole="button"
-          accessibilityLabel="Fazer novo pedido"
+          accessibilityLabel={t('cta.review_order')}
         >
-          <Text style={styles.botaoSecundarioTexto}>Fazer novo pedido</Text>
+          <Text style={styles.botaoSecundarioTexto}>{t('cta.view_menu')}</Text>
         </Pressable>
 
         {!cancelado ? (
@@ -258,7 +261,7 @@ export default function Confirmacao() {
               });
             }}
             accessibilityRole="button"
-            accessibilityLabel="Cancelar este pedido"
+            accessibilityLabel={t('cta.cancel_order')}
           >
             <Ionicons name="close-outline" size={14} color={colors.error} />
             <Text style={styles.botaoCancelarTexto}>{t('cta.cancel_order')}</Text>

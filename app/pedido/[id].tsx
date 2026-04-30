@@ -76,7 +76,7 @@ export default function PedidoDetalhesScreen() {
   }, [isPendente, prontoEmIso]);
 
   if (!isHydrated) {
-    return <LoadingScreen label="Carregando pedido" />;
+    return <LoadingScreen label={t('loading.order')} />;
   }
 
   if (!order) {
@@ -88,19 +88,19 @@ export default function PedidoDetalhesScreen() {
             hitSlop={12}
             style={({ pressed }) => [styles.iconButton, pressed && styles.pressedSoft]}
             accessibilityRole="button"
-            accessibilityLabel="Voltar"
+            accessibilityLabel={t('cta.back')}
           >
             <Ionicons name="chevron-back" size={20} color={colors.text} />
           </Pressable>
           <View style={styles.headerCenter}>
-            <Text style={styles.headerTitulo}>Pedido</Text>
+            <Text style={styles.headerTitulo}>{t('order.details_title')}</Text>
           </View>
           <View style={styles.iconButtonSpacer} />
         </View>
         <EmptyState
           emoji="🔍"
-          title="Pedido não encontrado"
-          subtitle="Talvez ele tenha sido removido ou você abriu um link expirado"
+          title={t('order.not_found_title')}
+          subtitle={t('order.not_found_subtitle')}
         />
       </View>
     );
@@ -153,12 +153,12 @@ export default function PedidoDetalhesScreen() {
           hitSlop={12}
           style={({ pressed }) => [styles.iconButton, pressed && styles.pressedSoft]}
           accessibilityRole="button"
-          accessibilityLabel="Voltar"
+          accessibilityLabel={t('cta.back')}
         >
           <Ionicons name="chevron-back" size={20} color={colors.text} />
         </Pressable>
         <View style={styles.headerCenter}>
-          <Text style={styles.headerTitulo}>Pedido</Text>
+          <Text style={styles.headerTitulo}>{t('order.details_title')}</Text>
         </View>
         <View style={styles.iconButtonSpacer} />
       </View>
@@ -172,7 +172,7 @@ export default function PedidoDetalhesScreen() {
       >
         {/* Hero senha */}
         <View style={styles.senhaHero}>
-          <Text style={styles.senhaLabel}>SUA SENHA</Text>
+          <Text style={styles.senhaLabel}>{t('confirmation.your_password')}</Text>
           <Text style={styles.senhaNumero}>{order.senha}</Text>
 
           <View
@@ -183,19 +183,19 @@ export default function PedidoDetalhesScreen() {
           >
             <Ionicons name={status.icon} size={12} color={status.color} />
             <Text style={[styles.statusLabel, { color: status.color }]}>
-              {status.label}
+              {t(status.labelKey).toUpperCase()}
             </Text>
           </View>
 
           {order.status === 'pendente' && tempoRestante ? (
             <Text style={styles.tempoRestante}>
-              Pronto em {tempoRestante}
+              {t('order.estimated_ready', { tempo: tempoRestante })}
             </Text>
           ) : null}
         </View>
 
         {/* Lista de items */}
-        <Text style={styles.sectionTitle}>Items do pedido</Text>
+        <Text style={styles.sectionTitle}>{t('order.items_label')}</Text>
         <View style={styles.itensCard}>
           {linhasComItem.map(({ item, quantidade }, idx) => (
             <View key={item.id}>
@@ -228,24 +228,24 @@ export default function PedidoDetalhesScreen() {
         <View style={styles.resumoCard}>
           <View style={styles.resumoLinha}>
             <Text style={styles.resumoLabel}>
-              {itens} {itens === 1 ? 'item' : 'itens'}
+              {itens} {t(itens === 1 ? 'cart.item_singular' : 'cart.item_plural')}
             </Text>
             <Text style={styles.resumoValor}>R$ {order.total.toFixed(2)}</Text>
           </View>
           <View style={styles.divisor} />
           <View style={styles.resumoLinha}>
-            <Text style={styles.totalLabel}>Total</Text>
+            <Text style={styles.totalLabel}>{t('common.total')}</Text>
             <Text style={styles.totalValor}>R$ {order.total.toFixed(2)}</Text>
           </View>
         </View>
 
         {/* Linha do tempo */}
-        <Text style={styles.sectionTitle}>Linha do tempo</Text>
+        <Text style={styles.sectionTitle}>{t('order.timeline_title')}</Text>
         <View style={styles.timelineCard}>
           <View style={styles.timelineLinha}>
             <View style={[styles.timelineDot, { backgroundColor: colors.primary }]} />
             <View style={styles.timelineInfo}>
-              <Text style={styles.timelineLabel}>Pedido confirmado</Text>
+              <Text style={styles.timelineLabel}>{t('order.timeline_received')}</Text>
               <Text style={styles.timelineSub}>{formatarDataCompleta(order.criadoEm)}</Text>
             </View>
           </View>
@@ -268,9 +268,7 @@ export default function PedidoDetalhesScreen() {
                 />
                 <View style={styles.timelineInfo}>
                   <Text style={styles.timelineLabel}>
-                    {order.status === 'pronto' || order.status === 'retirado'
-                      ? 'Pronto pra retirada'
-                      : 'Estimativa de pronto'}
+                    {t('order.timeline_ready')}
                   </Text>
                   <Text style={styles.timelineSub}>
                     {formatarDataCompleta(order.prontoEm)}
@@ -286,8 +284,8 @@ export default function PedidoDetalhesScreen() {
               <View style={styles.timelineLinha}>
                 <View style={[styles.timelineDot, { backgroundColor: colors.success }]} />
                 <View style={styles.timelineInfo}>
-                  <Text style={styles.timelineLabel}>Retirado</Text>
-                  <Text style={styles.timelineSub}>Pedido entregue</Text>
+                  <Text style={styles.timelineLabel}>{t('order.timeline_picked')}</Text>
+                  <Text style={styles.timelineSub}>{t('order.timeline_picked_sub')}</Text>
                 </View>
               </View>
             </>
@@ -299,8 +297,8 @@ export default function PedidoDetalhesScreen() {
               <View style={styles.timelineLinha}>
                 <View style={[styles.timelineDot, { backgroundColor: colors.error }]} />
                 <View style={styles.timelineInfo}>
-                  <Text style={styles.timelineLabel}>Cancelado</Text>
-                  <Text style={styles.timelineSub}>Pedido encerrado pelo usuário</Text>
+                  <Text style={styles.timelineLabel}>{t('order.timeline_cancelled')}</Text>
+                  <Text style={styles.timelineSub}>{t('order.timeline_cancelled_sub')}</Text>
                 </View>
               </View>
             </>
@@ -313,10 +311,10 @@ export default function PedidoDetalhesScreen() {
             style={({ pressed }) => [styles.botaoPrimario, pressed && styles.pressedSoft]}
             onPress={handleMarcarRetirado}
             accessibilityRole="button"
-            accessibilityLabel="Marcar pedido como retirado"
+            accessibilityLabel={t('cta.mark_picked_up')}
           >
             <Ionicons name="checkmark-circle-outline" size={18} color={colors.primaryText} />
-            <Text style={styles.botaoPrimarioTexto}>Marcar como retirado</Text>
+            <Text style={styles.botaoPrimarioTexto}>{t('cta.mark_picked_up')}</Text>
           </Pressable>
         ) : null}
 
@@ -325,10 +323,10 @@ export default function PedidoDetalhesScreen() {
             style={({ pressed }) => [styles.botaoCancelar, pressed && styles.pressedSoft]}
             onPress={handleCancelar}
             accessibilityRole="button"
-            accessibilityLabel="Cancelar este pedido"
+            accessibilityLabel={t('cta.cancel_order')}
           >
             <Ionicons name="close-outline" size={16} color={colors.error} />
-            <Text style={styles.botaoCancelarTexto}>Cancelar pedido</Text>
+            <Text style={styles.botaoCancelarTexto}>{t('cta.cancel_order')}</Text>
           </Pressable>
         ) : null}
 
@@ -337,10 +335,10 @@ export default function PedidoDetalhesScreen() {
             style={({ pressed }) => [styles.botaoPrimario, pressed && styles.pressedSoft]}
             onPress={handlePedirNovo}
             accessibilityRole="button"
-            accessibilityLabel="Refazer este pedido"
+            accessibilityLabel={t('cta.reorder')}
           >
             <Ionicons name="refresh" size={18} color={colors.primaryText} />
-            <Text style={styles.botaoPrimarioTexto}>Pedir de novo</Text>
+            <Text style={styles.botaoPrimarioTexto}>{t('cta.reorder')}</Text>
           </Pressable>
         ) : null}
       </ScrollView>

@@ -21,6 +21,7 @@ import {
   spacing,
 } from '@/constants/theme';
 import { useCart } from '@/context/CartContext';
+import { useLocale } from '@/context/LocaleContext';
 import { useTheme } from '@/context/ThemeContext';
 import CARDAPIO from '@/data/cardapio';
 import { useFadeIn } from '@/hooks/useFadeIn';
@@ -125,6 +126,7 @@ function LinhaItem({
 export default function CarrinhoScreen() {
   const router = useRouter();
   const { colors } = useTheme();
+  const { t } = useLocale();
   const insets = useSafeAreaInsets();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const { opacity } = useFadeIn(350);
@@ -170,12 +172,12 @@ export default function CarrinhoScreen() {
           hitSlop={12}
           style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
           accessibilityRole="button"
-          accessibilityLabel="Voltar"
+          accessibilityLabel={t('cta.back')}
         >
           <Ionicons name="chevron-back" size={20} color={colors.text} />
         </Pressable>
         <View style={styles.headerCenter}>
-          <Text style={styles.headerTitulo}>Carrinho</Text>
+          <Text style={styles.headerTitulo}>{t('cart.title')}</Text>
         </View>
         {items.length > 0 ? (
           <Pressable
@@ -183,7 +185,7 @@ export default function CarrinhoScreen() {
             hitSlop={12}
             style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
             accessibilityRole="button"
-            accessibilityLabel="Limpar carrinho"
+            accessibilityLabel={t('cta.cancel')}
           >
             <Ionicons name="trash-outline" size={18} color={colors.textMuted} />
           </Pressable>
@@ -200,18 +202,18 @@ export default function CarrinhoScreen() {
           >
             <EmptyState
               emoji="🛒"
-              title="Seu carrinho está vazio"
-              subtitle="Volte para o cardápio e monte seu pedido"
+              title={t('empty.cart_title')}
+              subtitle={t('empty.cart_subtitle')}
             />
             <View style={styles.emptyAcao}>
               <Pressable
                 style={({ pressed }) => [styles.emptyBotao, pressed && styles.pressedSoft]}
                 onPress={() => router.replace('/cardapio')}
                 accessibilityRole="button"
-                accessibilityLabel="Ir para o cardápio"
+                accessibilityLabel={t('cta.go_to_menu')}
               >
                 <Ionicons name="restaurant-outline" size={18} color={colors.primaryText} />
-                <Text style={styles.emptyBotaoTexto}>Ir para o cardápio</Text>
+                <Text style={styles.emptyBotaoTexto}>{t('cta.go_to_menu')}</Text>
               </Pressable>
             </View>
           </ScrollView>
@@ -222,10 +224,10 @@ export default function CarrinhoScreen() {
           >
             <View style={styles.contadorRow}>
               <Text style={styles.contadorLabel}>
-                {totalItens} {totalItens === 1 ? 'item' : 'itens'}
+                {totalItens} {t(totalItens === 1 ? 'cart.item_singular' : 'cart.item_plural')}
               </Text>
               <View style={styles.contadorDot} />
-              <Text style={styles.contadorSub}>Tudo certo pra confirmar</Text>
+              <Text style={styles.contadorSub}>{t('cart.ready')}</Text>
             </View>
 
             <View style={styles.lista}>
@@ -247,24 +249,24 @@ export default function CarrinhoScreen() {
               onPress={() => router.push('/cardapio')}
               style={({ pressed }) => [styles.adicionarMais, pressed && styles.pressedSoft]}
               accessibilityRole="button"
-              accessibilityLabel="Adicionar mais itens ao carrinho"
+              accessibilityLabel={t('cta.add_more_items')}
             >
               <Ionicons name="add" size={18} color={colors.primary} />
-              <Text style={styles.adicionarMaisTexto}>Adicionar mais itens</Text>
+              <Text style={styles.adicionarMaisTexto}>{t('cta.add_more_items')}</Text>
             </Pressable>
 
             <View style={styles.totaisCard}>
               <View style={styles.totaisLinha}>
-                <Text style={styles.totaisLabel}>Subtotal</Text>
+                <Text style={styles.totaisLabel}>{t('cart.subtotal')}</Text>
                 <Text style={styles.totaisValor}>R$ {totalPreco.toFixed(2)}</Text>
               </View>
               <View style={styles.totaisLinha}>
-                <Text style={styles.totaisLabel}>Taxa de retirada</Text>
-                <Text style={[styles.totaisValor, { color: colors.success }]}>Grátis</Text>
+                <Text style={styles.totaisLabel}>{t('cart.pickup_fee')}</Text>
+                <Text style={[styles.totaisValor, { color: colors.success }]}>{t('cart.free')}</Text>
               </View>
               <View style={styles.divisor} />
               <View style={styles.totaisLinha}>
-                <Text style={styles.totalLabel}>Total</Text>
+                <Text style={styles.totalLabel}>{t('cart.total')}</Text>
                 <Text style={styles.totalValor}>R$ {totalPreco.toFixed(2)}</Text>
               </View>
             </View>
@@ -274,7 +276,7 @@ export default function CarrinhoScreen() {
                 <Ionicons name="information-circle" size={14} color={colors.primary} />
               </View>
               <Text style={styles.avisoTexto}>
-                Você paga no balcão e recebe uma senha pra retirar quando ficar pronto.
+                {t('cart.payment_hint')}
               </Text>
             </View>
           </ScrollView>
@@ -292,10 +294,10 @@ export default function CarrinhoScreen() {
             style={({ pressed }) => [styles.botaoConfirmar, pressed && styles.pressedSoft]}
             onPress={handleConfirmar}
             accessibilityRole="button"
-            accessibilityLabel={`Confirmar pedido no total de R$ ${totalPreco.toFixed(2)}`}
+            accessibilityLabel={`${t('cta.confirm_order')}: R$ ${totalPreco.toFixed(2)}`}
           >
             <View style={styles.botaoConfirmarTextos}>
-              <Text style={styles.botaoConfirmarLabel}>Confirmar pedido</Text>
+              <Text style={styles.botaoConfirmarLabel}>{t('cta.confirm_order')}</Text>
               <Text style={styles.botaoConfirmarValor}>R$ {totalPreco.toFixed(2)}</Text>
             </View>
             <View style={styles.botaoConfirmarIconWrap}>
