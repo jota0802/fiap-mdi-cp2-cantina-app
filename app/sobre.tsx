@@ -35,7 +35,7 @@ export default function Sobre() {
 
   return (
     <View style={styles.container}>
-      <View style={[styles.headerNav, { paddingTop: insets.top + spacing.sm }]}>
+      <View style={[styles.headerNav, { paddingTop: insets.top + spacing.lg }]}>
         <Pressable
           onPress={() => router.back()}
           hitSlop={12}

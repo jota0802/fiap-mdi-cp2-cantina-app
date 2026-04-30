@@ -81,7 +81,7 @@ export default function PedidoDetalhesScreen() {
 
   if (!order) {
     return (
-      <View style={[styles.container, { paddingTop: insets.top }]}>
+      <View style={[styles.container, { paddingTop: insets.top + spacing.lg }]}>
         <View style={styles.headerNav}>
           <Pressable
             onPress={() => router.back()}
@@ -147,7 +147,7 @@ export default function PedidoDetalhesScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={[styles.headerNav, { paddingTop: insets.top + spacing.sm }]}>
+      <View style={[styles.headerNav, { paddingTop: insets.top + spacing.lg }]}>
         <Pressable
           onPress={() => router.back()}
           hitSlop={12}

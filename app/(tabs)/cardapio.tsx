@@ -106,7 +106,7 @@ export default function Cardapio() {
 
   return (
     <View style={styles.container}>
-      <View style={[styles.header, { paddingTop: insets.top + spacing.md }]}>
+      <View style={[styles.header, { paddingTop: insets.top + spacing.lg }]}>
         <View style={styles.tituloRow}>
           <View style={styles.tituloCol}>
             <Text style={styles.titulo}>{t('tab.menu')}</Text>

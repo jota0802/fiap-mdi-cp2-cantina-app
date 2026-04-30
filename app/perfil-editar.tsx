@@ -112,7 +112,7 @@ export default function PerfilEditarScreen() {
       style={[styles.container, { backgroundColor: colors.bg }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <View style={[styles.headerNav, { paddingTop: insets.top + spacing.sm }]}>
+      <View style={[styles.headerNav, { paddingTop: insets.top + spacing.lg }]}>
         <Pressable
           onPress={handleVoltar}
           hitSlop={12}
