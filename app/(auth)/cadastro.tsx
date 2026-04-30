@@ -17,6 +17,7 @@ import FiapLogo from '@/components/FiapLogo';
 import Input from '@/components/Input';
 import { fontFamily, fontSize, spacing } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
+import { useLocale } from '@/context/LocaleContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useFadeIn } from '@/hooks/useFadeIn';
 import { useShake } from '@/hooks/useShake';
@@ -26,6 +27,7 @@ import {
   validateEmail,
   validateNome,
   validateSenha,
+  type ValidationError,
 } from '@/lib/validation';
 import type { ThemeColors } from '@/types';
 
@@ -36,10 +38,11 @@ type FormValues = {
   confirmaSenha: string;
 };
 
-type Errors = Partial<Record<keyof FormValues | 'geral', string>>;
+type FieldErrors = Partial<Record<keyof FormValues, ValidationError>>;
+type Errors = FieldErrors & { geral?: string };
 
-function validar(values: FormValues): Errors {
-  const errors: Errors = {};
+function validar(values: FormValues): FieldErrors {
+  const errors: FieldErrors = {};
   const nome = validateNome(values.nome);
   if (nome) errors.nome = nome;
   const email = validateEmail(values.email);
@@ -53,12 +56,16 @@ function validar(values: FormValues): Errors {
 
 export default function CadastroScreen() {
   const { colors } = useTheme();
+  const { t } = useLocale();
   const insets = useSafeAreaInsets();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const router = useRouter();
   const { signUp } = useAuth();
   const { translateX, shake } = useShake();
   const { opacity, translateY } = useFadeIn(400);
+
+  const tErr = (e: ValidationError | undefined) =>
+    e ? t(e.key, e.vars) : undefined;
 
   const [values, setValues] = useState<FormValues>({
     nome: '',
@@ -72,7 +79,7 @@ export default function CadastroScreen() {
 
   const errors = useMemo(() => validar(values), [values]);
   const visibleErrors: Errors = submitted
-    ? { ...errors, geral: serverError ?? undefined }
+    ? { ...errors, ...(serverError ? { geral: serverError } : {}) }
     : {};
   const hasErrors = Object.keys(errors).length > 0;
   const buttonDisabled = submitted && hasErrors;
@@ -121,24 +128,24 @@ export default function CadastroScreen() {
       >
         <Animated.View style={[styles.header, { opacity, transform: [{ translateY }] }]}>
           <FiapLogo width={64} color={colors.primary} />
-          <Text style={styles.titulo}>Criar conta</Text>
-          <Text style={styles.subtitulo}>Cadastre-se para começar a usar</Text>
+          <Text style={styles.titulo}>{t('auth.signup_title')}</Text>
+          <Text style={styles.subtitulo}>{t('auth.signup_subtitle')}</Text>
         </Animated.View>
 
         <Animated.View style={[styles.form, { transform: [{ translateX }] }]}>
           <Input
-            label="Nome completo"
-            placeholder="Seu nome"
+            label={t('auth.name')}
+            placeholder={t('auth.name_placeholder')}
             icon="person-outline"
             value={values.nome}
             onChangeText={(v) => setField('nome', v)}
             autoCapitalize="words"
             autoComplete="name"
-            error={visibleErrors.nome}
+            error={tErr(visibleErrors.nome)}
           />
           <Input
-            label="E-mail"
-            placeholder="seu@email.com"
+            label={t('auth.email')}
+            placeholder={t('auth.email_placeholder')}
             icon="mail-outline"
             value={values.email}
             onChangeText={(v) => setField('email', v)}
@@ -146,27 +153,27 @@ export default function CadastroScreen() {
             autoCapitalize="none"
             autoCorrect={false}
             autoComplete="email"
-            error={visibleErrors.email}
+            error={tErr(visibleErrors.email)}
           />
           <Input
-            label="Senha"
-            placeholder="Mínimo 6 caracteres"
+            label={t('auth.password')}
+            placeholder={t('auth.password_placeholder')}
             icon="lock-closed-outline"
             value={values.senha}
             onChangeText={(v) => setField('senha', v)}
             secureTextEntry
             autoCapitalize="none"
-            error={visibleErrors.senha}
+            error={tErr(visibleErrors.senha)}
           />
           <Input
-            label="Confirmar senha"
-            placeholder="Repita a senha"
+            label={t('auth.password_confirm')}
+            placeholder={t('auth.password_confirm_placeholder')}
             icon="lock-closed-outline"
             value={values.confirmaSenha}
             onChangeText={(v) => setField('confirmaSenha', v)}
             secureTextEntry
             autoCapitalize="none"
-            error={visibleErrors.confirmaSenha}
+            error={tErr(visibleErrors.confirmaSenha)}
           />
 
           {visibleErrors.geral ? (
@@ -176,7 +183,7 @@ export default function CadastroScreen() {
           ) : null}
 
           <Button
-            title="Cadastrar"
+            title={t('cta.signup')}
             onPress={handleCadastro}
             loading={loading}
             disabled={buttonDisabled}
@@ -185,14 +192,14 @@ export default function CadastroScreen() {
           />
 
           <View style={styles.linkRow}>
-            <Text style={styles.linkText}>Já tem conta?</Text>
+            <Text style={styles.linkText}>{t('auth.have_account_text')}</Text>
             <Link href="/login" asChild>
               <Pressable
                 hitSlop={8}
                 accessibilityRole="link"
-                accessibilityLabel="Ir para a tela de login"
+                accessibilityLabel={t('auth.login_link')}
               >
-                <Text style={styles.linkAccent}>Fazer login</Text>
+                <Text style={styles.linkAccent}>{t('auth.login_link')}</Text>
               </Pressable>
             </Link>
           </View>

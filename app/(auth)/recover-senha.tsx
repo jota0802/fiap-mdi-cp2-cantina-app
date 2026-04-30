@@ -23,6 +23,7 @@ import {
   spacing,
 } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
+import { useLocale } from '@/context/LocaleContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useShake } from '@/hooks/useShake';
 import { haptic } from '@/lib/haptics';
@@ -30,22 +31,23 @@ import {
   validateConfirmaSenha,
   validateEmail,
   validateSenha,
+  type ValidationError,
 } from '@/lib/validation';
 import type { ThemeColors } from '@/types';
 
-type Errors = {
-  email?: string;
-  novaSenha?: string;
-  confirmaSenha?: string;
-  geral?: string;
+type FieldErrors = {
+  email?: ValidationError;
+  novaSenha?: ValidationError;
+  confirmaSenha?: ValidationError;
 };
+type Errors = FieldErrors & { geral?: string };
 
 function validar(values: {
   email: string;
   novaSenha: string;
   confirmaSenha: string;
-}): Errors {
-  const errors: Errors = {};
+}): FieldErrors {
+  const errors: FieldErrors = {};
   const email = validateEmail(values.email);
   if (email) errors.email = email;
   const senha = validateSenha(values.novaSenha);
@@ -58,10 +60,14 @@ function validar(values: {
 export default function RecoverSenhaScreen() {
   const router = useRouter();
   const { colors } = useTheme();
+  const { t } = useLocale();
   const insets = useSafeAreaInsets();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const { resetSenha } = useAuth();
   const { translateX, shake } = useShake();
+
+  const tErr = (e: ValidationError | undefined) =>
+    e ? t(e.key, e.vars) : undefined;
 
   const [email, setEmail] = useState('');
   const [novaSenha, setNovaSenha] = useState('');
@@ -79,7 +85,7 @@ export default function RecoverSenhaScreen() {
     [email, novaSenha, confirmaSenha],
   );
   const visibleErrors: Errors = submitted
-    ? { ...errors, geral: serverError ?? undefined }
+    ? { ...errors, ...(serverError ? { geral: serverError } : {}) }
     : {};
   const hasErrors = Object.keys(errors).length > 0;
   const buttonDisabled = submitted && hasErrors;
@@ -102,7 +108,7 @@ export default function RecoverSenhaScreen() {
       return;
     }
     haptic.success();
-    setToast({ visible: true, message: 'Senha redefinida — entre com a nova' });
+    setToast({ visible: true, message: t('toast.profile_saved') });
     setTimeout(() => router.replace('/login'), 900);
   };
 
@@ -122,12 +128,12 @@ export default function RecoverSenhaScreen() {
           hitSlop={12}
           style={({ pressed }) => [styles.iconButton, pressed && styles.pressedSoft]}
           accessibilityRole="button"
-          accessibilityLabel="Voltar"
+          accessibilityLabel={t('cta.back')}
         >
           <Ionicons name="chevron-back" size={20} color={colors.text} />
         </Pressable>
         <View style={styles.headerCenter}>
-          <Text style={styles.headerTitulo}>Recuperar senha</Text>
+          <Text style={styles.headerTitulo}>{t('auth.recover_password_title')}</Text>
         </View>
         <View style={styles.iconButtonSpacer} />
       </View>
@@ -144,16 +150,16 @@ export default function RecoverSenhaScreen() {
           <View style={styles.iconWrap}>
             <Ionicons name="lock-open-outline" size={28} color={colors.primary} />
           </View>
-          <Text style={styles.titulo}>Defina uma nova senha</Text>
+          <Text style={styles.titulo}>{t('auth.reset_password_title')}</Text>
           <Text style={styles.subtitulo}>
-            Confirme seu e-mail e escolha uma senha de pelo menos 6 caracteres.
+            {t('auth.reset_password_subtitle')}
           </Text>
         </View>
 
         <Animated.View style={[styles.form, { transform: [{ translateX }] }]}>
           <Input
-            label="E-mail da conta"
-            placeholder="seu@email.com"
+            label={t('auth.email_account_label')}
+            placeholder={t('auth.email_placeholder')}
             icon="mail-outline"
             value={email}
             onChangeText={setEmail}
@@ -161,27 +167,27 @@ export default function RecoverSenhaScreen() {
             autoCapitalize="none"
             autoCorrect={false}
             autoComplete="email"
-            error={visibleErrors.email}
+            error={tErr(visibleErrors.email)}
           />
           <Input
-            label="Nova senha"
-            placeholder="Mínimo 6 caracteres"
+            label={t('auth.new_password_label')}
+            placeholder={t('auth.password_placeholder')}
             icon="lock-closed-outline"
             value={novaSenha}
             onChangeText={setNovaSenha}
             secureTextEntry
             autoCapitalize="none"
-            error={visibleErrors.novaSenha}
+            error={tErr(visibleErrors.novaSenha)}
           />
           <Input
-            label="Confirmar nova senha"
-            placeholder="Repita a senha"
+            label={t('auth.confirm_new_password_label')}
+            placeholder={t('auth.password_confirm_placeholder')}
             icon="lock-closed-outline"
             value={confirmaSenha}
             onChangeText={setConfirmaSenha}
             secureTextEntry
             autoCapitalize="none"
-            error={visibleErrors.confirmaSenha}
+            error={tErr(visibleErrors.confirmaSenha)}
           />
 
           {visibleErrors.geral ? (
@@ -191,7 +197,7 @@ export default function RecoverSenhaScreen() {
           ) : null}
 
           <Button
-            title="Redefinir senha"
+            title={t('cta.reset_password')}
             onPress={handleSalvar}
             loading={loading}
             disabled={buttonDisabled}

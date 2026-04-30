@@ -17,16 +17,21 @@ import FiapLogo from '@/components/FiapLogo';
 import Input from '@/components/Input';
 import { fontFamily, fontSize, spacing } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
+import { useLocale } from '@/context/LocaleContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useFadeIn } from '@/hooks/useFadeIn';
 import { useShake } from '@/hooks/useShake';
 import { haptic } from '@/lib/haptics';
-import { validateEmail, validateSenha } from '@/lib/validation';
+import {
+  validateEmail,
+  validateSenha,
+  type ValidationError,
+} from '@/lib/validation';
 import type { ThemeColors } from '@/types';
 
 type Errors = {
-  email?: string;
-  senha?: string;
+  email?: ValidationError;
+  senha?: ValidationError;
   geral?: string;
 };
 
@@ -41,6 +46,7 @@ function validar(values: { email: string; senha: string }): Errors {
 
 export default function LoginScreen() {
   const { colors } = useTheme();
+  const { t } = useLocale();
   const insets = useSafeAreaInsets();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const router = useRouter();
@@ -97,14 +103,14 @@ export default function LoginScreen() {
       >
         <Animated.View style={[styles.header, { opacity, transform: [{ translateY }] }]}>
           <FiapLogo width={64} color={colors.primary} />
-          <Text style={styles.titulo}>Bem-vindo</Text>
-          <Text style={styles.subtitulo}>Entre para fazer seus pedidos</Text>
+          <Text style={styles.titulo}>{t('auth.welcome')}</Text>
+          <Text style={styles.subtitulo}>{t('auth.login_subtitle')}</Text>
         </Animated.View>
 
         <Animated.View style={[styles.form, { transform: [{ translateX }] }]}>
           <Input
-            label="E-mail"
-            placeholder="seu@email.com"
+            label={t('auth.email')}
+            placeholder={t('auth.email_placeholder')}
             icon="mail-outline"
             value={email}
             onChangeText={setEmail}
@@ -112,10 +118,10 @@ export default function LoginScreen() {
             autoCapitalize="none"
             autoCorrect={false}
             autoComplete="email"
-            error={visibleErrors.email}
+            error={visibleErrors.email ? t(visibleErrors.email.key, visibleErrors.email.vars) : undefined}
           />
           <Input
-            label="Senha"
+            label={t('auth.password')}
             placeholder="••••••"
             icon="lock-closed-outline"
             value={senha}
@@ -123,7 +129,7 @@ export default function LoginScreen() {
             secureTextEntry
             autoCapitalize="none"
             autoComplete="password"
-            error={visibleErrors.senha}
+            error={visibleErrors.senha ? t(visibleErrors.senha.key, visibleErrors.senha.vars) : undefined}
           />
 
           {visibleErrors.geral ? (
@@ -133,7 +139,7 @@ export default function LoginScreen() {
           ) : null}
 
           <Button
-            title="Entrar"
+            title={t('cta.login')}
             onPress={handleLogin}
             loading={loading}
             disabled={buttonDisabled}
@@ -146,21 +152,21 @@ export default function LoginScreen() {
               hitSlop={8}
               style={styles.esqueceuRow}
               accessibilityRole="link"
-              accessibilityLabel="Recuperar senha"
+              accessibilityLabel={t('auth.forgot_password')}
             >
-              <Text style={styles.esqueceuTexto}>Esqueceu sua senha?</Text>
+              <Text style={styles.esqueceuTexto}>{t('auth.forgot_password_text')}</Text>
             </Pressable>
           </Link>
 
           <View style={styles.linkRow}>
-            <Text style={styles.linkText}>Ainda não tem conta?</Text>
+            <Text style={styles.linkText}>{t('auth.no_account_text')}</Text>
             <Link href="/cadastro" asChild>
               <Pressable
                 hitSlop={8}
                 accessibilityRole="link"
-                accessibilityLabel="Ir para a tela de cadastro"
+                accessibilityLabel={t('auth.signup_link')}
               >
-                <Text style={styles.linkAccent}>Cadastre-se</Text>
+                <Text style={styles.linkAccent}>{t('auth.signup_link')}</Text>
               </Pressable>
             </Link>
           </View>
