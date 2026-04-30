@@ -1,34 +1,48 @@
+// Regras de validacao puras. Retornam ValidationError com chave i18n
+// (e variaveis opcionais) em vez de string literal — o consumer
+// traduz com t(error.key, error.vars).
+
 export const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export const SENHA_MIN_LENGTH = 6;
 export const NOME_MIN_LENGTH = 2;
 
-export function validateEmail(email: string): string | undefined {
+export type ValidationError = {
+  key: string;
+  vars?: Record<string, string | number>;
+};
+
+export type ValidationResult = ValidationError | undefined;
+
+export function validateEmail(email: string): ValidationResult {
   const trimmed = email.trim();
-  if (!trimmed) return 'O e-mail é obrigatório';
-  if (!EMAIL_REGEX.test(trimmed)) return 'E-mail inválido';
+  if (!trimmed) return { key: 'validation.email_required' };
+  if (!EMAIL_REGEX.test(trimmed)) return { key: 'validation.email_invalid' };
   return undefined;
 }
 
-export function validateSenha(senha: string): string | undefined {
-  if (!senha) return 'A senha é obrigatória';
+export function validateSenha(senha: string): ValidationResult {
+  if (!senha) return { key: 'validation.password_required' };
   if (senha.length < SENHA_MIN_LENGTH) {
-    return `A senha deve ter no mínimo ${SENHA_MIN_LENGTH} caracteres`;
+    return {
+      key: 'validation.password_too_short',
+      vars: { count: SENHA_MIN_LENGTH },
+    };
   }
   return undefined;
 }
 
-export function validateNome(nome: string): string | undefined {
+export function validateNome(nome: string): ValidationResult {
   const trimmed = nome.trim();
-  if (!trimmed) return 'O nome é obrigatório';
-  if (trimmed.length < NOME_MIN_LENGTH) return 'Nome muito curto';
+  if (!trimmed) return { key: 'validation.name_required' };
+  if (trimmed.length < NOME_MIN_LENGTH) return { key: 'validation.name_short' };
   return undefined;
 }
 
 export function validateConfirmaSenha(
   confirmaSenha: string,
   senha: string,
-): string | undefined {
-  if (!confirmaSenha) return 'Confirme sua senha';
-  if (confirmaSenha !== senha) return 'As senhas não coincidem';
+): ValidationResult {
+  if (!confirmaSenha) return { key: 'validation.confirm_password_required' };
+  if (confirmaSenha !== senha) return { key: 'validation.passwords_mismatch' };
   return undefined;
 }

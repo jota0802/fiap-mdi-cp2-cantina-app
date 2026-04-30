@@ -1,6 +1,6 @@
 // Testes da lógica de validação dos formulários (login + cadastro).
 // Replica EXATAMENTE as funções de lib/validation.ts. Roda em Node puro
-// (sem React Native), apenas para garantir que as regras estão corretas.
+// (sem React Native). As funções retornam ValidationError com `key` i18n.
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -11,29 +11,32 @@ const NOME_MIN_LENGTH = 2;
 
 function validateEmail(email) {
   const trimmed = email.trim();
-  if (!trimmed) return 'O e-mail é obrigatório';
-  if (!EMAIL_REGEX.test(trimmed)) return 'E-mail inválido';
+  if (!trimmed) return { key: 'validation.email_required' };
+  if (!EMAIL_REGEX.test(trimmed)) return { key: 'validation.email_invalid' };
   return undefined;
 }
 
 function validateSenha(senha) {
-  if (!senha) return 'A senha é obrigatória';
+  if (!senha) return { key: 'validation.password_required' };
   if (senha.length < SENHA_MIN_LENGTH) {
-    return `A senha deve ter no mínimo ${SENHA_MIN_LENGTH} caracteres`;
+    return {
+      key: 'validation.password_too_short',
+      vars: { count: SENHA_MIN_LENGTH },
+    };
   }
   return undefined;
 }
 
 function validateNome(nome) {
   const trimmed = nome.trim();
-  if (!trimmed) return 'O nome é obrigatório';
-  if (trimmed.length < NOME_MIN_LENGTH) return 'Nome muito curto';
+  if (!trimmed) return { key: 'validation.name_required' };
+  if (trimmed.length < NOME_MIN_LENGTH) return { key: 'validation.name_short' };
   return undefined;
 }
 
 function validateConfirmaSenha(confirmaSenha, senha) {
-  if (!confirmaSenha) return 'Confirme sua senha';
-  if (confirmaSenha !== senha) return 'As senhas não coincidem';
+  if (!confirmaSenha) return { key: 'validation.confirm_password_required' };
+  if (confirmaSenha !== senha) return { key: 'validation.passwords_mismatch' };
   return undefined;
 }
 
@@ -43,21 +46,25 @@ test('validateEmail aceita endereços válidos', () => {
   assert.equal(validateEmail('a@b.co'), undefined);
 });
 
-test('validateEmail rejeita campo vazio', () => {
-  assert.equal(validateEmail(''), 'O e-mail é obrigatório');
-  assert.equal(validateEmail('   '), 'O e-mail é obrigatório');
+test('validateEmail rejeita campo vazio com chave i18n', () => {
+  assert.deepEqual(validateEmail(''), { key: 'validation.email_required' });
+  assert.deepEqual(validateEmail('   '), { key: 'validation.email_required' });
 });
 
-test('validateEmail rejeita formatos inválidos', () => {
-  assert.equal(validateEmail('semarroba.com'), 'E-mail inválido');
-  assert.equal(validateEmail('sem@ponto'), 'E-mail inválido');
-  assert.equal(validateEmail('@dominio.com'), 'E-mail inválido');
-  assert.equal(validateEmail('com espaço@dom.com'), 'E-mail inválido');
+test('validateEmail rejeita formatos inválidos com chave i18n', () => {
+  const invalido = { key: 'validation.email_invalid' };
+  assert.deepEqual(validateEmail('semarroba.com'), invalido);
+  assert.deepEqual(validateEmail('sem@ponto'), invalido);
+  assert.deepEqual(validateEmail('@dominio.com'), invalido);
+  assert.deepEqual(validateEmail('com espaço@dom.com'), invalido);
 });
 
 test('validateSenha exige pelo menos 6 caracteres', () => {
-  assert.equal(validateSenha(''), 'A senha é obrigatória');
-  assert.equal(validateSenha('12345'), 'A senha deve ter no mínimo 6 caracteres');
+  assert.deepEqual(validateSenha(''), { key: 'validation.password_required' });
+  assert.deepEqual(validateSenha('12345'), {
+    key: 'validation.password_too_short',
+    vars: { count: 6 },
+  });
   assert.equal(validateSenha('123456'), undefined);
   assert.equal(validateSenha('senhaforte'), undefined);
 });
@@ -68,13 +75,17 @@ test('validateNome aceita nomes válidos', () => {
 });
 
 test('validateNome rejeita vazio ou muito curto', () => {
-  assert.equal(validateNome(''), 'O nome é obrigatório');
-  assert.equal(validateNome('   '), 'O nome é obrigatório');
-  assert.equal(validateNome('A'), 'Nome muito curto');
+  assert.deepEqual(validateNome(''), { key: 'validation.name_required' });
+  assert.deepEqual(validateNome('   '), { key: 'validation.name_required' });
+  assert.deepEqual(validateNome('A'), { key: 'validation.name_short' });
 });
 
 test('validateConfirmaSenha valida igualdade', () => {
-  assert.equal(validateConfirmaSenha('', '123456'), 'Confirme sua senha');
-  assert.equal(validateConfirmaSenha('111111', '123456'), 'As senhas não coincidem');
+  assert.deepEqual(validateConfirmaSenha('', '123456'), {
+    key: 'validation.confirm_password_required',
+  });
+  assert.deepEqual(validateConfirmaSenha('111111', '123456'), {
+    key: 'validation.passwords_mismatch',
+  });
   assert.equal(validateConfirmaSenha('123456', '123456'), undefined);
 });
