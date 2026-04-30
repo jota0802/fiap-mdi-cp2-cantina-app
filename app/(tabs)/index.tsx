@@ -185,7 +185,7 @@ export default function Home() {
             <View style={styles.bentoBigContent}>
               <View>
                 <Text style={styles.bentoBigEyebrow}>{t('home.new_order')}</Text>
-                <Text style={styles.bentoBigTitulo}>Ver{'\n'}cardápio</Text>
+                <Text style={styles.bentoBigTitulo}>{t('home.see_menu')}</Text>
               </View>
               <View style={styles.bentoBigArrow}>
                 <Ionicons name="arrow-forward" size={18} color={colors.primaryText} />
@@ -200,8 +200,8 @@ export default function Home() {
               accessibilityRole="button"
               accessibilityLabel={
                 totalItens > 0
-                  ? `Abrir carrinho com ${totalItens} ${totalItens === 1 ? 'item' : 'itens'}`
-                  : 'Abrir carrinho vazio'
+                  ? `${t('home.cart')}: ${totalItens}`
+                  : t('home.cart')
               }
             >
               <View style={styles.bentoSmallTopo}>
@@ -218,7 +218,7 @@ export default function Home() {
                 <Text style={styles.bentoSmallTitulo}>{t('home.cart')}</Text>
                 <Text style={styles.bentoSmallSub}>
                   {totalItens > 0
-                    ? `${totalItens} ${totalItens === 1 ? 'item' : 'itens'}`
+                    ? `${totalItens} ${t(totalItens === 1 ? 'cart.item_singular' : 'cart.item_plural')}`
                     : t('home.empty_cart')}
                 </Text>
               </View>
@@ -446,9 +446,9 @@ function ComboCard({
         ) : null}
       </View>
 
-      <Text style={styles.comboTitulo}>{combo.titulo}</Text>
+      <Text style={styles.comboTitulo}>{t(combo.tituloKey)}</Text>
       <Text style={styles.comboSubtitulo} numberOfLines={1}>
-        {combo.subtitulo}
+        {t(combo.subtituloKey, combo.recencyCount ? { count: combo.recencyCount } : {})}
       </Text>
 
       <View style={styles.comboItensInline}>
@@ -473,7 +473,7 @@ function ComboCard({
         style={({ pressed }) => [styles.comboCta, pressed && styles.comboCtaPressed]}
         onPress={onAdicionar}
         accessibilityRole="button"
-        accessibilityLabel={`Adicionar combo ${combo.titulo} ao carrinho por R$ ${preco.toFixed(2)}`}
+        accessibilityLabel={`${t('cta.add_to_cart')}: ${t(combo.tituloKey)} R$ ${preco.toFixed(2)}`}
       >
         <View style={styles.comboCtaIconWrap}>
           <Ionicons name="bag-add" size={16} color={colors.primaryText} />
@@ -494,14 +494,16 @@ type UltimoPedidoCardProps = {
 };
 
 function UltimoPedidoCard({ order, styles, onPress }: UltimoPedidoCardProps) {
+  const { t } = useLocale();
   const palette = statusPalette[order.status];
+  const statusLabel = t(palette.labelKey);
 
   return (
     <Pressable
       style={({ pressed }) => [styles.ultimoCard, pressed && styles.pressedSoft]}
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={`Pedido senha ${order.senha}, ${palette.label}, total R$ ${order.total.toFixed(2)}`}
+      accessibilityLabel={`${t('orders.password_label')} ${order.senha}, ${statusLabel}, R$ ${order.total.toFixed(2)}`}
     >
       <View
         style={[
@@ -511,12 +513,12 @@ function UltimoPedidoCard({ order, styles, onPress }: UltimoPedidoCardProps) {
       >
         <Ionicons name={palette.icon} size={11} color={palette.color} />
         <Text style={[styles.ultimoStatusTexto, { color: palette.color }]}>
-          {palette.label}
+          {statusLabel.toUpperCase()}
         </Text>
       </View>
 
       <View style={styles.ultimoMeio}>
-        <Text style={styles.ultimoSenhaLabel}>SENHA</Text>
+        <Text style={styles.ultimoSenhaLabel}>{t('orders.password_label')}</Text>
         <Text style={styles.ultimoSenha}>{order.senha}</Text>
       </View>
 
@@ -536,8 +538,10 @@ type PedidoAtivoCardProps = {
 };
 
 function PedidoAtivoCard({ order, colors, styles, onPress }: PedidoAtivoCardProps) {
+  const { t } = useLocale();
   const status = order.status === 'retirado' ? 'pronto' : order.status;
   const palette = statusPalette[status];
+  const statusLabel = t(palette.labelKey);
   const itens = order.items.reduce((acc, ci) => acc + ci.quantidade, 0);
 
   return (
@@ -545,7 +549,7 @@ function PedidoAtivoCard({ order, colors, styles, onPress }: PedidoAtivoCardProp
       style={({ pressed }) => [styles.pedidoAtivoCard, pressed && styles.pressedSoft]}
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={`Acompanhar pedido ativo, senha ${order.senha}, ${palette.label}`}
+      accessibilityLabel={`${t('home.track_order')}: ${order.senha}, ${statusLabel}`}
     >
       <View style={styles.pedidoAtivoTopo}>
         <View
@@ -556,7 +560,7 @@ function PedidoAtivoCard({ order, colors, styles, onPress }: PedidoAtivoCardProp
         >
           <Ionicons name={palette.icon} size={12} color={palette.color} />
           <Text style={[styles.pedidoAtivoStatusTexto, { color: palette.color }]}>
-            {palette.label}
+            {statusLabel.toUpperCase()}
           </Text>
         </View>
         <Ionicons name="chevron-forward" size={18} color={colors.textSubtle} />
@@ -564,12 +568,12 @@ function PedidoAtivoCard({ order, colors, styles, onPress }: PedidoAtivoCardProp
 
       <View style={styles.pedidoAtivoMeio}>
         <View>
-          <Text style={styles.pedidoAtivoLabel}>SUA SENHA</Text>
+          <Text style={styles.pedidoAtivoLabel}>{t('home.your_order')}</Text>
           <Text style={styles.pedidoAtivoSenha}>{order.senha}</Text>
         </View>
         <View style={styles.pedidoAtivoMeta}>
           <Text style={styles.pedidoAtivoMetaLabel}>
-            {itens} {itens === 1 ? 'item' : 'itens'}
+            {itens} {t(itens === 1 ? 'cart.item_singular' : 'cart.item_plural')}
           </Text>
           <Text style={styles.pedidoAtivoMetaValor}>
             R$ {order.total.toFixed(2)}
@@ -578,7 +582,7 @@ function PedidoAtivoCard({ order, colors, styles, onPress }: PedidoAtivoCardProp
       </View>
 
       <View style={styles.pedidoAtivoCta}>
-        <Text style={styles.pedidoAtivoCtaTexto}>Acompanhar pedido</Text>
+        <Text style={styles.pedidoAtivoCtaTexto}>{t('home.track_order')}</Text>
         <Ionicons name="arrow-forward" size={14} color={colors.primary} />
       </View>
     </Pressable>

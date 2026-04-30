@@ -11,6 +11,7 @@ import {
   tagPalette,
 } from '@/constants/theme';
 import { useFavorites } from '@/context/FavoritesContext';
+import { useLocale } from '@/context/LocaleContext';
 import { useTheme } from '@/context/ThemeContext';
 import { haptic } from '@/lib/haptics';
 import type { ItemCardapio as ItemCardapioModel, ThemeColors } from '@/types';
@@ -24,6 +25,7 @@ type Props = {
 
 export default function ItemCardapio({ item, quantidade, onAdicionar, onRemover }: Props) {
   const { colors } = useTheme();
+  const { t } = useLocale();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const { isFavorito, toggleFavorito } = useFavorites();
   const ativo = quantidade > 0;
@@ -98,10 +100,12 @@ export default function ItemCardapio({ item, quantidade, onAdicionar, onRemover 
         {item.tags && item.tags.length > 0 ? (
           <View style={styles.tagsRow}>
             {item.tags.slice(0, 3).map((tag) => {
-              const t = tagPalette[tag];
+              const info = tagPalette[tag];
               return (
-                <View key={tag} style={[styles.tagChip, { backgroundColor: t.bg }]}>
-                  <Text style={[styles.tagTexto, { color: t.color }]}>{t.label}</Text>
+                <View key={tag} style={[styles.tagChip, { backgroundColor: info.bg }]}>
+                  <Text style={[styles.tagTexto, { color: info.color }]}>
+                    {t(info.labelKey)}
+                  </Text>
                 </View>
               );
             })}

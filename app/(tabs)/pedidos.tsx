@@ -72,7 +72,7 @@ function PedidoCard({
       >
         <View style={styles.cardHeader}>
           <View style={styles.senhaBox}>
-            <Text style={styles.senhaLabel}>SENHA</Text>
+            <Text style={styles.senhaLabel}>{t('orders.password_label')}</Text>
             <Text style={styles.senhaNumero}>{order.senha}</Text>
           </View>
           <View style={styles.cardHeaderInfo}>
@@ -94,7 +94,7 @@ function PedidoCard({
         <Text style={styles.resumoLinha}>{order.resumo}</Text>
 
         <View style={styles.cardFooter}>
-          <Text style={styles.totalLabel}>TOTAL</Text>
+          <Text style={styles.totalLabel}>{t('orders.total_label')}</Text>
           <View style={styles.cardFooterDireita}>
             <Text style={styles.totalValor}>R$ {order.total.toFixed(2)}</Text>
             <Ionicons name="chevron-forward" size={14} color={colors.textSubtle} />
@@ -130,7 +130,7 @@ function PedidoCard({
                 order.status === 'pronto' && { color: status.color },
               ]}
             >
-              Retirado
+              {t('cta.picked_up_short')}
             </Text>
           </Pressable>
 
@@ -139,10 +139,10 @@ function PedidoCard({
               style={({ pressed }) => [styles.acaoCancelar, pressed && styles.pressedSoft]}
               onPress={onCancelar}
               accessibilityRole="button"
-              accessibilityLabel={`Cancelar pedido senha ${order.senha}`}
+              accessibilityLabel={`${t('cta.cancel_order')}: ${order.senha}`}
             >
               <Ionicons name="close-outline" size={16} color={colors.error} />
-              <Text style={styles.acaoCancelarTexto}>Cancelar</Text>
+              <Text style={styles.acaoCancelarTexto}>{t('cta.cancel')}</Text>
             </Pressable>
           ) : null}
         </View>
@@ -151,10 +151,10 @@ function PedidoCard({
           style={({ pressed }) => [styles.acaoPedirNovo, pressed && styles.pressedSoft]}
           onPress={onPedirNovo}
           accessibilityRole="button"
-          accessibilityLabel={`Refazer pedido senha ${order.senha}`}
+          accessibilityLabel={`${t('cta.reorder')}: ${order.senha}`}
         >
           <Ionicons name="refresh" size={16} color={colors.primary} />
-          <Text style={styles.acaoPedirNovoTexto}>Pedir de novo</Text>
+          <Text style={styles.acaoPedirNovoTexto}>{t('cta.reorder')}</Text>
         </Pressable>
       ) : null}
     </View>
@@ -231,8 +231,8 @@ export default function PedidosScreen() {
         <Text style={styles.tituloPagina}>{t('orders.title')}</Text>
         <Text style={styles.subtitulo}>
           {totalAtivos > 0
-            ? `${totalAtivos} ${totalAtivos === 1 ? 'pedido ativo' : 'pedidos ativos'}`
-            : 'Nenhum pedido ativo ainda'}
+            ? t(totalAtivos === 1 ? 'orders.active_singular' : 'orders.active_plural', { count: totalAtivos })
+            : t('orders.no_active')}
         </Text>
       </View>
 
@@ -259,8 +259,8 @@ export default function PedidosScreen() {
           <View>
             <EmptyState
               emoji="🧾"
-              title="Nenhum pedido ainda"
-              subtitle="Faça seu primeiro pedido e acompanhe ele aqui"
+              title={t('empty.orders_title')}
+              subtitle={t('empty.orders_subtitle')}
             />
             <View style={styles.ctaWrapper}>
               <Pressable

@@ -23,6 +23,7 @@ import {
   shadow,
   spacing,
 } from '@/constants/theme';
+import { useLocale } from '@/context/LocaleContext';
 import { useTheme } from '@/context/ThemeContext';
 import { haptic } from '@/lib/haptics';
 import type { ThemeColors } from '@/types';
@@ -32,8 +33,8 @@ type Slide = {
   iconeFallback: keyof typeof Ionicons.glyphMap;
   accent: string;
   accentSoft: string;
-  titulo: string;
-  texto: string;
+  tituloKey: string;
+  textoKey: string;
 };
 
 const SLIDES: readonly Slide[] = [
@@ -43,9 +44,8 @@ const SLIDES: readonly Slide[] = [
     iconeFallback: 'restaurant-outline',
     accent: '#ED145B',
     accentSoft: 'rgba(237, 20, 91, 0.18)',
-    titulo: 'Monte seu pedido',
-    texto:
-      'Explore o cardápio completo e adicione seus favoritos. Busca em tempo real e filtros por categoria.',
+    tituloKey: 'onboarding.slide1_title',
+    textoKey: 'onboarding.slide1_text',
   },
   {
     imagem:
@@ -53,9 +53,8 @@ const SLIDES: readonly Slide[] = [
     iconeFallback: 'flash-outline',
     accent: '#F59E0B',
     accentSoft: 'rgba(245, 158, 11, 0.18)',
-    titulo: 'Confirme em segundos',
-    texto:
-      'Revise no carrinho, confirme e receba uma senha única na hora. Sem fila, sem confusão.',
+    tituloKey: 'onboarding.slide2_title',
+    textoKey: 'onboarding.slide2_text',
   },
   {
     imagem:
@@ -63,9 +62,8 @@ const SLIDES: readonly Slide[] = [
     iconeFallback: 'bag-check-outline',
     accent: '#10B981',
     accentSoft: 'rgba(16, 185, 129, 0.18)',
-    titulo: 'Retire quando ficar pronto',
-    texto:
-      'Notificação automática quando o pedido sai da cozinha. Mostre a senha no balcão e pegue tudo.',
+    tituloKey: 'onboarding.slide3_title',
+    textoKey: 'onboarding.slide3_text',
   },
 ] as const;
 
@@ -94,7 +92,10 @@ function SlideView({
   heroHeight,
   styles,
 }: SlideViewProps) {
+  const { t } = useLocale();
   const [erro, setErro] = useState(false);
+  const titulo = t(slide.tituloKey);
+  const texto = t(slide.textoKey);
 
   const inputRange = [
     (index - 1) * slideWidth,
@@ -156,12 +157,12 @@ function SlideView({
         <View style={[styles.accentChip, { backgroundColor: slide.accentSoft }]}>
           <View style={[styles.accentDot, { backgroundColor: slide.accent }]} />
           <Text style={[styles.accentChipTexto, { color: slide.accent }]}>
-            {slide.titulo.split(' ')[0]?.toUpperCase()}
+            {titulo.split(' ')[0]?.toUpperCase()}
           </Text>
         </View>
 
-        <Text style={styles.titulo}>{slide.titulo}</Text>
-        <Text style={styles.texto}>{slide.texto}</Text>
+        <Text style={styles.titulo}>{titulo}</Text>
+        <Text style={styles.texto}>{texto}</Text>
       </Animated.View>
     </View>
   );
@@ -216,6 +217,7 @@ function Dot({ index, scrollX, slideWidth, accent, baseColor, onPress }: DotProp
 
 export default function Onboarding({ onComplete }: Props) {
   const { colors } = useTheme();
+  const { t } = useLocale();
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -297,9 +299,9 @@ export default function Onboarding({ onComplete }: Props) {
               hitSlop={12}
               style={styles.pularButton}
               accessibilityRole="button"
-              accessibilityLabel="Pular onboarding"
+              accessibilityLabel={t('cta.skip')}
             >
-              <Text style={styles.pularTexto}>Pular</Text>
+              <Text style={styles.pularTexto}>{t('cta.skip')}</Text>
             </Pressable>
           ) : (
             <View style={styles.pularButton} />
@@ -353,11 +355,9 @@ export default function Onboarding({ onComplete }: Props) {
             ]}
             onPress={handleProximo}
             accessibilityRole="button"
-            accessibilityLabel={
-              ultimoSlide ? 'Começar a usar o app' : 'Ir para o próximo slide'
-            }
+            accessibilityLabel={ultimoSlide ? t('cta.start') : t('cta.next')}
           >
-            <Text style={styles.botaoTexto}>{ultimoSlide ? 'Começar' : 'Próximo'}</Text>
+            <Text style={styles.botaoTexto}>{ultimoSlide ? t('cta.start') : t('cta.next')}</Text>
             <Ionicons
               name={ultimoSlide ? 'sparkles' : 'arrow-forward'}
               size={18}

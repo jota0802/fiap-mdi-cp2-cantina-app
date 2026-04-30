@@ -63,7 +63,7 @@ export default function PerfilScreen() {
   }>({ visible: false, message: '', variant: 'success' });
 
   if (!user) {
-    return <LoadingScreen label="Carregando perfil" />;
+    return <LoadingScreen label={t('loading.profile')} />;
   }
 
   const totalPedidos = orders.length;
@@ -80,10 +80,10 @@ export default function PerfilScreen() {
       const picked = await pickFromLibrary();
       if (picked) {
         await updateUser({ fotoUri: picked.uri });
-        showToast('Foto atualizada');
+        showToast(t('toast.photo_updated'));
       }
     } catch {
-      showToast('Não foi possível atualizar a foto', 'error');
+      showToast(t('toast.photo_failed'), 'error');
     } finally {
       setUpdatingPhoto(false);
     }
@@ -95,10 +95,10 @@ export default function PerfilScreen() {
       const picked = await pickFromCamera();
       if (picked) {
         await updateUser({ fotoUri: picked.uri });
-        showToast('Foto atualizada');
+        showToast(t('toast.photo_updated'));
       }
     } catch {
-      showToast('Não foi possível abrir a câmera', 'error');
+      showToast(t('toast.camera_failed'), 'error');
     } finally {
       setUpdatingPhoto(false);
     }
@@ -108,9 +108,9 @@ export default function PerfilScreen() {
     setUpdatingPhoto(true);
     try {
       await updateUser({ fotoUri: undefined });
-      showToast('Foto removida');
+      showToast(t('toast.photo_removed'));
     } catch {
-      showToast('Não foi possível remover a foto', 'error');
+      showToast(t('toast.photo_remove_failed'), 'error');
     } finally {
       setUpdatingPhoto(false);
     }
@@ -135,8 +135,10 @@ export default function PerfilScreen() {
         <View style={styles.header}>
           <Text style={styles.tituloPagina}>{t('tab.profile')}</Text>
           <Text style={styles.subtitulo}>
-            Olá, {primeiroNome(user.nome)} · membro desde{' '}
-            {formatarDataMembro(user.criadoEm)}
+            {t('profile.member_since', {
+              nome: primeiroNome(user.nome),
+              data: formatarDataMembro(user.criadoEm),
+            })}
           </Text>
         </View>
 
@@ -147,7 +149,7 @@ export default function PerfilScreen() {
             disabled={updatingPhoto}
             style={({ pressed }) => [styles.avatarPressable, pressed && styles.pressedSoft]}
             accessibilityRole="button"
-            accessibilityLabel="Trocar foto de perfil"
+            accessibilityLabel={t('profile.photo')}
           >
             <ProfileAvatar uri={user.fotoUri} nome={user.nome} size={64} />
             <View style={styles.avatarBadge}>
@@ -167,14 +169,14 @@ export default function PerfilScreen() {
         {/* Bento de stats: 3 cards */}
         <View style={styles.statsBento}>
           <StatCard
-            label="Pedidos"
+            label={t('profile.stat_orders')}
             valor={String(totalPedidos)}
             icon="receipt-outline"
             colors={colors}
             styles={styles}
           />
           <StatCard
-            label="Ativos"
+            label={t('profile.stat_active')}
             valor={String(pedidosAtivos)}
             icon="time-outline"
             colors={colors}
@@ -182,7 +184,7 @@ export default function PerfilScreen() {
             destaque={pedidosAtivos > 0}
           />
           <StatCard
-            label="Total"
+            label={t('profile.stat_total')}
             valor={`R$ ${totalGasto.toFixed(0)}`}
             icon="cash-outline"
             colors={colors}
@@ -198,12 +200,12 @@ export default function PerfilScreen() {
             onPress={handlePickFromCamera}
             disabled={updatingPhoto}
             accessibilityRole="button"
-            accessibilityLabel="Tirar foto com a câmera"
+            accessibilityLabel={t('profile.camera')}
           >
             <View style={styles.fotoIconWrap}>
               <Ionicons name="camera-outline" size={18} color={colors.primary} />
             </View>
-            <Text style={styles.fotoBotaoTexto}>Câmera</Text>
+            <Text style={styles.fotoBotaoTexto}>{t('profile.camera')}</Text>
           </Pressable>
 
           <Pressable
@@ -211,12 +213,12 @@ export default function PerfilScreen() {
             onPress={handlePickFromLibrary}
             disabled={updatingPhoto}
             accessibilityRole="button"
-            accessibilityLabel="Escolher foto da galeria"
+            accessibilityLabel={t('profile.gallery')}
           >
             <View style={styles.fotoIconWrap}>
               <Ionicons name="images-outline" size={18} color={colors.primary} />
             </View>
-            <Text style={styles.fotoBotaoTexto}>Galeria</Text>
+            <Text style={styles.fotoBotaoTexto}>{t('profile.gallery')}</Text>
           </Pressable>
 
           {user.fotoUri ? (
@@ -225,12 +227,12 @@ export default function PerfilScreen() {
               onPress={handleRemoveFoto}
               disabled={updatingPhoto}
               accessibilityRole="button"
-              accessibilityLabel="Remover foto de perfil"
+              accessibilityLabel={t('profile.remove')}
             >
               <View style={[styles.fotoIconWrap, { backgroundColor: colors.errorSoft }]}>
                 <Ionicons name="trash-outline" size={18} color={colors.error} />
               </View>
-              <Text style={[styles.fotoBotaoTexto, { color: colors.error }]}>Remover</Text>
+              <Text style={[styles.fotoBotaoTexto, { color: colors.error }]}>{t('profile.remove')}</Text>
             </Pressable>
           ) : null}
         </View>
@@ -284,8 +286,8 @@ export default function PerfilScreen() {
               </Text>
               <Text style={styles.themeSub}>
                 {mode === 'dark'
-                  ? 'Ative o claro pra ambientes iluminados'
-                  : 'Ative o escuro pra reduzir o brilho'}
+                  ? t('profile.dark_mode_hint')
+                  : t('profile.light_mode_hint')}
               </Text>
             </View>
           </View>
@@ -305,15 +307,15 @@ export default function PerfilScreen() {
             style={({ pressed }) => [styles.linhaAcao, pressed && styles.pressedSoft]}
             onPress={() => router.push('/perfil-editar')}
             accessibilityRole="button"
-            accessibilityLabel="Editar dados do perfil"
+            accessibilityLabel={t('profile.edit_data')}
           >
             <View style={styles.linhaAcaoEsquerda}>
               <View style={[styles.linhaAcaoIconWrap, { backgroundColor: colors.primarySoft }]}>
                 <Ionicons name="create-outline" size={18} color={colors.primary} />
               </View>
               <View>
-                <Text style={styles.linhaAcaoLabel}>Editar dados</Text>
-                <Text style={styles.linhaAcaoSub}>Alterar nome ou e-mail</Text>
+                <Text style={styles.linhaAcaoLabel}>{t('profile.edit_data')}</Text>
+                <Text style={styles.linhaAcaoSub}>{t('profile.edit_data_sub')}</Text>
               </View>
             </View>
             <Ionicons name="chevron-forward" size={16} color={colors.textSubtle} />
@@ -325,15 +327,15 @@ export default function PerfilScreen() {
             style={({ pressed }) => [styles.linhaAcao, pressed && styles.pressedSoft]}
             onPress={() => router.push('/sobre')}
             accessibilityRole="button"
-            accessibilityLabel="Sobre o projeto"
+            accessibilityLabel={t('profile.about_link')}
           >
             <View style={styles.linhaAcaoEsquerda}>
               <View style={styles.linhaAcaoIconWrap}>
                 <Ionicons name="information-circle-outline" size={18} color={colors.text} />
               </View>
               <View>
-                <Text style={styles.linhaAcaoLabel}>Sobre o projeto</Text>
-                <Text style={styles.linhaAcaoSub}>Equipe, stack e detalhes</Text>
+                <Text style={styles.linhaAcaoLabel}>{t('profile.about_link')}</Text>
+                <Text style={styles.linhaAcaoSub}>{t('profile.about_link_sub')}</Text>
               </View>
             </View>
             <Ionicons name="chevron-forward" size={16} color={colors.textSubtle} />
@@ -345,24 +347,19 @@ export default function PerfilScreen() {
             style={({ pressed }) => [styles.linhaAcao, pressed && styles.pressedSoft]}
             onPress={handleLogout}
             accessibilityRole="button"
-            accessibilityLabel="Sair da conta"
+            accessibilityLabel={t('cta.logout')}
           >
             <View style={styles.linhaAcaoEsquerda}>
               <View style={[styles.linhaAcaoIconWrap, { backgroundColor: colors.errorSoft }]}>
                 <Ionicons name="log-out-outline" size={18} color={colors.error} />
               </View>
               <View>
-                <Text style={[styles.linhaAcaoLabel, { color: colors.error }]}>Sair</Text>
-                <Text style={styles.linhaAcaoSub}>Encerrar sessão</Text>
+                <Text style={[styles.linhaAcaoLabel, { color: colors.error }]}>{t('cta.logout')}</Text>
               </View>
             </View>
             <Ionicons name="chevron-forward" size={16} color={colors.error} />
           </Pressable>
         </View>
-
-        <Text style={styles.footerHint}>
-          Suas credenciais ficam protegidas no dispositivo
-        </Text>
       </ScrollView>
 
       <Toast

@@ -24,6 +24,7 @@ import {
   spacing,
 } from '@/constants/theme';
 import { useCart } from '@/context/CartContext';
+import { useLocale } from '@/context/LocaleContext';
 import { useTheme } from '@/context/ThemeContext';
 import CARDAPIO from '@/data/cardapio';
 import { haptic } from '@/lib/haptics';
@@ -46,9 +47,13 @@ const CATEGORIA_ICONE: Record<Categoria | 'Todas', keyof typeof Ionicons.glyphMa
 export default function Cardapio() {
   const router = useRouter();
   const { colors } = useTheme();
+  const { t } = useLocale();
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
   const styles = useMemo(() => createStyles(colors), [colors]);
+
+  const categoriaLabel = (cat: 'Todas' | Categoria): string =>
+    cat === 'Todas' ? t('cardapio.all') : t(`category.${cat}`);
 
   const {
     addItem,
@@ -104,10 +109,11 @@ export default function Cardapio() {
       <View style={[styles.header, { paddingTop: insets.top + spacing.md }]}>
         <View style={styles.tituloRow}>
           <View style={styles.tituloCol}>
-            <Text style={styles.titulo}>Cardápio</Text>
+            <Text style={styles.titulo}>{t('tab.menu')}</Text>
             <Text style={styles.subtitulo}>
-              {itensFiltrados.length} {itensFiltrados.length === 1 ? 'item' : 'itens'}
-              {categoriaAtiva !== 'Todas' ? ` em ${categoriaAtiva}` : ' disponíveis'}
+              {itensFiltrados.length}{' '}
+              {t(itensFiltrados.length === 1 ? 'cart.item_singular' : 'cart.item_plural')}
+              {categoriaAtiva !== 'Todas' ? ` · ${categoriaLabel(categoriaAtiva)}` : ''}
             </Text>
           </View>
 
@@ -118,7 +124,7 @@ export default function Cardapio() {
                 style={({ pressed }) => [styles.badge, pressed && styles.pressedSoft]}
                 hitSlop={8}
                 accessibilityRole="button"
-                accessibilityLabel={`Abrir carrinho com ${totalItens} ${totalItens === 1 ? 'item' : 'itens'}`}
+                accessibilityLabel={`${t('home.cart')}: ${totalItens}`}
               >
                 <Ionicons name="bag-handle" size={14} color={colors.primaryText} />
                 <Text style={styles.badgeText}>{totalItens}</Text>
@@ -129,7 +135,7 @@ export default function Cardapio() {
 
         <View style={styles.searchWrapper}>
           <Input
-            placeholder="Buscar item, descrição ou categoria"
+            placeholder={t('cardapio.search_placeholder')}
             icon="search-outline"
             value={busca}
             onChangeText={setBusca}
@@ -142,7 +148,7 @@ export default function Cardapio() {
                   onPress={() => setBusca('')}
                   hitSlop={12}
                   accessibilityRole="button"
-                  accessibilityLabel="Limpar busca"
+                  accessibilityLabel={t('cta.cancel')}
                 >
                   <Ionicons
                     name="close-circle"
@@ -175,7 +181,7 @@ export default function Cardapio() {
                   pressed && styles.pressedSoft,
                 ]}
                 accessibilityRole="button"
-                accessibilityLabel={`Filtrar por categoria ${cat}`}
+                accessibilityLabel={categoriaLabel(cat)}
                 accessibilityState={{ selected: ativo }}
               >
                 <Ionicons
@@ -184,7 +190,7 @@ export default function Cardapio() {
                   color={ativo ? colors.primaryText : colors.textMuted}
                 />
                 <Text style={[styles.chipTexto, ativo && styles.chipTextoAtivo]}>
-                  {cat}
+                  {categoriaLabel(cat)}
                 </Text>
               </Pressable>
             );
@@ -200,11 +206,9 @@ export default function Cardapio() {
         {itensFiltrados.length === 0 ? (
           <EmptyState
             emoji="🔎"
-            title="Nada encontrado"
+            title={t('empty.search_title')}
             subtitle={
-              busca.trim()
-                ? 'Tente outra busca ou explore o cardápio completo'
-                : 'Sem itens nessa categoria por enquanto'
+              busca.trim() ? t('empty.search_subtitle') : t('empty.category_empty')
             }
           />
         ) : (
@@ -212,7 +216,7 @@ export default function Cardapio() {
             {categoriasVisiveis.map((categoria) => (
               <View key={categoria} style={styles.categoriaSection}>
                 <View style={styles.categoriaHeader}>
-                  <Text style={styles.categoriaTitulo}>{categoria}</Text>
+                  <Text style={styles.categoriaTitulo}>{t(`category.${categoria}`)}</Text>
                   <View style={styles.categoriaLinha} />
                 </View>
                 {itensFiltrados
@@ -232,8 +236,8 @@ export default function Cardapio() {
             {totalItens === 0 ? (
               <EmptyState
                 emoji="👇"
-                title="Toque no + para adicionar"
-                subtitle="Adicione itens pra revisar e confirmar"
+                title={t('cardapio.tap_to_add_title')}
+                subtitle={t('cardapio.tap_to_add_subtitle')}
               />
             ) : null}
           </>
@@ -251,7 +255,12 @@ export default function Cardapio() {
         >
           <View style={styles.resumo}>
             <Text style={styles.resumoItens}>
-              {totalItens} {totalItens === 1 ? 'item selecionado' : 'itens selecionados'}
+              {t(
+                totalItens === 1
+                  ? 'cardapio.items_selected_singular'
+                  : 'cardapio.items_selected_plural',
+                { count: totalItens },
+              )}
             </Text>
             <Text style={styles.resumoTotal}>R$ {totalPreco.toFixed(2)}</Text>
           </View>
@@ -259,9 +268,9 @@ export default function Cardapio() {
             style={({ pressed }) => [styles.botaoConfirmar, pressed && styles.pressedSoft]}
             onPress={irParaCarrinho}
             accessibilityRole="button"
-            accessibilityLabel={`Revisar pedido com ${totalItens} ${totalItens === 1 ? 'item' : 'itens'}, total R$ ${totalPreco.toFixed(2)}`}
+            accessibilityLabel={`${t('cta.review_order')}: R$ ${totalPreco.toFixed(2)}`}
           >
-            <Text style={styles.botaoConfirmarTexto}>Revisar pedido</Text>
+            <Text style={styles.botaoConfirmarTexto}>{t('cta.review_order')}</Text>
             <Ionicons name="arrow-forward" size={16} color={colors.primaryText} />
           </Pressable>
         </View>
