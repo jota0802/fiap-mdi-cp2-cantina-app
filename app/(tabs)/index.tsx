@@ -177,7 +177,7 @@ export default function Home() {
             style={({ pressed }) => [styles.bentoBig, pressed && styles.pressedSoft]}
             onPress={() => router.push('/cardapio')}
             accessibilityRole="button"
-            accessibilityLabel="Ver cardápio completo"
+            accessibilityLabel={t('cta.view_menu')}
           >
             <View style={styles.bentoBigBackdrop}>
               <Text style={styles.bentoBigEmoji}>🍔</Text>
@@ -228,7 +228,7 @@ export default function Home() {
               style={({ pressed }) => [styles.bentoSmall, pressed && styles.pressedSoft]}
               onPress={() => router.push('/pedidos')}
               accessibilityRole="button"
-              accessibilityLabel="Ver histórico de pedidos"
+              accessibilityLabel={t('home.history')}
             >
               <View style={styles.bentoSmallTopo}>
                 <View style={[styles.bentoIconWrap, { backgroundColor: colors.surfaceElevated }]}>
@@ -272,7 +272,7 @@ export default function Home() {
                 hitSlop={10}
                 onPress={() => router.push('/cardapio')}
                 accessibilityRole="link"
-                accessibilityLabel="Ver todos os favoritos no cardápio"
+                accessibilityLabel={t('home.your_favorites')}
               >
                 <Text style={styles.secaoLink}>{t('home.see_all')}</Text>
               </Pressable>
@@ -317,9 +317,9 @@ export default function Home() {
             hitSlop={10}
             onPress={() => router.push('/cardapio')}
             accessibilityRole="link"
-            accessibilityLabel="Ver todos os destaques no cardápio"
+            accessibilityLabel={t('home.see_all')}
           >
-            <Text style={styles.secaoLink}>Ver tudo</Text>
+            <Text style={styles.secaoLink}>{t('home.see_all')}</Text>
           </Pressable>
         </View>
 
@@ -439,7 +439,7 @@ function ComboCard({
               pressed && styles.pressedSoft,
             ]}
             accessibilityRole="button"
-            accessibilityLabel="Trocar sugestão de combo"
+            accessibilityLabel={t('cta.next')}
           >
             <Ionicons name="refresh" size={14} color={colors.textMuted} />
           </Pressable>

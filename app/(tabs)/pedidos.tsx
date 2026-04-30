@@ -267,9 +267,9 @@ export default function PedidosScreen() {
                 style={({ pressed }) => [styles.ctaBotao, pressed && styles.pressedSoft]}
                 onPress={() => router.push('/cardapio')}
                 accessibilityRole="button"
-                accessibilityLabel="Ir para o cardápio"
+                accessibilityLabel={t('cta.go_to_menu')}
               >
-                <Text style={styles.ctaBotaoTexto}>Ir para o cardápio</Text>
+                <Text style={styles.ctaBotaoTexto}>{t('cta.go_to_menu')}</Text>
               </Pressable>
             </View>
           </View>
