@@ -12,10 +12,11 @@ export const LOCALE_LABEL: Record<Locale, string> = {
   es: 'Español',
 };
 
-export const LOCALE_FLAG: Record<Locale, string> = {
-  pt: '🇧🇷',
-  en: '🇺🇸',
-  es: '🇪🇸',
+/** Siglas de 2 letras pro select compacto (PT / EN / ES). */
+export const LOCALE_SHORT: Record<Locale, string> = {
+  pt: 'PT',
+  en: 'EN',
+  es: 'ES',
 };
 
 type Dict = Record<string, string>;

@@ -3,6 +3,7 @@ import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import {
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -27,7 +28,7 @@ import { useLocale } from '@/context/LocaleContext';
 import { useOrders } from '@/context/OrdersContext';
 import { useTheme } from '@/context/ThemeContext';
 import { haptic } from '@/lib/haptics';
-import { LOCALES, LOCALE_FLAG, LOCALE_LABEL, type Locale } from '@/lib/i18n';
+import { LOCALES, LOCALE_LABEL, LOCALE_SHORT, type Locale } from '@/lib/i18n';
 import { pickFromCamera, pickFromLibrary } from '@/lib/image-picker';
 import type { ThemeColors } from '@/types';
 
@@ -56,6 +57,7 @@ export default function PerfilScreen() {
   const { orders } = useOrders();
 
   const [updatingPhoto, setUpdatingPhoto] = useState(false);
+  const [localeAberto, setLocaleAberto] = useState(false);
   const [toast, setToast] = useState<{
     visible: boolean;
     message: string;
@@ -237,37 +239,34 @@ export default function PerfilScreen() {
           ) : null}
         </View>
 
-        {/* Idioma */}
+        {/* Idioma — select com modal */}
         <Text style={styles.sectionTitle}>{t('profile.language')}</Text>
-        <View style={styles.localeRow}>
-          {LOCALES.map((loc: Locale) => (
-            <Pressable
-              key={loc}
-              onPress={() => {
-                if (locale !== loc) haptic.selection();
-                setLocale(loc);
-              }}
-              style={({ pressed }) => [
-                styles.localeChip,
-                locale === loc && styles.localeChipAtivo,
-                pressed && styles.pressedSoft,
-              ]}
-              accessibilityRole="button"
-              accessibilityLabel={`Mudar idioma para ${LOCALE_LABEL[loc]}`}
-              accessibilityState={{ selected: locale === loc }}
-            >
-              <Text style={styles.localeFlag}>{LOCALE_FLAG[loc]}</Text>
-              <Text
-                style={[
-                  styles.localeTexto,
-                  locale === loc && styles.localeTextoAtivo,
-                ]}
-              >
-                {LOCALE_LABEL[loc]}
+        <Pressable
+          onPress={() => {
+            haptic.light();
+            setLocaleAberto(true);
+          }}
+          style={({ pressed }) => [
+            styles.localeSelect,
+            pressed && styles.pressedSoft,
+          ]}
+          accessibilityRole="button"
+          accessibilityLabel={`${t('profile.language')}: ${LOCALE_LABEL[locale]}`}
+          accessibilityHint={t('profile.language')}
+        >
+          <View style={styles.localeSelectEsquerda}>
+            <View style={styles.localeIconWrap}>
+              <Ionicons name="globe-outline" size={18} color={colors.primary} />
+            </View>
+            <View style={styles.localeTextos}>
+              <Text style={styles.localeLabel}>{t('profile.language')}</Text>
+              <Text style={styles.localeValor}>
+                {LOCALE_LABEL[locale]} · {LOCALE_SHORT[locale]}
               </Text>
-            </Pressable>
-          ))}
-        </View>
+            </View>
+          </View>
+          <Ionicons name="chevron-down" size={16} color={colors.textSubtle} />
+        </Pressable>
 
         {/* Aparência */}
         <Text style={styles.sectionTitle}>{t('profile.appearance')}</Text>
@@ -361,6 +360,62 @@ export default function PerfilScreen() {
           </Pressable>
         </View>
       </ScrollView>
+
+      {/* Modal do select de idioma */}
+      <Modal
+        visible={localeAberto}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setLocaleAberto(false)}
+      >
+        <Pressable
+          style={styles.localeModalBackdrop}
+          onPress={() => setLocaleAberto(false)}
+          accessibilityRole="button"
+          accessibilityLabel={t('cta.cancel')}
+        >
+          <Pressable
+            style={[styles.localeModalCard, { paddingBottom: insets.bottom + spacing.md }]}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <View style={styles.localeModalHandle} />
+            <View style={styles.localeModalHeader}>
+              <Ionicons name="globe-outline" size={20} color={colors.primary} />
+              <Text style={styles.localeModalTitulo}>{t('profile.language')}</Text>
+            </View>
+            {LOCALES.map((loc: Locale, idx) => {
+              const ativo = locale === loc;
+              return (
+                <View key={loc}>
+                  {idx > 0 ? <View style={styles.localeOpcaoDivisor} /> : null}
+                  <Pressable
+                    onPress={() => {
+                      if (!ativo) haptic.selection();
+                      setLocale(loc);
+                      setLocaleAberto(false);
+                    }}
+                    style={({ pressed }) => [
+                      styles.localeOpcao,
+                      pressed && styles.pressedSoft,
+                    ]}
+                    accessibilityRole="button"
+                    accessibilityLabel={LOCALE_LABEL[loc]}
+                    accessibilityState={{ selected: ativo }}
+                  >
+                    <View style={styles.localeOpcaoTextos}>
+                      <Text style={styles.localeOpcaoNome}>{LOCALE_LABEL[loc]}</Text>
+                      <Text style={styles.localeOpcaoSigla}>{LOCALE_SHORT[loc]}</Text>
+                    </View>
+                    {ativo ? (
+                      <Ionicons name="checkmark" size={20} color={colors.primary} />
+                    ) : null}
+                  </Pressable>
+                </View>
+              );
+            })}
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       <Toast
         message={toast.message}
@@ -544,41 +599,105 @@ const createStyles = (c: ThemeColors) =>
       color: c.text,
     },
 
-    /* Locale picker */
-    localeRow: {
-      flexDirection: 'row',
-      gap: spacing.sm,
-      marginHorizontal: spacing.xl,
-      marginBottom: spacing.lg,
-    },
-    localeChip: {
-      flex: 1,
+    /* Locale select (botão) */
+    localeSelect: {
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'center',
-      gap: spacing.xs + 2,
+      justifyContent: 'space-between',
+      gap: spacing.md,
+      marginHorizontal: spacing.xl,
+      marginBottom: spacing.lg,
       backgroundColor: c.surface,
-      borderRadius: radius.full,
-      paddingVertical: spacing.sm + 2,
-      paddingHorizontal: spacing.sm,
+      borderRadius: radius.lg,
+      padding: spacing.lg,
       borderWidth: 1,
       borderColor: c.border,
     },
-    localeChipAtivo: {
+    localeSelectEsquerda: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+    },
+    localeIconWrap: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
       backgroundColor: c.primarySoft,
-      borderColor: c.primary,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
-    localeFlag: {
-      fontSize: fontSize.md,
+    localeTextos: {
+      flex: 1,
     },
-    localeTexto: {
-      fontFamily: fontFamily.semibold,
+    localeLabel: {
+      fontFamily: fontFamily.medium,
       fontSize: fontSize.sm,
       color: c.textMuted,
     },
-    localeTextoAtivo: {
-      color: c.primary,
+    localeValor: {
       fontFamily: fontFamily.bold,
+      fontSize: fontSize.md,
+      color: c.text,
+      marginTop: 2,
+    },
+
+    /* Locale modal */
+    localeModalBackdrop: {
+      flex: 1,
+      backgroundColor: c.overlay,
+      justifyContent: 'flex-end',
+    },
+    localeModalCard: {
+      backgroundColor: c.surface,
+      borderTopLeftRadius: radius['2xl'],
+      borderTopRightRadius: radius['2xl'],
+      paddingHorizontal: spacing.xl,
+      paddingTop: spacing.md,
+    },
+    localeModalHandle: {
+      alignSelf: 'center',
+      width: 40,
+      height: 4,
+      borderRadius: 2,
+      backgroundColor: c.borderStrong,
+      marginBottom: spacing.lg,
+    },
+    localeModalHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      paddingBottom: spacing.md,
+    },
+    localeModalTitulo: {
+      fontFamily: fontFamily.bold,
+      fontSize: fontSize.lg,
+      color: c.text,
+    },
+    localeOpcao: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingVertical: spacing.md + 2,
+    },
+    localeOpcaoTextos: {
+      flex: 1,
+    },
+    localeOpcaoNome: {
+      fontFamily: fontFamily.semibold,
+      fontSize: fontSize.base,
+      color: c.text,
+    },
+    localeOpcaoSigla: {
+      fontFamily: fontFamily.medium,
+      fontSize: fontSize.sm,
+      color: c.textMuted,
+      marginTop: 2,
+      letterSpacing: 1,
+    },
+    localeOpcaoDivisor: {
+      height: 1,
+      backgroundColor: c.separator,
     },
 
     /* Theme card */
