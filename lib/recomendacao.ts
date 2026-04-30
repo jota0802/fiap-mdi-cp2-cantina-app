@@ -2,12 +2,19 @@ import type { ItemCardapio, Order } from '@/types';
 
 export type Periodo = 'manha' | 'almoco' | 'tarde' | 'noite';
 
+/**
+ * Combo retorna CHAVES i18n em vez de texto. O consumer (Home) usa
+ * `t(combo.tituloKey)` e `t(combo.subtituloKey, { count })` pra obter
+ * a string traduzida no idioma ativo.
+ */
 export type Combo = {
   periodo: Periodo;
-  titulo: string;
-  subtitulo: string;
+  tituloKey: string;
+  subtituloKey: string;
   itemIds: [number, number];
   fonte: 'padrao' | 'historico' | 'alternativo';
+  /** Apenas para combo personalizado: qtd de pedidos considerados */
+  recencyCount?: number;
 };
 
 const RECENCY_WINDOW = 10;
@@ -27,29 +34,29 @@ export function getPeriodoAtual(date: Date = new Date()): Periodo {
 const COMBOS_PADRAO: Record<Periodo, Combo> = {
   manha: {
     periodo: 'manha',
-    titulo: 'Combo café da manhã',
-    subtitulo: 'Pra começar bem o dia',
+    tituloKey: 'combo.breakfast.title',
+    subtituloKey: 'combo.breakfast.subtitle',
     itemIds: [1, 4],
     fonte: 'padrao',
   },
   almoco: {
     periodo: 'almoco',
-    titulo: 'Combo do almoço',
-    subtitulo: 'Bem pesado pra dar conta da tarde',
+    tituloKey: 'combo.lunch.title',
+    subtituloKey: 'combo.lunch.subtitle',
     itemIds: [6, 3],
     fonte: 'padrao',
   },
   tarde: {
     periodo: 'tarde',
-    titulo: 'Combo café da tarde',
-    subtitulo: 'Aquela pausa que merece',
+    tituloKey: 'combo.afternoon.title',
+    subtituloKey: 'combo.afternoon.subtitle',
     itemIds: [2, 5],
     fonte: 'padrao',
   },
   noite: {
     periodo: 'noite',
-    titulo: 'Combo lanche da noite',
-    subtitulo: 'Pra quem ainda tá na firma',
+    tituloKey: 'combo.night.title',
+    subtituloKey: 'combo.night.subtitle',
     itemIds: [7, 2],
     fonte: 'padrao',
   },
@@ -58,43 +65,35 @@ const COMBOS_PADRAO: Record<Periodo, Combo> = {
 const COMBOS_ALTERNATIVOS: Record<Periodo, Combo> = {
   manha: {
     periodo: 'manha',
-    titulo: 'Quero algo mais leve',
-    subtitulo: 'Croissant fresquinho com café',
+    tituloKey: 'combo.alt_breakfast.title',
+    subtituloKey: 'combo.alt_breakfast.subtitle',
     itemIds: [12, 1],
     fonte: 'alternativo',
   },
   almoco: {
     periodo: 'almoco',
-    titulo: 'Opção mais leve',
-    subtitulo: 'Salada Caesar com suco natural',
+    tituloKey: 'combo.alt_lunch.title',
+    subtituloKey: 'combo.alt_lunch.subtitle',
     itemIds: [10, 3],
     fonte: 'alternativo',
   },
   tarde: {
     periodo: 'tarde',
-    titulo: 'Doce e café',
-    subtitulo: 'Brigadeiro com cappuccino',
+    tituloKey: 'combo.alt_afternoon.title',
+    subtituloKey: 'combo.alt_afternoon.subtitle',
     itemIds: [9, 2],
     fonte: 'alternativo',
   },
   noite: {
     periodo: 'noite',
-    titulo: 'Pra refrescar',
-    subtitulo: 'Açaí com refrigerante gelado',
+    tituloKey: 'combo.alt_night.title',
+    subtituloKey: 'combo.alt_night.subtitle',
     itemIds: [8, 11],
     fonte: 'alternativo',
   },
 };
 
-/**
- * Combo personalizado: se o usuário tem ≥2 items recorrentes nos últimos
- * pedidos, sugere os 2 mais frequentes. Considera apenas os pedidos recentes
- * pra não deixar comportamento antigo dominar a sugestão.
- */
-function getComboHistorico(
-  periodo: Periodo,
-  orders: Order[],
-): Combo | null {
+function getComboHistorico(periodo: Periodo, orders: Order[]): Combo | null {
   const recentes = [...orders]
     .sort(
       (a, b) =>
@@ -124,22 +123,18 @@ function getComboHistorico(
 
   return {
     periodo,
-    titulo: 'Seus favoritos',
-    subtitulo: `Baseado nos seus últimos ${recentes.length} pedidos`,
+    tituloKey: 'combo.personalized_title',
+    subtituloKey: 'combo.personalized_subtitle',
     itemIds: [a, b],
     fonte: 'historico',
+    recencyCount: recentes.length,
   };
 }
 
 /**
- * Retorna os combos disponíveis pro horário atual, em ordem de prioridade:
- * 1. Personalizado (se houver histórico forte)
- * 2. Combo padrão do período
- * 3. Combo alternativo do período
- *
- * Se `cartItemIds` for passado, descarta combos cujo PAR DE ITENS já está
- * inteiro no carrinho — não tem sentido sugerir o que já foi adicionado.
- * Sempre retorna ao menos 1 combo (fallback no padrão).
+ * Retorna combos disponíveis em ordem de prioridade: histórico > padrão >
+ * alternativo. Filtra combos cujo PAR completo já está no carrinho.
+ * Sempre retorna ao menos 1 combo.
  */
 export function getCombosDisponiveis(
   periodo: Periodo,
@@ -154,12 +149,10 @@ export function getCombosDisponiveis(
   candidatos.push(COMBOS_PADRAO[periodo]);
   candidatos.push(COMBOS_ALTERNATIVOS[periodo]);
 
-  // Remove combos cujos 2 itens já estão no carrinho (sugerir item já comprado é ruim)
   const filtrados = candidatos.filter(
     (c) => !(cartSet.has(c.itemIds[0]) && cartSet.has(c.itemIds[1])),
   );
 
-  // Dedup por par (a,b) ignorando ordem
   const visto = new Set<string>();
   const unicos: Combo[] = [];
   for (const c of filtrados) {
@@ -172,21 +165,11 @@ export function getCombosDisponiveis(
   return unicos.length > 0 ? unicos : [COMBOS_PADRAO[periodo]];
 }
 
-/**
- * Retorna o combo recomendado primário (compat com chamadas antigas).
- */
-export function getComboRecomendado(
-  periodo: Periodo,
-  orders: Order[],
-): Combo {
+export function getComboRecomendado(periodo: Periodo, orders: Order[]): Combo {
   const lista = getCombosDisponiveis(periodo, orders);
   return lista[0] ?? COMBOS_PADRAO[periodo];
 }
 
-/**
- * Calcula o preço total do combo somando os 2 items.
- * Retorna 0 se algum item não for encontrado.
- */
 export function precoCombo(combo: Combo, cardapio: ItemCardapio[]): number {
   const a = cardapio.find((i) => i.id === combo.itemIds[0]);
   const b = cardapio.find((i) => i.id === combo.itemIds[1]);

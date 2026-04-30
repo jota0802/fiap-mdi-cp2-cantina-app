@@ -157,7 +157,8 @@ export const shadow = {
 export type StatusKey = 'pendente' | 'pronto' | 'retirado' | 'cancelado';
 
 export type StatusPalette = {
-  label: string;
+  /** Chave i18n — consumer chama t(labelKey) e .toUpperCase() se quiser. */
+  labelKey: string;
   color: string;
   bg: string;
   border: string;
@@ -170,31 +171,32 @@ export type StatusPalette = {
 
 /**
  * Cores semânticas para os status de pedido. Funciona em dark e light theme.
+ * Os labels saem via i18n (labelKey) — telas chamam t(palette.labelKey).
  */
 export const statusPalette: Record<StatusKey, StatusPalette> = {
   pendente: {
-    label: 'PREPARANDO',
+    labelKey: 'status.pendente',
     color: '#F59E0B', // amber-500
     bg: 'rgba(245, 158, 11, 0.12)',
     border: 'rgba(245, 158, 11, 0.4)',
     icon: 'time-outline',
   },
   pronto: {
-    label: 'PRONTO',
+    labelKey: 'status.pronto',
     color: '#10B981', // emerald-500
     bg: 'rgba(16, 185, 129, 0.14)',
     border: 'rgba(16, 185, 129, 0.45)',
     icon: 'checkmark-circle-outline',
   },
   retirado: {
-    label: 'RETIRADO',
+    labelKey: 'status.retirado',
     color: '#6B7280', // gray-500
     bg: 'rgba(107, 114, 128, 0.12)',
     border: 'rgba(107, 114, 128, 0.35)',
     icon: 'bag-check-outline',
   },
   cancelado: {
-    label: 'CANCELADO',
+    labelKey: 'status.cancelado',
     color: '#9CA3AF', // gray-400
     bg: 'rgba(156, 163, 175, 0.10)',
     border: 'rgba(156, 163, 175, 0.30)',
@@ -213,7 +215,8 @@ export type TagKey =
   | 'novo';
 
 export type TagInfo = {
-  label: string;
+  /** Chave i18n — consumer chama t(labelKey). */
+  labelKey: string;
   color: string;
   bg: string;
 };
@@ -221,14 +224,31 @@ export type TagInfo = {
 /**
  * Cores para tags de itens do cardápio (vegano verde, picante laranja, etc.).
  * Usados como pequenos chips abaixo da descrição dos itens.
+ * Os labels saem via i18n (labelKey).
  */
 export const tagPalette: Record<TagKey, TagInfo> = {
-  vegano: { label: 'Vegano', color: '#16A34A', bg: 'rgba(22, 163, 74, 0.12)' },
-  vegetariano: { label: 'Vegetariano', color: '#65A30D', bg: 'rgba(101, 163, 13, 0.12)' },
-  'sem-gluten': { label: 'Sem glúten', color: '#0891B2', bg: 'rgba(8, 145, 178, 0.12)' },
-  'sem-lactose': { label: 'Sem lactose', color: '#6366F1', bg: 'rgba(99, 102, 241, 0.12)' },
-  quente: { label: 'Quente', color: '#EA580C', bg: 'rgba(234, 88, 12, 0.12)' },
-  frio: { label: 'Frio', color: '#0EA5E9', bg: 'rgba(14, 165, 233, 0.12)' },
-  popular: { label: 'Popular', color: '#DB2777', bg: 'rgba(219, 39, 119, 0.12)' },
-  novo: { label: 'Novo', color: '#7C3AED', bg: 'rgba(124, 58, 237, 0.12)' },
+  vegano: { labelKey: 'tag.vegano', color: '#16A34A', bg: 'rgba(22, 163, 74, 0.12)' },
+  vegetariano: {
+    labelKey: 'tag.vegetariano',
+    color: '#65A30D',
+    bg: 'rgba(101, 163, 13, 0.12)',
+  },
+  'sem-gluten': {
+    labelKey: 'tag.sem-gluten',
+    color: '#0891B2',
+    bg: 'rgba(8, 145, 178, 0.12)',
+  },
+  'sem-lactose': {
+    labelKey: 'tag.sem-lactose',
+    color: '#6366F1',
+    bg: 'rgba(99, 102, 241, 0.12)',
+  },
+  quente: { labelKey: 'tag.quente', color: '#EA580C', bg: 'rgba(234, 88, 12, 0.12)' },
+  frio: { labelKey: 'tag.frio', color: '#0EA5E9', bg: 'rgba(14, 165, 233, 0.12)' },
+  popular: {
+    labelKey: 'tag.popular',
+    color: '#DB2777',
+    bg: 'rgba(219, 39, 119, 0.12)',
+  },
+  novo: { labelKey: 'tag.novo', color: '#7C3AED', bg: 'rgba(124, 58, 237, 0.12)' },
 };
