@@ -283,29 +283,32 @@ export default function Home() {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.destaquesScroll}
             >
-              {itensFavoritos.map((item) => (
-                <Pressable
-                  key={item.id}
-                  style={({ pressed }) => [styles.destaqueCard, pressed && styles.pressedSoft]}
-                  onPress={() => router.push('/cardapio')}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Favorito: ${item.nome}, R$ ${item.preco.toFixed(2)}. Tocar abre o cardápio`}
-                >
-                  <View style={styles.destaqueImagemWrap}>
-                    <ItemThumbnail
-                      emoji={item.emoji}
-                      imagem={item.imagem}
-                      size={108}
-                      borderRadius={radius.md}
-                      bgColor={colors.surfaceElevated}
-                    />
-                  </View>
-                  <Text style={styles.destaqueNome} numberOfLines={1}>
-                    {item.nome}
-                  </Text>
-                  <Text style={styles.destaquePreco}>R$ {item.preco.toFixed(2)}</Text>
-                </Pressable>
-              ))}
+              {itensFavoritos.map((item) => {
+                const itemNome = item.nomeKey ? t(item.nomeKey) : item.nome;
+                return (
+                  <Pressable
+                    key={item.id}
+                    style={({ pressed }) => [styles.destaqueCard, pressed && styles.pressedSoft]}
+                    onPress={() => router.push('/cardapio')}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${itemNome} · R$ ${item.preco.toFixed(2)}`}
+                  >
+                    <View style={styles.destaqueImagemWrap}>
+                      <ItemThumbnail
+                        emoji={item.emoji}
+                        imagem={item.imagem}
+                        size={108}
+                        borderRadius={radius.md}
+                        bgColor={colors.surfaceElevated}
+                      />
+                    </View>
+                    <Text style={styles.destaqueNome} numberOfLines={1}>
+                      {itemNome}
+                    </Text>
+                    <Text style={styles.destaquePreco}>R$ {item.preco.toFixed(2)}</Text>
+                  </Pressable>
+                );
+              })}
             </ScrollView>
           </>
         ) : null}
@@ -328,29 +331,32 @@ export default function Home() {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.destaquesScroll}
         >
-          {DESTAQUES.map((item) => (
-            <Pressable
-              key={item.id}
-              style={({ pressed }) => [styles.destaqueCard, pressed && styles.pressedSoft]}
-              onPress={() => router.push('/cardapio')}
-              accessibilityRole="button"
-              accessibilityLabel={`Destaque: ${item.nome}, R$ ${item.preco.toFixed(2)}. Tocar abre o cardápio`}
-            >
-              <View style={styles.destaqueImagemWrap}>
-                <ItemThumbnail
-                  emoji={item.emoji}
-                  imagem={item.imagem}
-                  size={108}
-                  borderRadius={radius.md}
-                  bgColor={colors.surfaceElevated}
-                />
-              </View>
-              <Text style={styles.destaqueNome} numberOfLines={1}>
-                {item.nome}
-              </Text>
-              <Text style={styles.destaquePreco}>R$ {item.preco.toFixed(2)}</Text>
-            </Pressable>
-          ))}
+          {DESTAQUES.map((item) => {
+            const itemNome = item.nomeKey ? t(item.nomeKey) : item.nome;
+            return (
+              <Pressable
+                key={item.id}
+                style={({ pressed }) => [styles.destaqueCard, pressed && styles.pressedSoft]}
+                onPress={() => router.push('/cardapio')}
+                accessibilityRole="button"
+                accessibilityLabel={`${itemNome} · R$ ${item.preco.toFixed(2)}`}
+              >
+                <View style={styles.destaqueImagemWrap}>
+                  <ItemThumbnail
+                    emoji={item.emoji}
+                    imagem={item.imagem}
+                    size={108}
+                    borderRadius={radius.md}
+                    bgColor={colors.surfaceElevated}
+                  />
+                </View>
+                <Text style={styles.destaqueNome} numberOfLines={1}>
+                  {itemNome}
+                </Text>
+                <Text style={styles.destaquePreco}>R$ {item.preco.toFixed(2)}</Text>
+              </Pressable>
+            );
+          })}
         </ScrollView>
 
         {/* Últimos pedidos */}
@@ -463,7 +469,7 @@ function ComboCard({
               bgColor={colors.bg}
             />
             <Text style={styles.comboItemNomeInline} numberOfLines={1}>
-              {item.nome}
+              {item.nomeKey ? t(item.nomeKey) : item.nome}
             </Text>
           </View>
         ))}

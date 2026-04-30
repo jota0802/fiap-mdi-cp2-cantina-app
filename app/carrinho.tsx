@@ -47,7 +47,9 @@ function LinhaItem({
   styles,
   colors,
 }: LinhaItemProps) {
+  const { t } = useLocale();
   const subtotal = item.preco * quantidade;
+  const nome = item.nomeKey ? t(item.nomeKey) : item.nome;
 
   return (
     <View style={styles.linha}>
@@ -63,7 +65,7 @@ function LinhaItem({
         <View style={styles.linhaTopo}>
           <View style={styles.linhaNomeWrap}>
             <Text style={styles.linhaNome} numberOfLines={1}>
-              {item.nome}
+              {nome}
             </Text>
             <Text style={styles.linhaPrecoUnit}>
               R$ {item.preco.toFixed(2)} · cada
@@ -77,7 +79,7 @@ function LinhaItem({
             hitSlop={10}
             style={styles.removeButton}
             accessibilityRole="button"
-            accessibilityLabel={`Remover ${item.nome} do carrinho`}
+            accessibilityLabel={`${nome}: ${t('cta.cancel')}`}
           >
             <Ionicons name="close" size={16} color={colors.textSubtle} />
           </Pressable>
@@ -93,7 +95,7 @@ function LinhaItem({
               }}
               hitSlop={6}
               accessibilityRole="button"
-              accessibilityLabel={`Diminuir quantidade de ${item.nome}`}
+              accessibilityLabel={`${nome}: -1`}
             >
               <Ionicons name="remove" size={14} color={colors.text} />
             </Pressable>
@@ -110,7 +112,7 @@ function LinhaItem({
               }}
               hitSlop={6}
               accessibilityRole="button"
-              accessibilityLabel={`Aumentar quantidade de ${item.nome}`}
+              accessibilityLabel={`${nome}: +1`}
             >
               <Ionicons name="add" size={14} color={colors.primaryText} />
             </Pressable>

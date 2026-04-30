@@ -210,7 +210,7 @@ export default function PedidoDetalhesScreen() {
                 />
                 <View style={styles.itemInfo}>
                   <Text style={styles.itemNome} numberOfLines={1}>
-                    {item.nome}
+                    {item.nomeKey ? t(item.nomeKey) : item.nome}
                   </Text>
                   <Text style={styles.itemPrecoUnit}>
                     {quantidade} × R$ {item.preco.toFixed(2)}

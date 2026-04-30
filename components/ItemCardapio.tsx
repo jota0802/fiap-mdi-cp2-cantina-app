@@ -59,6 +59,9 @@ export default function ItemCardapio({ item, quantidade, onAdicionar, onRemover 
     animateHeart();
   };
 
+  const nome = item.nomeKey ? t(item.nomeKey) : item.nome;
+  const descricao = item.descricaoKey ? t(item.descricaoKey) : item.descricao;
+
   return (
     <View style={[styles.container, ativo && styles.containerAtivo]}>
       <ItemThumbnail
@@ -72,18 +75,14 @@ export default function ItemCardapio({ item, quantidade, onAdicionar, onRemover 
       <View style={styles.info}>
         <View style={styles.nomeRow}>
           <Text style={styles.nome} numberOfLines={1}>
-            {item.nome}
+            {nome}
           </Text>
           <Pressable
             onPress={handleHeart}
             hitSlop={8}
             style={styles.heartButton}
             accessibilityRole="button"
-            accessibilityLabel={
-              favorito
-                ? `Remover ${item.nome} dos favoritos`
-                : `Adicionar ${item.nome} aos favoritos`
-            }
+            accessibilityLabel={`${nome}: ${t('home.your_favorites')}`}
           >
             <Animated.View style={{ transform: [{ scale: heartScale }] }}>
               <Ionicons
@@ -95,7 +94,7 @@ export default function ItemCardapio({ item, quantidade, onAdicionar, onRemover 
           </Pressable>
         </View>
         <Text style={styles.descricao} numberOfLines={2}>
-          {item.descricao}
+          {descricao}
         </Text>
         {item.tags && item.tags.length > 0 ? (
           <View style={styles.tagsRow}>
@@ -125,7 +124,7 @@ export default function ItemCardapio({ item, quantidade, onAdicionar, onRemover 
             }}
             hitSlop={8}
             accessibilityRole="button"
-            accessibilityLabel={`Diminuir quantidade de ${item.nome}`}
+            accessibilityLabel={`${nome}: -1`}
           >
             <Text style={styles.botaoMenosTexto}>−</Text>
           </Pressable>
@@ -146,11 +145,7 @@ export default function ItemCardapio({ item, quantidade, onAdicionar, onRemover 
           }}
           hitSlop={8}
           accessibilityRole="button"
-          accessibilityLabel={
-            ativo
-              ? `Aumentar quantidade de ${item.nome}`
-              : `Adicionar ${item.nome} ao carrinho`
-          }
+          accessibilityLabel={ativo ? `${nome}: +1` : `${nome}: ${t('cta.add_to_cart')}`}
         >
           <Text style={styles.botaoMaisTexto}>+</Text>
         </Pressable>

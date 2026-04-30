@@ -71,13 +71,19 @@ export default function Cardapio() {
     return CARDAPIO.filter((i) => {
       if (categoriaAtiva !== 'Todas' && i.categoria !== categoriaAtiva) return false;
       if (!termo) return true;
+      const nomeT = i.nomeKey ? t(i.nomeKey) : i.nome;
+      const descT = i.descricaoKey ? t(i.descricaoKey) : i.descricao;
+      const catT = t(`category.${i.categoria}`);
       return (
         i.nome.toLowerCase().includes(termo) ||
+        nomeT.toLowerCase().includes(termo) ||
         i.descricao.toLowerCase().includes(termo) ||
-        i.categoria.toLowerCase().includes(termo)
+        descT.toLowerCase().includes(termo) ||
+        i.categoria.toLowerCase().includes(termo) ||
+        catT.toLowerCase().includes(termo)
       );
     });
-  }, [busca, categoriaAtiva]);
+  }, [busca, categoriaAtiva, t]);
 
   const categoriasVisiveis: Categoria[] = useMemo(
     () => Array.from(new Set(itensFiltrados.map((i) => i.categoria))),
