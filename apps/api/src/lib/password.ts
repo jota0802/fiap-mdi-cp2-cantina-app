@@ -1,4 +1,5 @@
 import { hash, verify } from '@node-rs/argon2';
+import { logger } from './logger.js';
 
 const ARGON2_OPTS = {
   memoryCost: 19456, // 19 MiB — OWASP 2024 recommendation
@@ -13,7 +14,8 @@ export async function hashPassword(plain: string): Promise<string> {
 export async function verifyPassword(plain: string, hashStr: string): Promise<boolean> {
   try {
     return await verify(hashStr, plain);
-  } catch {
+  } catch (err) {
+    logger.error({ err }, 'verifyPassword: argon2 verify threw');
     return false;
   }
 }
