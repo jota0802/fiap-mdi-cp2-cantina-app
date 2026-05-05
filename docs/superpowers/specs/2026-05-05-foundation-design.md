@@ -6,7 +6,7 @@
 
 ## 1. Contexto
 
-App Cantina FIAP (CP2) já entregue ao professor. Stack atual: monorepo single-package Expo + TypeScript strict + 6 contexts persistidos em AsyncStorage + i18n PT/EN/ES. ~16.660 linhas em 93 arquivos, 116 commits distribuídos entre 4 RMs.
+App Cantina FIAP (CP2) já entregue ao professor. Stack atual: monorepo single-package Expo + TypeScript strict + 6 contexts persistidos em AsyncStorage + i18n PT/EN/ES. ~16.660 linhas em 93 arquivos, 116 commits.
 
 A entrega acabou e o usuário quer evoluir o projeto pra "outro patamar" como portfólio: backend de verdade, banco real, persona de operador da cantina (admin), pagamentos, agendamento, calendário e validação de retirada.
 
@@ -601,22 +601,8 @@ Salvo em `docs/AUDITORIA.md`. Cada auditoria gera report em `docs/superpowers/au
 
 Conforme o agente (Claude) trabalha em features, ele **flagra ativamente**: se mudar `package.json` ou estrutura sem auditoria, abre prompt: "🚨 essa mudança bate uma auditoria CLAUDE.md, quer que eu rode agora?"
 
-## 14. Distribuição de commits (4 RMs)
 
-Status atual (final brainstorm): DevRuanVieira=31, jota0802=29, roji-menez=28, lucksza=27.
-
-Foundation tem ~15-20 commits estimados. Sugestão de afinidade pra plano:
-
-| RM | Especialidade | Commits Foundation sugeridos |
-|---|---|---|
-| **lucksza** (atualmente menos) | persistência/dados | drizzle schema, migrations, seed, db client factory |
-| **roji-menez** | auth/segurança | argon2, JWT, SecureStore migration, auth middleware |
-| **jota0802** | navegação/docs | React Query setup, contexts→facades, docs (HANDOFF/CLAUDE.md), AUDITORIA.md |
-| **DevRuanVieira** | UI/visual | dark mode B tokens, elevation system, theme refactor |
-
-Plano final detalha por commit, mas a heurística é: priorizar `lucksza` em paridade com os outros.
-
-## 15. Riscos & mitigações
+## 14. Riscos & mitigações
 
 | Risco | Probabilidade | Impacto | Mitigação |
 |---|---|---|---|
@@ -657,7 +643,6 @@ Plano final detalha por commit, mas a heurística é: priorizar `lucksza` em par
 - [ ] `pnpm audit:run` roda os 4 helpers e produz output legível
 - [ ] `CLAUDE.md`, `HANDOFF.md`, `ROADMAP.md` atualizados com nova realidade monorepo
 - [ ] README.md raiz reescrito explicando monorepo, comandos, deploy
-- [ ] Commits distribuídos entre 4 RMs (gap ≤2)
 
 ## 18. Próximas etapas
 

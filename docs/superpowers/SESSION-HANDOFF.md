@@ -2,9 +2,9 @@
 
 > **Para retomar em outra sessão:** este doc é o ponto de entrada. Lê isso → lê os 3 abaixo → prossegue.
 
-**Última sessão:** 2026-05-05 (sessão 3)
-**Branch:** `feat/foundation` (16 commits à frente de `main`)
-**Stage:** Phases 1, 2 e 3 do plano executadas; pausa antes da Phase 4 (auth endpoints).
+**Última sessão:** 2026-05-05 (sessão 3 — continuou Phases 3 e 4 no mesmo dia)
+**Branch:** `feat/foundation` (19 commits à frente de `main`)
+**Stage:** Phases 1, 2, 3 e 4 do plano executadas; pausa antes da Phase 5 (Items + Orders + Favorites endpoints).
 
 ## 📚 Docs prioritários (ler nesta ordem)
 
@@ -13,9 +13,12 @@
 3. [CLAUDE.md](../../CLAUDE.md) — convenções do projeto + autor único `jota0802`
 4. **Memória persistente** em `C:\Users\jotin\.claude\projects\c--Users-jotin-Documents-fiap-mdi-cp2-cantina-app\memory\` — feedback, project status, paths
 
-## ✅ O que está feito (16 commits em `feat/foundation`)
+## ✅ O que está feito (19 commits em `feat/foundation`)
 
 ```
+00eed1e fix(api): hardening auth endpoints pos code-review
+11ac0e1 feat(api): rotas /auth/register, /auth/login, /auth/me com testes (TDD)
+2a70466 docs(handoff): salva estado da sessao apos Phase 3 do Foundation
 d9303db test(api): fixtures (createTestDb pglite, createTestUser, createTestItem)
 0c59e05 feat(api): middleware auth (Bearer JWT) + error-handler centralizado
 5234c21 fix(api): observabilidade no verifyPassword e zod parse no verifyJwt
@@ -64,16 +67,25 @@ c9f680a refactor(monorepo): move Expo app pra apps/mobile e cria root package.js
 - `apps/api/src/test/db.ts` — `createTestDb` (pglite efêmero por teste) + migrate
 - `apps/api/src/test/fixtures.ts` — `createTestUser` (retorna `{user, password, token}`) + `createTestItem` (com defaults pra `name`/`descricao` notNull)
 
-## ⏳ O que falta — começar por aqui na próxima sessão
+### Phase 4 — Auth endpoints ✅
+- `apps/api/src/routes/auth.ts` exporta `createAuthRoutes(db)` (async — DUMMY_HASH computado no startup)
+- 3 endpoints: `POST /register`, `POST /login`, `GET /me` (todas montadas em `/api/v1/auth`)
+- 9 testes TDD em `auth.test.ts` (3 register + 3 login + 3 me) — total da API agora 15/15
+- `app.ts` refatorado pra `async createApp(injected?: { db?: DB })` com DI — `index.ts` faz `await createApp()`
+- `validateJson()` helper que re-throwa ZodError pra errorHandler responder 422 (não o 400 default do zValidator)
+- `toPublicUser()` allowlist explícito tipado como `PublicUser` de `@cantina/shared` — protege contra leak de novos campos
+- `assertValidRole()` runtime guard substitui cast inseguro `as 'customer' | 'staff'`
+- **Fix de timing oracle:** login sempre roda argon2 verify (contra hash real ou DUMMY_HASH constante) → não dá mais pra enumerar emails registrados
 
-### Phase 4 — Auth endpoints (1 task complex, TDD denso)
-- **Task 4.1** `/auth/register`, `/auth/login`, `/auth/me` com 9+ testes TDD. Mount em `app.ts` com DI do db.
+## ⏳ O que falta — começar por aqui na próxima sessão
 
 ### Phase 5 — Items + Orders + Favorites endpoints (4 tasks)
 - 5.1 Items (list + get com filtro categoria)
 - 5.2 Orders (list/get/create/cancel) com senha sequencial e estimativa
 - 5.3 Auto-promote pendente→pronto job (setInterval 30s)
 - 5.4 Favorites (list/add/remove idempotente)
+
+**Como retomar Phase 5:** todos os endpoints usam `requireAuth` middleware (já testado). Reuse `createAuthRoutes(db)` pattern: factory recebendo `DB | TestDb`, rotas com `validateJson` + Zod schemas do shared. Tests via `app.request()` contra fresh `createTestDb()` per test.
 
 ### Phase 6 — Mobile React Query + AuthContext (2 tasks)
 - 6.1 Instalar RQ + persister + criar `apps/mobile/lib/api/client.ts`
@@ -140,6 +152,16 @@ c9f680a refactor(monorepo): move Expo app pra apps/mobile e cria root package.js
 9. **Code review apanhou bugs reais** mesmo em código com exact-code do plano. O reviewer da Task 3.2 sugeriu logger no `verifyPassword` (silent lockout em prod) e Zod parse no `verifyJwt` (claims ausentes silently undefined). Ambos foram aceitos e implementados em `5234c21`. **Lição:** code review formal vale o custo em tasks de segurança, mesmo quando o plano traz exact-code.
 
 10. **Spec drift — `as string` cast no plano original:** o plano da Task 3.2 instruía `email: payload.email as string` (sem validação). Funcionalmente OK em greenfield, mas defesa em profundidade (Zod parse) é trivial e captura tokens forjados/incompletos. Aplicar Zod parse a qualquer dado externo (req body, JWT payload, env vars) por padrão — já é convenção em `env.ts` e `verifyJwt`.
+
+11. **`zValidator` retorna 400 por default; testes da Phase 4 esperavam 422.** Plano não mencionou. Fix: passar hook `(result) => { if (!result.success) throw result.error; }` pro `zValidator` — ZodError vai pro errorHandler que retorna 422. Helper `validateJson()` em `auth.ts` encapsula isso.
+
+12. **Phase 4 review pegou 2 critical security issues (timing oracle + role cast unsafe) + 1 critical leak (toPublicUser spread).** Mesmo seguindo exact-code do plano, code review formal foi load-bearing. Padrões reaproveitáveis pra Phase 5+:
+    - **Allowlist explícito sempre que serializar entity DB pra resposta API.** Nunca `...rest` minus uma coluna — uso lista positiva tipada com schema do shared.
+    - **Runtime guard pra qualquer `as` cast em union de literais.** TypeScript não garante valor; DB pode mentir.
+    - **Toda operação de auth (login, password change, etc.) deve rodar argon2 unconditionally** — verifyPassword contra DUMMY_HASH se não achou user. Sem timing oracle.
+    - **DUMMY_HASH computado no startup**, não per-request. Implica factory async (`async createXxxRoutes(db)`) + `await createXxxRoutes(db)` no mount.
+
+13. **Subagent fez 1 GREEN cycle pros 3 endpoints da Phase 4 ao invés de 3 RED→GREEN cycles separados.** Tests cobrem o estado final corretamente, então não foi regression de qualidade do código — só process gap. Aceitável se exact-code do plano é confiável; menos aceitável se eu estivesse explorando design. Pra próximas tasks, prompt pode ser explícito: "implemente UM grupo de testes/rotas por vez, RED→GREEN, antes de mover pro próximo".
 
 ## 🧠 Memória persistente — o que está salvo
 
@@ -232,4 +254,4 @@ fiap-mdi-cp2-cantina-app/
 
 ## 🟢 Veredicto
 
-Foundation tá com **30% executado** (3 de 10 phases). Phase 3 (shared schemas + auth helpers + middleware + fixtures) destravou Phase 4 (auth endpoints) e Phase 5 (CRUD endpoints) — a partir daqui, é puxar exact-code do plano + tests TDD via supertest contra fixtures criadas. Mobile (Phase 6+) ainda consome AsyncStorage; troca por React Query vem após API estar de pé. Estimo **1-2 sessões** mais pra fechar Foundation completo.
+Foundation tá com **40% executado** (4 de 10 phases). Auth completo + hardened. Phase 5 (CRUD endpoints) reusa o pattern de Phase 4 (factory async com DI, validateJson hook, allowlist toPublicXxx). Mobile (Phase 6+) ainda consome AsyncStorage; troca por React Query vem após API estar de pé. Estimo **1-2 sessões** mais pra fechar Foundation completo.
