@@ -12,7 +12,7 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "doctor": "expo-doctor",
-    "check": "npm run typecheck && npm run lint && npm test"
+    "check": "pnpm typecheck && pnpm lint && pnpm test"
   },
   "dependencies": {
     "@expo-google-fonts/manrope": "^0.4.2",
