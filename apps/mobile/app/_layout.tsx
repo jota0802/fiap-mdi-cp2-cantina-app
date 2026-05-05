@@ -21,6 +21,7 @@ import { FavoritesProvider } from '@/context/FavoritesContext';
 import { LocaleProvider } from '@/context/LocaleContext';
 import { OrdersProvider } from '@/context/OrdersContext';
 import { ThemeProvider, useTheme } from '@/context/ThemeContext';
+import { QueryProvider } from '@/lib/api/query-client';
 
 if (Platform.OS === 'web') {
   // RN Web emite warnings deprecation/runtime sem impacto funcional.
@@ -127,18 +128,20 @@ export default function RootLayout() {
   });
 
   return (
-    <ThemeProvider>
-      <LocaleProvider>
-        <AuthProvider>
-          <CartProvider>
-            <OrdersProvider>
-              <FavoritesProvider>
-                {fontsLoaded ? <RootStack /> : <LoadingScreen />}
-              </FavoritesProvider>
-            </OrdersProvider>
-          </CartProvider>
-        </AuthProvider>
-      </LocaleProvider>
-    </ThemeProvider>
+    <QueryProvider>
+      <ThemeProvider>
+        <LocaleProvider>
+          <AuthProvider>
+            <CartProvider>
+              <OrdersProvider>
+                <FavoritesProvider>
+                  {fontsLoaded ? <RootStack /> : <LoadingScreen />}
+                </FavoritesProvider>
+              </OrdersProvider>
+            </CartProvider>
+          </AuthProvider>
+        </LocaleProvider>
+      </ThemeProvider>
+    </QueryProvider>
   );
 }
