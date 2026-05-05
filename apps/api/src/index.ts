@@ -3,7 +3,7 @@ import { createApp } from './app.js';
 import { env } from './env.js';
 import { logger } from './lib/logger.js';
 
-const app = createApp();
+const app = await createApp();
 
 const server = serve({ fetch: app.fetch, port: env.PORT }, (info) => {
   logger.info(`🌶️  Hono running on http://localhost:${info.port} (${env.NODE_ENV})`);
