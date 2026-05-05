@@ -2,9 +2,9 @@
 
 > **Para retomar em outra sessão:** este doc é o ponto de entrada. Lê isso → lê os 3 abaixo → prossegue.
 
-**Última sessão:** 2026-05-05 (sessão 3 — continuou Phases 3 e 4 no mesmo dia)
-**Branch:** `feat/foundation` (19 commits à frente de `main`)
-**Stage:** Phases 1, 2, 3 e 4 do plano executadas; pausa antes da Phase 5 (Items + Orders + Favorites endpoints).
+**Última sessão:** 2026-05-05 (sessão 3 — Phases 3, 4 e 5 no mesmo dia)
+**Branch:** `feat/foundation` (26 commits à frente de `main`)
+**Stage:** Phases 1-5 do plano executadas; pausa antes da Phase 6 (mobile React Query + AuthContext rewrite).
 
 ## 📚 Docs prioritários (ler nesta ordem)
 
@@ -13,9 +13,15 @@
 3. [CLAUDE.md](../../CLAUDE.md) — convenções do projeto + autor único `jota0802`
 4. **Memória persistente** em `C:\Users\jotin\.claude\projects\c--Users-jotin-Documents-fiap-mdi-cp2-cantina-app\memory\` — feedback, project status, paths
 
-## ✅ O que está feito (19 commits em `feat/foundation`)
+## ✅ O que está feito (26 commits em `feat/foundation`)
 
 ```
+c411637 fix(api): hardenings Phase 5 pos code-review
+5c58184 feat(api): rotas /favorites (list/add/remove) idempotentes com allowlist reusado
+524e111 feat(api): job auto-promote pedidos pendente->pronto via prontoEmEstimado
+99dec5e feat(api): rotas /orders (CRUD + cancel) com senha sequencial UTC e estimativa
+dd38bee feat(api): rotas /items (list + get) com filtro categoria validado e allowlist
+cd5f6cb docs(handoff): salva estado pos-Phase 4 + limpa spec legacy 4-RMs
 00eed1e fix(api): hardening auth endpoints pos code-review
 11ac0e1 feat(api): rotas /auth/register, /auth/login, /auth/me com testes (TDD)
 2a70466 docs(handoff): salva estado da sessao apos Phase 3 do Foundation
@@ -77,19 +83,31 @@ c9f680a refactor(monorepo): move Expo app pra apps/mobile e cria root package.js
 - `assertValidRole()` runtime guard substitui cast inseguro `as 'customer' | 'staff'`
 - **Fix de timing oracle:** login sempre roda argon2 verify (contra hash real ou DUMMY_HASH constante) → não dá mais pra enumerar emails registrados
 
+### Phase 5 — Items + Orders + Favorites endpoints ✅
+- `apps/api/src/lib/zod-hono.ts` — `validateJson()` extraído de auth.ts pra ser reusado (auth + orders agora compartilham)
+- `apps/api/src/lib/estimativa.ts` — `calcularEstimativa(pendingCount): number` (90s base + 60s/pendente, cap 600s)
+- **Items** (`/items`, `/items/:id`): `categoria` query param validado contra `CategoriaSchema` (400 em valor inválido); `toPublicItem` allowlist exportado pra reuso
+- **Orders** (`/orders` POST/GET/list, `/orders/:id` GET, `/orders/:id/status` PATCH): `nextSenha` UTC-deterministic, `nameSnapshot: item.name` (raw notNull, não nameKey), allowlist `toPublicOrder` + `toPublicOrderItem`, conditional `canceladoEm` stamp só quando status='cancelado'
+- **Promote-orders job** (`apps/api/src/jobs/promote-orders.ts`): `tickOnce(db)` exportado pra teste determinístico; `startPromoteJob(db)` envolve em setInterval 30s com reentrancy guard; integrado em `index.ts` com graceful shutdown
+- **Favorites** (`/favorites` GET, `/favorites/:itemId` POST/DELETE): preflight check de item existência (404 limpo em vez de FK violation 500); reuso do `toPublicItem` de items.ts
+- 35 testes total (5 items + 7 orders + 4 promote-orders job + 2 favorites + 9 auth + 6 jwt/password + 6 outros antigos)
+
 ## ⏳ O que falta — começar por aqui na próxima sessão
 
-### Phase 5 — Items + Orders + Favorites endpoints (4 tasks)
-- 5.1 Items (list + get com filtro categoria)
-- 5.2 Orders (list/get/create/cancel) com senha sequencial e estimativa
-- 5.3 Auto-promote pendente→pronto job (setInterval 30s)
-- 5.4 Favorites (list/add/remove idempotente)
+### Phase 6 — Mobile API client + React Query + AuthContext rewrite (2 tasks)
 
-**Como retomar Phase 5:** todos os endpoints usam `requireAuth` middleware (já testado). Reuse `createAuthRoutes(db)` pattern: factory recebendo `DB | TestDb`, rotas com `validateJson` + Zod schemas do shared. Tests via `app.request()` contra fresh `createTestDb()` per test.
-
-### Phase 6 — Mobile React Query + AuthContext (2 tasks)
+### Phase 6 — Mobile React Query + AuthContext (2 tasks) ← retomar aqui
 - 6.1 Instalar RQ + persister + criar `apps/mobile/lib/api/client.ts`
 - 6.2 Reescrever `AuthContext.tsx` consumindo API
+
+## 🐛 Issues conhecidas (deferidas, documentar antes de produção)
+
+Phase 5 code review identificou 4 issues que NÃO foram fixadas agora porque o ROI ou a urgência não justificavam atraso:
+
+- **C1 — `nextSenha` race condition:** dois POST /orders simultâneos no mesmo segundo podem gerar a mesma senha. Sem unique constraint no `(tenantId, DATE(criadoEm), senha)`. Cantina FIAP é low-traffic (single instance Render free tier), então o risco prático é baixo. **Fix antes de sub-projeto 2 (Cantina admin)** que aumenta concorrência. Solução: unique index + retry on 23505 OR `INSERT ... RETURNING` com sub-select.
+- **I2 — `GET /favorites` retorna items unavailable:** sem filtro `disponivel: true`. UX-ambíguo por design (mostrar item favoritado mesmo unavailable vs filtrar silenciosamente). Decisão fica pra Phase 6 quando o mobile consumir.
+- **I4 — N+1 em `GET /orders`:** `fetchOrderWithItems` re-fetch o order + itens por iteração; lista com 30 pedidos = 61 round-trips. Acceptable hoje; refator pra `inArray(orderItems.orderId, orderIds)` na Phase 6 pass quando o mobile carregar listas grandes.
+- **M2 — `createTestItem` double-spread brittle:** o pattern `{ slug: overrides.slug ?? default, ...overrides }` permite override mas é confuso. Defer pra próxima vez que tocar fixtures.
 
 ### Phase 7 — Mobile migration (3 tasks)
 - 7.1 useItems + cardapio screen consome /items
@@ -162,6 +180,14 @@ c9f680a refactor(monorepo): move Expo app pra apps/mobile e cria root package.js
     - **DUMMY_HASH computado no startup**, não per-request. Implica factory async (`async createXxxRoutes(db)`) + `await createXxxRoutes(db)` no mount.
 
 13. **Subagent fez 1 GREEN cycle pros 3 endpoints da Phase 4 ao invés de 3 RED→GREEN cycles separados.** Tests cobrem o estado final corretamente, então não foi regression de qualidade do código — só process gap. Aceitável se exact-code do plano é confiável; menos aceitável se eu estivesse explorando design. Pra próximas tasks, prompt pode ser explícito: "implemente UM grupo de testes/rotas por vez, RED→GREEN, antes de mover pro próximo".
+
+14. **Phase 5 plan tinha 2 drifts vs DB real:** (a) `nameSnapshot: item.nameKey` violaria NOT NULL pra os 6 itens com nameKey null; trocou pra `item.name`. (b) `categoria` query param sem validação (Zod) caía em silent empty result em vez de 400 limpo. Ambos pegos antecipadamente no prompt antes do dispatch.
+
+15. **Code quality review end-of-phase (1 review pra todas as 4 tasks da Phase 5) é mais eficiente que review por task** — pegou issues de integração (race conditions, N+1) que reviews atomicos isolados não veriam. Custo equivalente, melhor cobertura. Pattern pra Phase 5+: phase-end review formal, spot-check direto dentro de cada task.
+
+16. **Concurrent senha generation é unguarded.** `nextSenha` faz SELECT COUNT + INSERT (não atomic). Em low-traffic tudo bem; antes de sub-projeto 2 (Cantina admin com volume real), precisa de unique constraint `(tenantId, DATE(criadoEm), senha)` + retry. Documentado em "Issues conhecidas" no fim do handoff.
+
+17. **Inconsistencies UTC vs tenant-local:** `nextSenha` usa UTC midnight pra reset. Para uma cantina BRT, senhas restartam ~21:00 BRT em vez da meia-noite local. Aceitável MVP; sub-projeto 2 deveria derivar timezone de `tenantId`.
 
 ## 🧠 Memória persistente — o que está salvo
 
@@ -254,4 +280,4 @@ fiap-mdi-cp2-cantina-app/
 
 ## 🟢 Veredicto
 
-Foundation tá com **40% executado** (4 de 10 phases). Auth completo + hardened. Phase 5 (CRUD endpoints) reusa o pattern de Phase 4 (factory async com DI, validateJson hook, allowlist toPublicXxx). Mobile (Phase 6+) ainda consome AsyncStorage; troca por React Query vem após API estar de pé. Estimo **1-2 sessões** mais pra fechar Foundation completo.
+Foundation tá com **50% executado** (5 de 10 phases). API toda de pé: auth + items + orders + favorites + auto-promote job. 35/35 testes passando, 0 regressões em todos os fixes. Próximo grande salto é Phase 6: mobile vira cliente da API via React Query (substitui AsyncStorage gradualmente via strangler pattern nos contexts). Estimo **1-2 sessões** mais pra fechar Foundation completo.
