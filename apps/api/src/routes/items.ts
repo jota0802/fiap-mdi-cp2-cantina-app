@@ -7,7 +7,7 @@ import { notFound, badRequest } from '../lib/errors.js';
 import type { DB } from '../db/client.js';
 import type { TestDb } from '../test/db.js';
 
-function toPublicItem(i: typeof items.$inferSelect): ItemDto {
+export function toPublicItem(i: typeof items.$inferSelect): ItemDto {
   return {
     id: i.id,
     slug: i.slug,
