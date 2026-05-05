@@ -4,7 +4,9 @@ const EnvSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(8787),
   DATABASE_URL: z.string().url().optional(),
-  USE_PGLITE: z.coerce.boolean().default(false),
+  // NOTE: z.coerce.boolean() trata QUALQUER string nao-vazia como true (incluindo 'false').
+  // Parse explicito: 'true' -> true, qualquer outra coisa -> false.
+  USE_PGLITE: z.string().optional().transform((s) => s === 'true'),
   PGLITE_PATH: z.string().default('./dev.db'),
   JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 chars'),
   JWT_EXPIRES_IN: z.string().default('7d'),
