@@ -1,19 +1,10 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-  type ReactNode,
-} from 'react';
+import { createContext, useCallback, useContext, useMemo, type ReactNode } from 'react';
 
-import { STORAGE_KEYS } from '@/constants/storage-keys';
-import { useAuth } from '@/context/AuthContext';
+import type { Item } from '@cantina/shared';
 
-// TODO(task-7.3): migrar favoritos para API — persistencia server-side.
-// Por enquanto, favoritos sao string IDs (cuid2) salvos em AsyncStorage local.
+import { useFavorites as useFavoritesQuery, useToggleFavorite } from '@/lib/api/hooks/use-favorites';
+import { useItems } from '@/lib/api/hooks/use-items';
+
 type FavoritesContextValue = {
   favoritos: string[];
   isFavorito: (itemId: string) => boolean;
@@ -24,76 +15,32 @@ type FavoritesContextValue = {
 
 const FavoritesContext = createContext<FavoritesContextValue | undefined>(undefined);
 
-function favoritesKey(userId: string): string {
-  return `${STORAGE_KEYS.FAVORITES}:${userId}`;
-}
+export function FavoritesProvider({ children }: { children: ReactNode }) {
+  const { data, isPending } = useFavoritesQuery();
+  const { data: itemsData } = useItems();
+  const toggle = useToggleFavorite();
 
-type ProviderProps = { children: ReactNode };
-
-export function FavoritesProvider({ children }: ProviderProps) {
-  const { user } = useAuth();
-  const [favoritos, setFavoritos] = useState<string[]>([]);
-  const [isHydrated, setIsHydrated] = useState(false);
-
-  // Hidrata favoritos a cada mudança de usuário
-  useEffect(() => {
-    let cancelled = false;
-    setIsHydrated(false);
-
-    if (!user) {
-      setFavoritos([]);
-      setIsHydrated(true);
-      return () => {
-        cancelled = true;
-      };
-    }
-
-    AsyncStorage.getItem(favoritesKey(user.id))
-      .then((stored) => {
-        if (cancelled) return;
-        if (stored) {
-          try {
-            const parsed = JSON.parse(stored) as unknown;
-            if (Array.isArray(parsed)) {
-              // Aceita strings (novo formato cuid2) e descarta numeros legados
-              setFavoritos(parsed.filter((id): id is string => typeof id === 'string'));
-            } else {
-              setFavoritos([]);
-            }
-          } catch {
-            setFavoritos([]);
-          }
-        } else {
-          setFavoritos([]);
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setIsHydrated(true);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [user]);
-
-  // Persiste alterações após hidratar
-  useEffect(() => {
-    if (!isHydrated || !user) return;
-    AsyncStorage.setItem(favoritesKey(user.id), JSON.stringify(favoritos)).catch(() => {
-      // armazenamento falha silenciosamente
-    });
-  }, [favoritos, isHydrated, user]);
+  const favoritos = useMemo(
+    () => data?.items.map((i: Item) => i.id) ?? [],
+    [data],
+  );
 
   const isFavorito = useCallback(
     (itemId: string) => favoritos.includes(itemId),
     [favoritos],
   );
 
-  const toggleFavorito = useCallback((itemId: string) => {
-    setFavoritos((prev) =>
-      prev.includes(itemId) ? prev.filter((id) => id !== itemId) : [...prev, itemId],
-    );
-  }, []);
+  const toggleFavorito = useCallback(
+    (itemId: string) => {
+      const isFav = favoritos.includes(itemId);
+      // Look up the full Item from the items cache so the optimistic add can include it.
+      // If items not yet loaded, the optimistic update for "add" is a no-op (server reconciles via onSettled).
+      const item = itemsData?.items.find((i: Item) => i.id === itemId);
+      const vars = item ? { itemId, isFav, item } : { itemId, isFav };
+      toggle.mutate(vars);
+    },
+    [favoritos, itemsData, toggle],
+  );
 
   const value = useMemo<FavoritesContextValue>(
     () => ({
@@ -101,9 +48,9 @@ export function FavoritesProvider({ children }: ProviderProps) {
       isFavorito,
       toggleFavorito,
       totalFavoritos: favoritos.length,
-      isHydrated,
+      isHydrated: !isPending,
     }),
-    [favoritos, isFavorito, toggleFavorito, isHydrated],
+    [favoritos, isFavorito, toggleFavorito, isPending],
   );
 
   return (
