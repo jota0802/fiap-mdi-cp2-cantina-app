@@ -4,48 +4,57 @@
 
 **CP2 (Checkpoint 2)** da matéria Mobile Development & IoT da FIAP — aplicativo Expo + TypeScript de pedidos da cantina.
 
-**Status:** CP2 entregue ao professor. Em fase de evolução pós-entrega como portfolio. Próximo grande refactor:
+**Status:** CP2 entregue. Foundation (sub-projeto 1) **concluído** — monorepo pnpm + Hono + Neon + dark mode premium + pipeline de auditoria. Em fase de portfolio, próximo passo: deploy manual + sub-projeto 2.
 
-**Sub-projeto 1 (Foundation)** — monorepo + backend separado (Hono+Neon) + dark mode premium + pipeline de auditoria. **Spec aprovado:** [docs/superpowers/specs/2026-05-05-foundation-design.md](./docs/superpowers/specs/2026-05-05-foundation-design.md).
+Decomposição completa (3 sub-projetos sequenciais):
 
-Decomposição completa do refactor (3 sub-projetos sequenciais):
-
-1. **Foundation** ← em planejamento agora
+1. **Foundation** ← CONCLUÍDO (37+ commits, branch `feat/foundation`)
 2. **Cantina admin** (multi-tenant, estoque, fornecedores, vitrine on/off)
 3. **Customer flows v2** (calendário, filtros, kitchen-flow, validação retirada, recorrentes, Stripe)
 
 📖 **Antes de qualquer ação no projeto, ler:**
 
-- [docs/superpowers/specs/2026-05-05-foundation-design.md](./docs/superpowers/specs/2026-05-05-foundation-design.md) — spec do refactor
-- [docs/HANDOFF.md](./docs/HANDOFF.md) — estado atual pré-refactor
-- [docs/ROADMAP.md](./docs/ROADMAP.md) — backlog histórico (top 8 + tier 2 já concluídos)
+- [docs/superpowers/specs/2026-05-05-foundation-design.md](./docs/superpowers/specs/2026-05-05-foundation-design.md) — spec do Foundation
+- [docs/ROADMAP.md](./docs/ROADMAP.md) — backlog histórico + status Foundation
+- [docs/DEPLOY.md](./docs/DEPLOY.md) — guia de deploy Neon + Render
 
-## Comandos críticos (estado atual, pré-Foundation)
+## Comandos críticos
 
 ```powershell
-npx tsc --noEmit          # TypeScript strict (deve sair com exit 0)
-npm test                  # 26 testes Node (validation + hash + cart + recomendacao)
-npx expo-doctor           # Config Expo (deve dar 18/18)
-npx expo start            # Dev server
-npx expo install <pkg>    # Adicionar dep (NUNCA usar npm install direto pra pacotes Expo)
+pnpm -r typecheck         # TypeScript strict nos 3 workspaces (deve sair com exit 0)
+pnpm -r test              # todos os testes (vitest + Node)
+pnpm audit:run            # pipeline de auditoria (4 scripts)
+
+# API local (pglite — sem Postgres real)
+$env:USE_PGLITE="true"; $env:JWT_SECRET="local-dev-secret-min-32-chars-please-rotate"
+pnpm --filter @cantina/api db:migrate
+pnpm --filter @cantina/api db:seed
+pnpm --filter @cantina/api dev          # http://localhost:8787
+
+# Mobile (em outro terminal)
+pnpm --filter @cantina/mobile start
+
+# Ou ambos juntos
+pnpm dev
+
+# Adicionar dep Expo (NUNCA npm install direto)
+pnpm --filter @cantina/mobile exec npx expo install <pkg>
 ```
 
-**Roda os 3 primeiros antes de cada commit.** Se algum quebrar, conserta antes de seguir.
-
-> ⚠️ Após Foundation ser implementado os comandos mudam pra `pnpm` workspaces — ver §6.1 do spec.
+**Roda typecheck + test antes de cada commit.** Se algum quebrar, conserta antes de seguir.
 
 ## Convenções inegociáveis
 
 1. **TypeScript strict + `noUncheckedIndexedAccess`** — `array[i]` retorna `T | undefined`, sempre tratar com `?? default` ou guard.
-2. **Path alias `@/`** — `import X from '@/components/X'`, nunca `'../../components/X'`. Pós-Foundation, cross-package vira `@cantina/shared`.
-3. **Cores via tema** — `const { colors } = useTheme()`. Zero cor hardcoded em telas. Tokens em [constants/theme.ts](./constants/theme.ts) (vira `apps/mobile/constants/theme.ts` pós-Foundation).
+2. **Path alias `@/`** — `import X from '@/components/X'`, nunca `'../../components/X'`. Cross-package usa `@cantina/shared`.
+3. **Cores via tema** — `const { colors } = useTheme()`. Zero cor hardcoded em telas. Tokens em [`apps/mobile/constants/theme.ts`](./apps/mobile/constants/theme.ts).
 4. **Styles dinâmicos** — padrão `const styles = useMemo(() => createStyles(colors), [colors])` + `function createStyles(c: ThemeColors) { return StyleSheet.create({ ... }) }`.
-5. **Storage keys** — sempre via [constants/storage-keys.ts](./constants/storage-keys.ts), nunca strings literais.
-6. **Validação centralizada** em [lib/validation.ts](./lib/validation.ts) (vira `packages/shared/validation` pós-Foundation). Regra nova → teste correspondente.
+5. **Storage keys** — sempre via [`apps/mobile/constants/storage-keys.ts`](./apps/mobile/constants/storage-keys.ts), nunca strings literais.
+6. **Validação centralizada** em [`packages/shared/src/validation.ts`](./packages/shared/src/validation.ts). Regra nova → teste correspondente (Vitest em `packages/shared`).
 7. **Sem `Alert` em formulários** — erros sempre inline, vermelho, abaixo do campo.
 8. **`useSafeAreaInsets()`** nos headers (notch/Dynamic Island).
 9. **`Pressable` em vez de `TouchableOpacity`** quando precisar de feedback visual avançado.
-10. **Cart é isolado por usuário** (sufixo `:{userId}`). Pós-Foundation, dados server-side não usam essa convenção; só Cart e Favorites locais usam.
+10. **Cart é isolado por usuário** (sufixo `:{userId}`) — apenas dados locais (Cart, Favorites no AsyncStorage). Dados server-side (orders, items) usam a API.
 
 ## Commits
 
@@ -69,14 +78,18 @@ npx expo install <pkg>    # Adicionar dep (NUNCA usar npm install direto pra pac
 - **SecureStore não funciona no web** — fallback automático pro AsyncStorage com prefix `__secure__:` ([lib/secure-store.ts](./lib/secure-store.ts)).
 - **Notifications no Expo Go iOS** pedem permissão na hora. Simulador iOS pode não disparar agendadas — testar em device real.
 - **Background `expo start` não imprime QR** (sem TTY). Use `--tunnel` + `curl http://localhost:4040/api/tunnels`.
-- **Pós-Foundation: emulador Android não enxerga `localhost`** do host — usar `10.0.2.2:8787` em `EXPO_PUBLIC_API_URL` no Android.
-- **Pós-Foundation: `EXPO_PUBLIC_*` é baked-in no bundle** no build time — trocar API URL exige rebuild via EAS profile.
+- **Emulador Android não enxerga `localhost`** do host — usar `10.0.2.2:8787` em `EXPO_PUBLIC_API_URL` no Android (`.env.development`).
+- **`EXPO_PUBLIC_*` é baked-in no bundle** no build time — trocar API URL exige rebuild via EAS profile.
 
-## Stack atual
+## Stack
 
-Expo SDK 55 · TypeScript 5 strict · React 19 · React Native 0.83.6 · Expo Router 55 · @react-native-async-storage/async-storage · expo-secure-store · expo-crypto · expo-notifications · expo-image-picker · expo-haptics · @expo-google-fonts/manrope · react-native-svg · react-native-safe-area-context · @expo/vector-icons · expo-blur · expo-image · react-native-qrcode-svg.
+**Mobile (`apps/mobile`):** Expo SDK 55 · TypeScript 5 strict · React 19 · React Native 0.83.6 · Expo Router 55 · TanStack Query v5 · @react-native-async-storage/async-storage · expo-secure-store · expo-notifications · expo-image-picker · expo-haptics · @expo-google-fonts/manrope · react-native-svg · react-native-safe-area-context · @expo/vector-icons · expo-blur · expo-image · react-native-qrcode-svg.
 
-**A ser adicionado em Foundation:** pnpm workspaces · Hono · Drizzle ORM · Postgres (Neon) + pglite · @node-rs/argon2 · Zod · TanStack Query v5 · pino · Vitest · supertest · @testing-library/react-native.
+**API (`apps/api`):** Hono 4 · Drizzle ORM + drizzle-kit · Postgres (Neon em prod) + pglite (dev/test) · @node-rs/argon2 · jose · Zod · pino · tsup · Vitest.
+
+**Shared (`packages/shared`):** Zod schemas de validação + tipos compartilhados.
+
+**Monorepo:** pnpm workspaces · concurrently · tsx · prettier.
 
 ## Pipeline de auditoria
 
@@ -88,7 +101,7 @@ Conforme §13 do spec do Foundation, o projeto terá auditorias frequentes pra m
 - **Helpers:** `pnpm audit:run` (4 scripts em `scripts/`)
 - **Como invocar:** "claude, audita fim de fase" ou "audita full"
 
-Antes de Foundation existir, auditoria é manual ad-hoc — eu (Claude) sinalizo proativamente quando uma mudança bate auditoria.
+Pipeline ativo desde Foundation. `pnpm audit:run` disponível a qualquer momento.
 
 ## Estrutura de docs/
 
@@ -107,8 +120,7 @@ docs/
 
 ## Próximos passos
 
-1. **Gerar plano de execução do Foundation** via skill `superpowers:writing-plans` (lê o spec aprovado).
-2. **Executar Foundation** em fases (cada fase = 1 PR ou bundle de commits, com auditoria quick no fim).
-3. **Auditoria full** ao concluir Foundation.
-4. **Brainstorm sub-projeto 2 (Cantina admin).**
-5. **Brainstorm sub-projeto 3 (Customer flows v2).**
+1. **Deploy manual** — seguir `docs/DEPLOY.md` (provisionar Neon + Render, setar secrets).
+2. **Merge `feat/foundation` → `main`** após smoke test do deploy.
+3. **Brainstorm sub-projeto 2 (Cantina admin)** — spec via `superpowers:brainstorming`.
+4. **Brainstorm sub-projeto 3 (Customer flows v2)** — calendário, Stripe, kitchen-flow.

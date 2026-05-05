@@ -1,0 +1,4 @@
+# env local de producao (contem URL do backend deployado — nao commitar se sensivel)
+.env.production
+.env.development
+.env.local
