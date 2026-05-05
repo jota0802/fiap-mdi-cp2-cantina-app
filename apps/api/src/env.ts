@@ -9,10 +9,17 @@ const EnvSchema = z.object({
   JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 chars'),
   JWT_EXPIRES_IN: z.string().default('7d'),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
-  ALLOWED_ORIGINS: z.string().default('*'),
+  ALLOWED_ORIGINS: z.string().optional(),
 });
 
 export type Env = z.infer<typeof EnvSchema>;
+
+const DEV_DEFAULT_ORIGINS = [
+  'http://localhost:8081',
+  'http://localhost:19006',
+  'http://localhost:8082',
+  'http://10.0.2.2:8081',
+];
 
 function parseEnv(): Env {
   const result = EnvSchema.safeParse(process.env);
@@ -29,7 +36,24 @@ function parseEnv(): Env {
 
 export const env = parseEnv();
 export const isDev = env.NODE_ENV === 'development';
+export const isTest = env.NODE_ENV === 'test';
 export const isProd = env.NODE_ENV === 'production';
-export const allowedOrigins: string | string[] = env.ALLOWED_ORIGINS === '*'
-  ? '*'
-  : env.ALLOWED_ORIGINS.split(',').map(s => s.trim());
+
+function resolveAllowedOrigins(): string[] {
+  if (env.ALLOWED_ORIGINS) {
+    const list = env.ALLOWED_ORIGINS.split(',').map(s => s.trim()).filter(Boolean);
+    if (list.includes('*')) {
+      if (isProd) {
+        console.error('❌ ALLOWED_ORIGINS contains "*" — not allowed in production. Provide explicit origins.');
+        process.exit(1);
+      }
+      console.warn('⚠️  ALLOWED_ORIGINS contains "*" — accepted in dev/test only.');
+    }
+    return list;
+  }
+  if (isDev || isTest) return DEV_DEFAULT_ORIGINS;
+  console.error('❌ ALLOWED_ORIGINS must be set in production (no wildcard fallback).');
+  process.exit(1);
+}
+
+export const allowedOrigins: string[] = resolveAllowedOrigins();
