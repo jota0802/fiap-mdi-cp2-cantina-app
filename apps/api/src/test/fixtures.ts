@@ -20,7 +20,8 @@ export async function createTestUser(
     locale: 'pt',
   }).returning();
   if (!user) throw new Error('failed to create user');
-  const token = await signJwt({ sub: user.id, email: user.email, role: user.role as 'customer' | 'staff', locale: user.locale });
+  const validRole: 'customer' | 'staff' = user.role === 'staff' ? 'staff' : 'customer';
+  const token = await signJwt({ sub: user.id, email: user.email, role: validRole, locale: user.locale });
   return { user, password, token };
 }
 

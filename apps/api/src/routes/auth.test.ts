@@ -14,7 +14,7 @@ beforeEach(async () => {
   testDb = fixture.db;
   close = fixture.close;
   app = new Hono();
-  app.route('/api/v1/auth', createAuthRoutes(testDb));
+  app.route('/api/v1/auth', await createAuthRoutes(testDb));
   app.onError(errorHandler);
 });
 
@@ -34,7 +34,11 @@ describe('POST /auth/register', () => {
     expect(json.user.email).toBe('joao@fiap.com');
     expect(json.user.name).toBe('João');
     expect(json.token).toMatch(/^eyJ/); // JWT
-    expect((json as any).user.passwordHash).toBeUndefined(); // não vaza hash
+    expect(json.user).toBeDefined();
+    const userKeys = Object.keys(json.user);
+    expect(userKeys).not.toContain('passwordHash'); // não vaza hash
+    expect(userKeys).not.toContain('tenantId');     // não vaza ID multi-tenant
+    expect(userKeys).not.toContain('updatedAt');    // só campos do PublicUserSchema
   });
 
   it('rejeita email duplicado com 409', async () => {

@@ -22,7 +22,7 @@ export async function createApp(injected?: { db?: DB }) {
 
   app.get('/api/v1/health', (c) => c.json({ status: 'ok', uptime: Math.floor(process.uptime()), version: '0.0.0', env: env.NODE_ENV }));
 
-  app.route('/api/v1/auth', createAuthRoutes(db));
+  app.route('/api/v1/auth', await createAuthRoutes(db));
 
   app.notFound((c) => c.json({ error: { code: 'NOT_FOUND', message: 'Route not found' } }, 404));
   app.onError(errorHandler);
