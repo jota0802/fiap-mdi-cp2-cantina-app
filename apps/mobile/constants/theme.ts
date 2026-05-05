@@ -6,29 +6,29 @@ export const FIAP_PRIMARY_GRADIENT_END = '#FF4F8B';
 
 export const palette: Record<ThemeMode, ThemeColors> = {
   dark: {
-    bg: '#0E0E16',
-    bgElevated: '#13131F',
-    surface: '#181826',
-    surfaceElevated: '#1F1F30',
-    surfaceHover: '#26263A',
-    card: '#181826',
-    cardElevated: '#1F1F30',
+    bg: '#08080B',
+    bgElevated: '#0B0B0E',
+    surface: '#111114',
+    surfaceElevated: '#18181C',
+    surfaceHover: '#1D1D22',
+    card: '#111114',           // alias compat
+    cardElevated: '#18181C',   // alias compat
     border: 'rgba(255,255,255,0.06)',
-    borderStrong: 'rgba(255,255,255,0.12)',
-    separator: 'rgba(255,255,255,0.04)',
-    text: '#F5F5F7',
-    textMuted: '#A0A0B0',
-    textSubtle: '#6B6B80',
-    primary: FIAP_PRIMARY,
-    primaryDeep: FIAP_PRIMARY_DEEP,
+    borderStrong: 'rgba(255,255,255,0.10)',
+    separator: 'rgba(255,255,255,0.05)',
+    text: '#F2F2F5',
+    textMuted: '#A8A8B0',
+    textSubtle: '#6B6B72',
+    primary: '#6B6BE8',         // indigo dessaturada — substitui FIAP pink em dark
+    primaryDeep: '#5454C7',
     primaryText: '#FFFFFF',
-    primarySoft: 'rgba(237, 20, 91, 0.14)',
-    success: '#10B981',
+    primarySoft: 'rgba(107,107,232,0.16)',
+    success: '#34D399',
     error: '#F87171',
-    errorSoft: 'rgba(248, 113, 113, 0.14)',
+    errorSoft: 'rgba(248,113,113,0.14)',
     overlay: 'rgba(0,0,0,0.6)',
-    tabBar: 'rgba(14, 14, 22, 0.85)',
-    inputBg: '#181826',
+    tabBar: 'rgba(8, 8, 11, 0.85)',
+    inputBg: '#111114',
   },
   light: {
     bg: '#F7F7F8',
@@ -112,11 +112,10 @@ export const letterSpacing = {
 } as const;
 
 /**
- * Sombras por nível de elevação. Cada level retorna o objeto de estilo
- * pronto para spread em StyleSheet — inclui versão iOS (shadow*) e Android (elevation).
- * Usar com parcimônia: zero em dark, ~level 1-2 em light theme.
+ * Elevação para light mode — sombras reais (iOS shadow* + Android elevation).
+ * Em light mode, sombras suaves criam hierarquia visual.
  */
-export const shadow = {
+export const elevationLight = {
   none: {
     shadowColor: 'transparent',
     shadowOffset: { width: 0, height: 0 },
@@ -135,24 +134,43 @@ export const shadow = {
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
-    shadowRadius: 12,
-    elevation: 3,
+    shadowRadius: 8,
+    elevation: 2,
   },
   lg: {
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.08,
-    shadowRadius: 24,
-    elevation: 6,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.10,
+    shadowRadius: 16,
+    elevation: 4,
   },
   primary: {
-    shadowColor: FIAP_PRIMARY,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.25,
-    shadowRadius: 20,
-    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 3,
   },
 } as const;
+
+/**
+ * Elevação para dark mode — SEM sombras. Usa top-highlight (borderTop claro)
+ * para simular hierarquia de superfície. Estética Vercel/Cursor.
+ */
+export const elevationDark = {
+  none: {},
+  sm: { borderTopColor: 'rgba(255,255,255,0.04)', borderTopWidth: 1 },
+  md: { borderTopColor: 'rgba(255,255,255,0.06)', borderTopWidth: 1 },
+  lg: { borderTopColor: 'rgba(255,255,255,0.08)', borderTopWidth: 1 },
+  primary: { borderTopColor: 'rgba(255,255,255,0.10)', borderTopWidth: 1 },
+} as const;
+
+/**
+ * @deprecated Use `useTheme().elevation` para comportamento tema-aware.
+ * Backwards-compat: `shadow` continua exportado apontando para elevationLight
+ * (mesmo comportamento do CP2 para código legado).
+ */
+export const shadow = elevationLight;
 
 export type StatusKey = 'pendente' | 'pronto' | 'retirado' | 'cancelado';
 

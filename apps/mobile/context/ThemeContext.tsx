@@ -12,12 +12,15 @@ import {
 import { Animated, StyleSheet, useColorScheme, View } from 'react-native';
 
 import { STORAGE_KEYS } from '@/constants/storage-keys';
-import { palette } from '@/constants/theme';
+import { elevationDark, elevationLight, palette } from '@/constants/theme';
 import type { ThemeColors, ThemeMode } from '@/types';
+
+type Elevation = typeof elevationLight | typeof elevationDark;
 
 type ThemeContextValue = {
   mode: ThemeMode;
   colors: ThemeColors;
+  elevation: Elevation;
   isHydrated: boolean;
   toggleTheme: () => void;
   setTheme: (mode: ThemeMode) => void;
@@ -104,6 +107,7 @@ export function ThemeProvider({ children }: ProviderProps) {
     () => ({
       mode,
       colors: palette[mode],
+      elevation: mode === 'dark' ? elevationDark : elevationLight,
       isHydrated,
       toggleTheme,
       setTheme,
