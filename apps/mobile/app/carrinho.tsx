@@ -23,13 +23,15 @@ import {
 import { useCart } from '@/context/CartContext';
 import { useLocale } from '@/context/LocaleContext';
 import { useTheme } from '@/context/ThemeContext';
-import CARDAPIO from '@/data/cardapio';
 import { useFadeIn } from '@/hooks/useFadeIn';
 import { haptic } from '@/lib/haptics';
-import type { ItemCardapio, ThemeColors } from '@/types';
+import { useItems } from '@/lib/api/hooks/use-items';
+import { emojiForSlug } from '@/lib/item-emoji';
+import type { ThemeColors } from '@/types';
+import type { Item } from '@cantina/shared';
 
 type LinhaItemProps = {
-  item: ItemCardapio;
+  item: Item;
   quantidade: number;
   onAdicionar: () => void;
   onRemover: () => void;
@@ -48,14 +50,14 @@ function LinhaItem({
   colors,
 }: LinhaItemProps) {
   const { t } = useLocale();
-  const subtotal = item.preco * quantidade;
-  const nome = item.nomeKey ? t(item.nomeKey) : item.nome;
+  const subtotal = parseFloat(item.preco) * quantidade;
+  const nome = item.nameKey ? t(item.nameKey) : item.name;
 
   return (
     <View style={styles.linha}>
       <ItemThumbnail
-        emoji={item.emoji}
-        imagem={item.imagem}
+        emoji={emojiForSlug(item.slug)}
+        imagem={item.imagem ?? undefined}
         size={56}
         borderRadius={12}
         bgColor={colors.surfaceElevated}
@@ -68,7 +70,7 @@ function LinhaItem({
               {nome}
             </Text>
             <Text style={styles.linhaPrecoUnit}>
-              R$ {item.preco.toFixed(2)} · cada
+              R$ {parseFloat(item.preco).toFixed(2)} · cada
             </Text>
           </View>
           <Pressable
@@ -135,16 +137,20 @@ export default function CarrinhoScreen() {
 
   const { items, totalItens, totalPreco, addItem, removeItem, setQuantidade, clear } = useCart();
 
+  // Resolve detalhes dos itens do carrinho via API
+  const { data: itemsData } = useItems();
+  const allItems = itemsData?.items ?? [];
+
   const linhasComItem = useMemo(
     () =>
       items
         .map((ci) => {
-          const item = CARDAPIO.find((i) => i.id === ci.itemId);
+          const item = allItems.find((i) => i.id === ci.itemId);
           if (!item) return null;
           return { item, quantidade: ci.quantidade };
         })
-        .filter((x): x is { item: ItemCardapio; quantidade: number } => x !== null),
-    [items],
+        .filter((x): x is { item: Item; quantidade: number } => x !== null),
+    [items, allItems],
   );
 
   const handleConfirmar = () => {

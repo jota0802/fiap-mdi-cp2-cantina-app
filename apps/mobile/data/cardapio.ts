@@ -1,11 +1,25 @@
-import type { ItemCardapio } from '@/types';
+// TODO(task-7.2): Este mock sera removido quando pedido/[id].tsx e pedidos.tsx
+// forem migrados para a API. Usa um tipo local pra nao quebrar com o novo
+// ItemCardapio (que agora e alias de Item da API com shape diferente).
+type LegacyItemCardapio = {
+  id: number;
+  nome: string;
+  nomeKey?: string;
+  preco: number;
+  descricao: string;
+  descricaoKey?: string;
+  emoji: string;
+  imagem?: string;
+  categoria: 'Bebidas' | 'Lanches' | 'Sobremesas';
+  tags?: string[];
+};
 
 const UNSPLASH_PARAMS = '?w=240&h=240&fit=crop&q=80';
 
 // Pratos brasileiros (Pão de Queijo, Coxinha, Brigadeiro, Açaí Bowl)
 // ficam só com nome PT — não traduzem. Itens internacionais ganham
 // nomeKey/descricaoKey pra exibir traducao via t().
-const CARDAPIO: ItemCardapio[] = [
+const CARDAPIO: LegacyItemCardapio[] = [
   {
     id: 1,
     nome: 'Café Espresso',

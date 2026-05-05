@@ -1,5 +1,14 @@
-export type Categoria = 'Bebidas' | 'Lanches' | 'Sobremesas';
+// Re-exporta tipos da API. Mobile nao define mais ItemCardapio/Categoria localmente.
+export type { Item, Categoria, OrderStatus, OrderItemDto } from '@cantina/shared';
 
+// Alias de retrocompatibilidade — consumers que importavam ItemCardapio continuam
+// funcionando. Phase 7.2 vai substituir os usos restantes por `Item` diretamente
+// e entao remover este alias.
+import type { Item } from '@cantina/shared';
+export type ItemCardapio = Item;
+
+// Tag — API retorna tags como string[]. Mobile precisa do tipo union so para
+// indexar tagPalette em constants/theme.ts. API nao impoe este enum.
 export type Tag =
   | 'vegano'
   | 'vegetariano'
@@ -10,30 +19,13 @@ export type Tag =
   | 'popular'
   | 'novo';
 
-export type ItemCardapio = {
-  id: number;
-  /** Nome em PT (default e fallback). Pratos brasileiros (Pão de Queijo,
-   *  Coxinha, etc.) ficam só aqui — não traduzem. */
-  nome: string;
-  /** Chave i18n opcional pro nome. Se presente, telas exibem t(nomeKey).
-   *  Usar em itens internacionais (Cheeseburger, Caesar Salad, etc.). */
-  nomeKey?: string;
-  preco: number;
-  /** Descrição em PT (default). */
-  descricao: string;
-  /** Chave i18n opcional pra descrição. */
-  descricaoKey?: string;
-  emoji: string;
-  imagem?: string;
-  categoria: Categoria;
-  tags?: Tag[];
-};
-
+// CartItem agora usa string itemId (cuid2 vindo da API).
 export type CartItem = {
-  itemId: number;
+  itemId: string;
   quantidade: number;
 };
 
+// User fica com shape mobile (traduzido na fronteira do AuthContext — Task 6.2).
 export type User = {
   id: string;
   nome: string;
@@ -42,6 +34,8 @@ export type User = {
   criadoEm: string;
 };
 
+// Order fica com shape mobile ate Task 7.2 migrar pedidos para API.
+// CartItem.itemId ja e string aqui.
 export type Order = {
   id: string;
   userId: string;

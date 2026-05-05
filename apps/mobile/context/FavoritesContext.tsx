@@ -12,10 +12,12 @@ import {
 import { STORAGE_KEYS } from '@/constants/storage-keys';
 import { useAuth } from '@/context/AuthContext';
 
+// TODO(task-7.3): migrar favoritos para API — persistencia server-side.
+// Por enquanto, favoritos sao string IDs (cuid2) salvos em AsyncStorage local.
 type FavoritesContextValue = {
-  favoritos: number[];
-  isFavorito: (itemId: number) => boolean;
-  toggleFavorito: (itemId: number) => void;
+  favoritos: string[];
+  isFavorito: (itemId: string) => boolean;
+  toggleFavorito: (itemId: string) => void;
   totalFavoritos: number;
   isHydrated: boolean;
 };
@@ -30,7 +32,7 @@ type ProviderProps = { children: ReactNode };
 
 export function FavoritesProvider({ children }: ProviderProps) {
   const { user } = useAuth();
-  const [favoritos, setFavoritos] = useState<number[]>([]);
+  const [favoritos, setFavoritos] = useState<string[]>([]);
   const [isHydrated, setIsHydrated] = useState(false);
 
   // Hidrata favoritos a cada mudança de usuário
@@ -53,7 +55,8 @@ export function FavoritesProvider({ children }: ProviderProps) {
           try {
             const parsed = JSON.parse(stored) as unknown;
             if (Array.isArray(parsed)) {
-              setFavoritos(parsed.filter((id): id is number => typeof id === 'number'));
+              // Aceita strings (novo formato cuid2) e descarta numeros legados
+              setFavoritos(parsed.filter((id): id is string => typeof id === 'string'));
             } else {
               setFavoritos([]);
             }
@@ -82,11 +85,11 @@ export function FavoritesProvider({ children }: ProviderProps) {
   }, [favoritos, isHydrated, user]);
 
   const isFavorito = useCallback(
-    (itemId: number) => favoritos.includes(itemId),
+    (itemId: string) => favoritos.includes(itemId),
     [favoritos],
   );
 
-  const toggleFavorito = useCallback((itemId: number) => {
+  const toggleFavorito = useCallback((itemId: string) => {
     setFavoritos((prev) =>
       prev.includes(itemId) ? prev.filter((id) => id !== itemId) : [...prev, itemId],
     );

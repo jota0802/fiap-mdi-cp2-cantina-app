@@ -30,7 +30,10 @@ import CARDAPIO from '@/data/cardapio';
 import { confirmar } from '@/lib/confirm';
 import { formatarTempoRestante } from '@/lib/estimativa';
 import { haptic } from '@/lib/haptics';
-import type { ItemCardapio, ThemeColors } from '@/types';
+import type { ThemeColors } from '@/types';
+
+// TODO(task-7.2): tipo legado do mock local. Removido quando este arquivo migrar para API.
+type LegacyItem = (typeof CARDAPIO)[number];
 
 function formatarDataCompleta(iso: string): string {
   try {
@@ -109,13 +112,15 @@ export default function PedidoDetalhesScreen() {
   const status = statusPalette[order.status];
   const itens = order.items.reduce((acc, ci) => acc + ci.quantidade, 0);
 
+  // TODO(task-7.2): migrar para busca por API. ci.itemId agora e string (cuid2);
+  // CARDAPIO.id e number, entao usamos parseInt para compatibilidade temporaria.
   const linhasComItem = order.items
     .map((ci) => {
-      const item = CARDAPIO.find((i) => i.id === ci.itemId);
+      const item = CARDAPIO.find((i) => i.id === parseInt(ci.itemId, 10));
       if (!item) return null;
       return { item, quantidade: ci.quantidade };
     })
-    .filter((x): x is { item: ItemCardapio; quantidade: number } => x !== null);
+    .filter((x): x is { item: LegacyItem; quantidade: number } => x !== null);
 
   const handleCancelar = () => {
     confirmar({
@@ -201,6 +206,7 @@ export default function PedidoDetalhesScreen() {
             <View key={item.id}>
               {idx > 0 ? <View style={styles.divisor} /> : null}
               <View style={styles.itemRow}>
+                {/* TODO(task-7.2): item.emoji ainda existe no shape legado do mock */}
                 <ItemThumbnail
                   emoji={item.emoji}
                   imagem={item.imagem}
@@ -210,6 +216,7 @@ export default function PedidoDetalhesScreen() {
                 />
                 <View style={styles.itemInfo}>
                   <Text style={styles.itemNome} numberOfLines={1}>
+                    {/* TODO(task-7.2): ainda usa shape legado do mock local */}
                     {item.nomeKey ? t(item.nomeKey) : item.nome}
                   </Text>
                   <Text style={styles.itemPrecoUnit}>

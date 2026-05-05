@@ -28,18 +28,21 @@ import { useFavorites } from '@/context/FavoritesContext';
 import { useLocale } from '@/context/LocaleContext';
 import { useOrders } from '@/context/OrdersContext';
 import { useTheme } from '@/context/ThemeContext';
-import CARDAPIO from '@/data/cardapio';
 import { useFadeIn } from '@/hooks/useFadeIn';
 import { haptic } from '@/lib/haptics';
+import { useItems } from '@/lib/api/hooks/use-items';
+import { emojiForSlug } from '@/lib/item-emoji';
 import {
   getCombosDisponiveis,
   getPeriodoAtual,
   precoCombo,
   type Combo,
 } from '@/lib/recomendacao';
-import type { ItemCardapio, Order, ThemeColors } from '@/types';
+import type { Order, ThemeColors } from '@/types';
+import type { Item } from '@cantina/shared';
 
-const DESTAQUES = CARDAPIO.filter((item) => [1, 5, 6, 8].includes(item.id));
+// Slugs dos destaques fixos na home (equivalente aos ids 1, 5, 6, 8 do cardapio legado)
+const DESTAQUE_SLUGS = ['cafe-espresso', 'coxinha', 'x-burger', 'acai-bowl'];
 
 function getSaudacaoKey(): 'greeting.morning' | 'greeting.afternoon' | 'greeting.evening' {
   const h = new Date().getHours();
@@ -77,12 +80,24 @@ export default function Home() {
   const { items: cartItems, totalItens, addItem } = useCart();
   const { favoritos } = useFavorites();
 
+  // Carrega todos os items da API
+  const { data: itemsData } = useItems();
+  const allItems = itemsData?.items ?? [];
+
   const itensFavoritos = useMemo(
     () =>
       favoritos
-        .map((id) => CARDAPIO.find((i) => i.id === id))
-        .filter((x): x is ItemCardapio => !!x),
-    [favoritos],
+        .map((id) => allItems.find((i) => i.id === id))
+        .filter((x): x is Item => !!x),
+    [favoritos, allItems],
+  );
+
+  const destaques = useMemo(
+    () =>
+      DESTAQUE_SLUGS
+        .map((slug) => allItems.find((i) => i.slug === slug))
+        .filter((x): x is Item => !!x),
+    [allItems],
   );
 
   const pedidoAtivo: Order | undefined = useMemo(
@@ -99,10 +114,19 @@ export default function Home() {
   );
 
   const periodoAtual = useMemo(() => getPeriodoAtual(), []);
-  const cartItemIds = useMemo(() => cartItems.map((ci) => ci.itemId), [cartItems]);
+
+  // cartSlugs: resolve slugs do carrinho a partir dos IDs e da lista da API
+  const cartSlugs = useMemo(
+    () =>
+      cartItems
+        .map((ci) => allItems.find((i) => i.id === ci.itemId)?.slug)
+        .filter((s): s is string => !!s),
+    [cartItems, allItems],
+  );
+
   const combosDisponiveis = useMemo(
-    () => getCombosDisponiveis(periodoAtual, orders, cartItemIds),
-    [periodoAtual, orders, cartItemIds],
+    () => getCombosDisponiveis(periodoAtual, orders, cartSlugs, allItems),
+    [periodoAtual, orders, cartSlugs, allItems],
   );
 
   const [comboIndice, setComboIndice] = useState(0);
@@ -112,15 +136,16 @@ export default function Home() {
   const comboItems = useMemo(
     () =>
       comboAtual
-        ? comboAtual.itemIds
-            .map((id) => CARDAPIO.find((i) => i.id === id))
-            .filter((x): x is ItemCardapio => !!x)
+        ? comboAtual.itemSlugs
+            .map((slug) => allItems.find((i) => i.slug === slug))
+            .filter((x): x is Item => !!x)
         : [],
-    [comboAtual],
+    [comboAtual, allItems],
   );
+
   const comboPreco = useMemo(
-    () => (comboAtual ? precoCombo(comboAtual, CARDAPIO) : 0),
-    [comboAtual],
+    () => (comboAtual ? precoCombo(comboAtual, allItems) : 0),
+    [comboAtual, allItems],
   );
 
   const saudacao = t(getSaudacaoKey());
@@ -128,8 +153,10 @@ export default function Home() {
 
   const handleAdicionarCombo = () => {
     if (!comboAtual) return;
-    for (const id of comboAtual.itemIds) {
-      addItem(id);
+    // Adicionar por ID: encontrar item pelo slug e usar seu id
+    for (const slug of comboAtual.itemSlugs) {
+      const item = allItems.find((i) => i.slug === slug);
+      if (item) addItem(item.id);
     }
     haptic.success();
     router.push('/carrinho');
@@ -284,19 +311,19 @@ export default function Home() {
               contentContainerStyle={styles.destaquesScroll}
             >
               {itensFavoritos.map((item) => {
-                const itemNome = item.nomeKey ? t(item.nomeKey) : item.nome;
+                const itemNome = item.nameKey ? t(item.nameKey) : item.name;
                 return (
                   <Pressable
                     key={item.id}
                     style={({ pressed }) => [styles.destaqueCard, pressed && styles.pressedSoft]}
                     onPress={() => router.push('/cardapio')}
                     accessibilityRole="button"
-                    accessibilityLabel={`${itemNome} · R$ ${item.preco.toFixed(2)}`}
+                    accessibilityLabel={`${itemNome} · R$ ${parseFloat(item.preco).toFixed(2)}`}
                   >
                     <View style={styles.destaqueImagemWrap}>
                       <ItemThumbnail
-                        emoji={item.emoji}
-                        imagem={item.imagem}
+                        emoji={emojiForSlug(item.slug)}
+                        imagem={item.imagem ?? undefined}
                         size={108}
                         borderRadius={radius.md}
                         bgColor={colors.surfaceElevated}
@@ -305,7 +332,7 @@ export default function Home() {
                     <Text style={styles.destaqueNome} numberOfLines={1}>
                       {itemNome}
                     </Text>
-                    <Text style={styles.destaquePreco}>R$ {item.preco.toFixed(2)}</Text>
+                    <Text style={styles.destaquePreco}>R$ {parseFloat(item.preco).toFixed(2)}</Text>
                   </Pressable>
                 );
               })}
@@ -331,20 +358,20 @@ export default function Home() {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.destaquesScroll}
         >
-          {DESTAQUES.map((item) => {
-            const itemNome = item.nomeKey ? t(item.nomeKey) : item.nome;
+          {destaques.map((item) => {
+            const itemNome = item.nameKey ? t(item.nameKey) : item.name;
             return (
               <Pressable
                 key={item.id}
                 style={({ pressed }) => [styles.destaqueCard, pressed && styles.pressedSoft]}
                 onPress={() => router.push('/cardapio')}
                 accessibilityRole="button"
-                accessibilityLabel={`${itemNome} · R$ ${item.preco.toFixed(2)}`}
+                accessibilityLabel={`${itemNome} · R$ ${parseFloat(item.preco).toFixed(2)}`}
               >
                 <View style={styles.destaqueImagemWrap}>
                   <ItemThumbnail
-                    emoji={item.emoji}
-                    imagem={item.imagem}
+                    emoji={emojiForSlug(item.slug)}
+                    imagem={item.imagem ?? undefined}
                     size={108}
                     borderRadius={radius.md}
                     bgColor={colors.surfaceElevated}
@@ -353,7 +380,7 @@ export default function Home() {
                 <Text style={styles.destaqueNome} numberOfLines={1}>
                   {itemNome}
                 </Text>
-                <Text style={styles.destaquePreco}>R$ {item.preco.toFixed(2)}</Text>
+                <Text style={styles.destaquePreco}>R$ {parseFloat(item.preco).toFixed(2)}</Text>
               </Pressable>
             );
           })}
@@ -396,7 +423,7 @@ export default function Home() {
 
 type ComboCardProps = {
   combo: Combo;
-  items: ItemCardapio[];
+  items: Item[];
   preco: number;
   colors: ThemeColors;
   styles: ReturnType<typeof createStyles>;
@@ -462,14 +489,14 @@ function ComboCard({
           <View key={item.id} style={styles.comboItemInline}>
             {idx > 0 ? <Text style={styles.comboPlusInline}>+</Text> : null}
             <ItemThumbnail
-              emoji={item.emoji}
-              imagem={item.imagem}
+              emoji={emojiForSlug(item.slug)}
+              imagem={item.imagem ?? undefined}
               size={28}
               borderRadius={8}
               bgColor={colors.bg}
             />
             <Text style={styles.comboItemNomeInline} numberOfLines={1}>
-              {item.nomeKey ? t(item.nomeKey) : item.nome}
+              {item.nameKey ? t(item.nameKey) : item.name}
             </Text>
           </View>
         ))}

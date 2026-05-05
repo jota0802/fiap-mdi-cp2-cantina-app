@@ -26,23 +26,35 @@ import {
 import { useCart } from '@/context/CartContext';
 import { useLocale } from '@/context/LocaleContext';
 import { useTheme } from '@/context/ThemeContext';
-import CARDAPIO from '@/data/cardapio';
 import { haptic } from '@/lib/haptics';
-import type { Categoria, ThemeColors } from '@/types';
+import { useItems } from '@/lib/api/hooks/use-items';
+import type { ThemeColors } from '@/types';
+import type { Categoria } from '@cantina/shared';
 
-const CATEGORIAS_ORDEM: ('Todas' | Categoria)[] = [
-  'Todas',
-  'Bebidas',
-  'Lanches',
-  'Sobremesas',
+// Categorias da API sao lowercase. 'todas' e apenas estado local do filtro.
+type CategoriaFiltro = 'todas' | Categoria;
+
+const CATEGORIAS_ORDEM: CategoriaFiltro[] = [
+  'todas',
+  'bebidas',
+  'lanches',
+  'sobremesas',
 ];
 
-const CATEGORIA_ICONE: Record<Categoria | 'Todas', keyof typeof Ionicons.glyphMap> = {
-  Todas: 'apps-outline',
-  Bebidas: 'cafe-outline',
-  Lanches: 'fast-food-outline',
-  Sobremesas: 'ice-cream-outline',
+const CATEGORIA_ICONE: Record<CategoriaFiltro, keyof typeof Ionicons.glyphMap> = {
+  todas: 'apps-outline',
+  bebidas: 'cafe-outline',
+  lanches: 'fast-food-outline',
+  sobremesas: 'ice-cream-outline',
 };
+
+/** Exibe categoria com inicial maiuscula para o usuario (PT). */
+function displayCategoria(cat: CategoriaFiltro, t: (key: string) => string): string {
+  if (cat === 'todas') return t('cardapio.all');
+  // Usa chave i18n existente com a inicial maiuscula se disponivel
+  const chave = `category.${cat.charAt(0).toUpperCase()}${cat.slice(1)}`;
+  return t(chave);
+}
 
 export default function Cardapio() {
   const router = useRouter();
@@ -51,9 +63,6 @@ export default function Cardapio() {
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
   const styles = useMemo(() => createStyles(colors), [colors]);
-
-  const categoriaLabel = (cat: 'Todas' | Categoria): string =>
-    cat === 'Todas' ? t('cardapio.all') : t(`category.${cat}`);
 
   const {
     addItem,
@@ -64,18 +73,25 @@ export default function Cardapio() {
   } = useCart();
 
   const [busca, setBusca] = useState('');
-  const [categoriaAtiva, setCategoriaAtiva] = useState<'Todas' | Categoria>('Todas');
+  const [categoriaAtiva, setCategoriaAtiva] = useState<CategoriaFiltro>('todas');
+
+  // Carrega itens da API; quando categoriaAtiva !== 'todas', filtra no servidor
+  const apiCategoria: Categoria | undefined =
+    categoriaAtiva === 'todas' ? undefined : categoriaAtiva;
+  const { data, isPending, isError, refetch } = useItems(
+    apiCategoria ? { categoria: apiCategoria } : undefined,
+  );
+  const todosItens = data?.items ?? [];
 
   const itensFiltrados = useMemo(() => {
     const termo = busca.trim().toLowerCase();
-    return CARDAPIO.filter((i) => {
-      if (categoriaAtiva !== 'Todas' && i.categoria !== categoriaAtiva) return false;
-      if (!termo) return true;
-      const nomeT = i.nomeKey ? t(i.nomeKey) : i.nome;
+    if (!termo) return todosItens;
+    return todosItens.filter((i) => {
+      const nomeT = i.nameKey ? t(i.nameKey) : i.name;
       const descT = i.descricaoKey ? t(i.descricaoKey) : i.descricao;
-      const catT = t(`category.${i.categoria}`);
+      const catT = displayCategoria(i.categoria as CategoriaFiltro, t);
       return (
-        i.nome.toLowerCase().includes(termo) ||
+        i.name.toLowerCase().includes(termo) ||
         nomeT.toLowerCase().includes(termo) ||
         i.descricao.toLowerCase().includes(termo) ||
         descT.toLowerCase().includes(termo) ||
@@ -83,10 +99,10 @@ export default function Cardapio() {
         catT.toLowerCase().includes(termo)
       );
     });
-  }, [busca, categoriaAtiva, t]);
+  }, [busca, todosItens, t]);
 
-  const categoriasVisiveis: Categoria[] = useMemo(
-    () => Array.from(new Set(itensFiltrados.map((i) => i.categoria))),
+  const categoriasVisiveis = useMemo(
+    () => Array.from(new Set(itensFiltrados.map((i) => i.categoria))) as Categoria[],
     [itensFiltrados],
   );
 
@@ -110,17 +126,18 @@ export default function Cardapio() {
     router.push('/carrinho');
   };
 
+  const contadorLabel =
+    isPending
+      ? t('loading.items') || '…'
+      : `${itensFiltrados.length} ${t(itensFiltrados.length === 1 ? 'cart.item_singular' : 'cart.item_plural')}${categoriaAtiva !== 'todas' ? ` · ${displayCategoria(categoriaAtiva, t)}` : ''}`;
+
   return (
     <View style={styles.container}>
       <View style={[styles.header, { paddingTop: insets.top + spacing.lg }]}>
         <View style={styles.tituloRow}>
           <View style={styles.tituloCol}>
             <Text style={styles.titulo}>{t('tab.menu')}</Text>
-            <Text style={styles.subtitulo}>
-              {itensFiltrados.length}{' '}
-              {t(itensFiltrados.length === 1 ? 'cart.item_singular' : 'cart.item_plural')}
-              {categoriaAtiva !== 'Todas' ? ` · ${categoriaLabel(categoriaAtiva)}` : ''}
-            </Text>
+            <Text style={styles.subtitulo}>{contadorLabel}</Text>
           </View>
 
           {totalItens > 0 ? (
@@ -187,7 +204,7 @@ export default function Cardapio() {
                   pressed && styles.pressedSoft,
                 ]}
                 accessibilityRole="button"
-                accessibilityLabel={categoriaLabel(cat)}
+                accessibilityLabel={displayCategoria(cat, t)}
                 accessibilityState={{ selected: ativo }}
               >
                 <Ionicons
@@ -196,7 +213,7 @@ export default function Cardapio() {
                   color={ativo ? colors.primaryText : colors.textMuted}
                 />
                 <Text style={[styles.chipTexto, ativo && styles.chipTextoAtivo]}>
-                  {categoriaLabel(cat)}
+                  {displayCategoria(cat, t)}
                 </Text>
               </Pressable>
             );
@@ -209,7 +226,23 @@ export default function Cardapio() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        {itensFiltrados.length === 0 ? (
+        {isError ? (
+          <View style={styles.errorWrap}>
+            <EmptyState
+              emoji="⚠️"
+              title={t('empty.error_title') || 'Erro ao carregar'}
+              subtitle={t('empty.error_subtitle') || 'Tente novamente'}
+            />
+            <Pressable
+              onPress={() => refetch()}
+              style={({ pressed }) => [styles.retryButton, pressed && styles.pressedSoft]}
+              accessibilityRole="button"
+              accessibilityLabel={t('cta.retry') || 'Tentar novamente'}
+            >
+              <Text style={styles.retryButtonText}>{t('cta.retry') || 'Tentar novamente'}</Text>
+            </Pressable>
+          </View>
+        ) : itensFiltrados.length === 0 && !isPending ? (
           <EmptyState
             emoji="🔎"
             title={t('empty.search_title')}
@@ -222,7 +255,9 @@ export default function Cardapio() {
             {categoriasVisiveis.map((categoria) => (
               <View key={categoria} style={styles.categoriaSection}>
                 <View style={styles.categoriaHeader}>
-                  <Text style={styles.categoriaTitulo}>{t(`category.${categoria}`)}</Text>
+                  <Text style={styles.categoriaTitulo}>
+                    {displayCategoria(categoria as CategoriaFiltro, t)}
+                  </Text>
                   <View style={styles.categoriaLinha} />
                 </View>
                 {itensFiltrados
@@ -239,7 +274,7 @@ export default function Cardapio() {
               </View>
             ))}
 
-            {totalItens === 0 ? (
+            {!isPending && totalItens === 0 && itensFiltrados.length > 0 ? (
               <EmptyState
                 emoji="👇"
                 title={t('cardapio.tap_to_add_title')}
@@ -420,5 +455,20 @@ const createStyles = (c: ThemeColors) =>
     pressedSoft: {
       opacity: 0.85,
       transform: [{ scale: 0.98 }],
+    },
+    retryButton: {
+      marginTop: spacing.md,
+      paddingHorizontal: spacing.xl,
+      paddingVertical: spacing.md,
+      backgroundColor: c.primary,
+      borderRadius: radius.full,
+    },
+    retryButtonText: {
+      fontFamily: fontFamily.bold,
+      color: c.primaryText,
+      fontSize: fontSize.base,
+    },
+    errorWrap: {
+      alignItems: 'center',
     },
   });

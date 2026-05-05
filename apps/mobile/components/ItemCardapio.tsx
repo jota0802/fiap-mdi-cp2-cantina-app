@@ -10,17 +10,20 @@ import {
   spacing,
   tagPalette,
 } from '@/constants/theme';
+import type { TagKey } from '@/constants/theme';
 import { useFavorites } from '@/context/FavoritesContext';
 import { useLocale } from '@/context/LocaleContext';
 import { useTheme } from '@/context/ThemeContext';
 import { haptic } from '@/lib/haptics';
-import type { ItemCardapio as ItemCardapioModel, ThemeColors } from '@/types';
+import { emojiForSlug } from '@/lib/item-emoji';
+import type { ThemeColors } from '@/types';
+import type { Item } from '@cantina/shared';
 
 type Props = {
-  item: ItemCardapioModel;
+  item: Item;
   quantidade: number;
-  onAdicionar: (id: number) => void;
-  onRemover: (id: number) => void;
+  onAdicionar: (id: string) => void;
+  onRemover: (id: string) => void;
 };
 
 export default function ItemCardapio({ item, quantidade, onAdicionar, onRemover }: Props) {
@@ -59,14 +62,15 @@ export default function ItemCardapio({ item, quantidade, onAdicionar, onRemover 
     animateHeart();
   };
 
-  const nome = item.nomeKey ? t(item.nomeKey) : item.nome;
+  // item.nameKey e item.descricaoKey sao string | null (API shape)
+  const nome = item.nameKey ? t(item.nameKey) : item.name;
   const descricao = item.descricaoKey ? t(item.descricaoKey) : item.descricao;
 
   return (
     <View style={[styles.container, ativo && styles.containerAtivo]}>
       <ItemThumbnail
-        emoji={item.emoji}
-        imagem={item.imagem}
+        emoji={emojiForSlug(item.slug)}
+        imagem={item.imagem ?? undefined}
         size={52}
         borderRadius={radius.md}
         bgColor={colors.surfaceElevated}
@@ -99,7 +103,10 @@ export default function ItemCardapio({ item, quantidade, onAdicionar, onRemover 
         {item.tags && item.tags.length > 0 ? (
           <View style={styles.tagsRow}>
             {item.tags.slice(0, 3).map((tag) => {
-              const info = tagPalette[tag];
+              // tags da API sao string[]; cast para TagKey para indexar tagPalette.
+              // Tags desconhecidas nao terao entrada no palette e retornarao undefined.
+              const info = tagPalette[tag as TagKey];
+              if (!info) return null;
               return (
                 <View key={tag} style={[styles.tagChip, { backgroundColor: info.bg }]}>
                   <Text style={[styles.tagTexto, { color: info.color }]}>
@@ -110,7 +117,7 @@ export default function ItemCardapio({ item, quantidade, onAdicionar, onRemover 
             })}
           </View>
         ) : null}
-        <Text style={styles.preco}>R$ {item.preco.toFixed(2)}</Text>
+        <Text style={styles.preco}>R$ {parseFloat(item.preco).toFixed(2)}</Text>
       </View>
 
       <View style={styles.controles}>

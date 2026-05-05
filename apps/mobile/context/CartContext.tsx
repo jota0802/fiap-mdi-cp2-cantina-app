@@ -11,7 +11,7 @@ import {
 
 import { STORAGE_KEYS } from '@/constants/storage-keys';
 import { useAuth } from '@/context/AuthContext';
-import CARDAPIO from '@/data/cardapio';
+import { useItems } from '@/lib/api/hooks/use-items';
 import type { CartItem } from '@/types';
 
 type CartContextValue = {
@@ -19,11 +19,11 @@ type CartContextValue = {
   totalItens: number;
   totalPreco: number;
   isHydrated: boolean;
-  addItem: (itemId: number) => void;
-  removeItem: (itemId: number) => void;
-  setQuantidade: (itemId: number, quantidade: number) => void;
+  addItem: (itemId: string) => void;
+  removeItem: (itemId: string) => void;
+  setQuantidade: (itemId: string, quantidade: number) => void;
   clear: () => void;
-  getQuantidade: (itemId: number) => number;
+  getQuantidade: (itemId: string) => number;
   buildResumo: () => string;
 };
 
@@ -39,6 +39,11 @@ export function CartProvider({ children }: ProviderProps) {
   const { user } = useAuth();
   const [items, setItems] = useState<CartItem[]>([]);
   const [isHydrated, setIsHydrated] = useState(false);
+
+  // Resolve item details para totalPreco e buildResumo
+  // Quando ainda esta carregando, itemsList e [], e totalPreco sera 0 (estado transiente aceitavel)
+  const { data: itemsData } = useItems();
+  const itemsList = itemsData?.items ?? [];
 
   // Hidrata o carrinho a cada mudança de usuário (incluindo logout)
   useEffect(() => {
@@ -88,7 +93,7 @@ export function CartProvider({ children }: ProviderProps) {
     });
   }, [items, isHydrated, user]);
 
-  const addItem = useCallback((itemId: number) => {
+  const addItem = useCallback((itemId: string) => {
     setItems((prev) => {
       const existing = prev.find((i) => i.itemId === itemId);
       if (existing) {
@@ -100,7 +105,7 @@ export function CartProvider({ children }: ProviderProps) {
     });
   }, []);
 
-  const removeItem = useCallback((itemId: number) => {
+  const removeItem = useCallback((itemId: string) => {
     setItems((prev) => {
       const existing = prev.find((i) => i.itemId === itemId);
       if (!existing) return prev;
@@ -113,7 +118,7 @@ export function CartProvider({ children }: ProviderProps) {
     });
   }, []);
 
-  const setQuantidade = useCallback((itemId: number, quantidade: number) => {
+  const setQuantidade = useCallback((itemId: string, quantidade: number) => {
     setItems((prev) => {
       if (quantidade <= 0) {
         return prev.filter((i) => i.itemId !== itemId);
@@ -131,7 +136,7 @@ export function CartProvider({ children }: ProviderProps) {
   }, []);
 
   const getQuantidade = useCallback(
-    (itemId: number) => items.find((i) => i.itemId === itemId)?.quantidade ?? 0,
+    (itemId: string) => items.find((i) => i.itemId === itemId)?.quantidade ?? 0,
     [items],
   );
 
@@ -143,20 +148,20 @@ export function CartProvider({ children }: ProviderProps) {
   const totalPreco = useMemo(
     () =>
       items.reduce((acc, ci) => {
-        const item = CARDAPIO.find((i) => i.id === ci.itemId);
-        return acc + (item?.preco ?? 0) * ci.quantidade;
+        const item = itemsList.find((i) => i.id === ci.itemId);
+        return acc + (item ? parseFloat(item.preco) : 0) * ci.quantidade;
       }, 0),
-    [items],
+    [items, itemsList],
   );
 
   const buildResumo = useCallback(() => {
     return items
       .map((ci) => {
-        const item = CARDAPIO.find((i) => i.id === ci.itemId);
-        return `${ci.quantidade}x ${item?.nome ?? ''}`;
+        const item = itemsList.find((i) => i.id === ci.itemId);
+        return `${ci.quantidade}x ${item?.name ?? ''}`;
       })
       .join(', ');
-  }, [items]);
+  }, [items, itemsList]);
 
   const value = useMemo<CartContextValue>(
     () => ({
