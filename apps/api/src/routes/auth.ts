@@ -1,5 +1,4 @@
 import { Hono } from 'hono';
-import { zValidator } from '@hono/zod-validator';
 import { eq } from 'drizzle-orm';
 import { createId } from '@paralleldrive/cuid2';
 import { RegisterSchema, LoginSchema } from '@cantina/shared';
@@ -11,7 +10,7 @@ import { requireAuth } from '../middleware/auth.js';
 import { users } from '../db/schema.js';
 import type { TestDb } from '../test/db.js';
 import type { DB } from '../db/client.js';
-import type { ZodSchema } from 'zod';
+import { validateJson } from '../lib/zod-hono.js';
 
 const VALID_ROLES = ['customer', 'staff'] as const;
 type ValidRole = typeof VALID_ROLES[number];
@@ -34,12 +33,6 @@ function toPublicUser(u: typeof users.$inferSelect): PublicUser {
     createdAt: u.createdAt.toISOString(),
   };
 }
-
-// Throw ZodError so errorHandler returns 422 instead of zValidator's default 400
-const validateJson = <T extends ZodSchema>(schema: T) =>
-  zValidator('json', schema, (result) => {
-    if (!result.success) throw result.error;
-  });
 
 export async function createAuthRoutes(db: DB | TestDb) {
   const DUMMY_HASH = await hashPassword('cantina-dummy-00000000');

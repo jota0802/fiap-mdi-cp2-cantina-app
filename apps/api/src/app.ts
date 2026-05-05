@@ -6,6 +6,7 @@ import { logger } from './lib/logger.js';
 import { errorHandler } from './middleware/error-handler.js';
 import { createAuthRoutes } from './routes/auth.js';
 import { createItemsRoutes } from './routes/items.js';
+import { createOrdersRoutes } from './routes/orders.js';
 import { getDb } from './db/client.js';
 import type { DB } from './db/client.js';
 
@@ -25,6 +26,7 @@ export async function createApp(injected?: { db?: DB }) {
 
   app.route('/api/v1/auth', await createAuthRoutes(db));
   app.route('/api/v1/items', createItemsRoutes(db));
+  app.route('/api/v1/orders', createOrdersRoutes(db));
 
   app.notFound((c) => c.json({ error: { code: 'NOT_FOUND', message: 'Route not found' } }, 404));
   app.onError(errorHandler);
