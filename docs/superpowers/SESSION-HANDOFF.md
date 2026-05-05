@@ -2,9 +2,9 @@
 
 > **Para retomar em outra sessão:** este doc é o ponto de entrada. Lê isso → lê os 3 abaixo → prossegue.
 
-**Última sessão:** 2026-05-05 (sessão 3 — Phases 3, 4 e 5 no mesmo dia)
-**Branch:** `feat/foundation` (26 commits à frente de `main`)
-**Stage:** Phases 1-5 do plano executadas; pausa antes da Phase 6 (mobile React Query + AuthContext rewrite).
+**Última sessão:** 2026-05-05 (sessão 3 — Phases 3-7 no mesmo dia, full strategy B)
+**Branch:** `feat/foundation` (33 commits à frente de `main`)
+**Stage:** Phases 1-7 do plano executadas; pausa antes da Phase 8 (dark mode B refresh). API + mobile já consomem ponta-a-ponta.
 
 ## 📚 Docs prioritários (ler nesta ordem)
 
@@ -13,9 +13,16 @@
 3. [CLAUDE.md](../../CLAUDE.md) — convenções do projeto + autor único `jota0802`
 4. **Memória persistente** em `C:\Users\jotin\.claude\projects\c--Users-jotin-Documents-fiap-mdi-cp2-cantina-app\memory\` — feedback, project status, paths
 
-## ✅ O que está feito (26 commits em `feat/foundation`)
+## ✅ O que está feito (33 commits em `feat/foundation`)
 
 ```
+628cd5a fix(mobile): hardenings Phase 6+7 pos code-review
+0d387a3 feat(mobile): FavoritesContext vira facade sobre React Query com optimistic toggle
+a00549b feat(mobile): migracao orders para API + delete data/cardapio.ts (auto-promote server-side)
+7f33312 feat(mobile): migracao items + cart pra API (React Query) — strategy B full migration
+0fe0ae8 feat(mobile): AuthContext consome API (/auth/*) com JWT em SecureStore
+bdfa4f8 feat(mobile): React Query + AsyncStorage persister + lib/api/client
+14a2233 docs(handoff): salva estado pos-Phase 5 + issues deferidas
 c411637 fix(api): hardenings Phase 5 pos code-review
 5c58184 feat(api): rotas /favorites (list/add/remove) idempotentes com allowlist reusado
 524e111 feat(api): job auto-promote pedidos pendente->pronto via prontoEmEstimado
@@ -102,19 +109,28 @@ c9f680a refactor(monorepo): move Expo app pra apps/mobile e cria root package.js
 
 ## 🐛 Issues conhecidas (deferidas, documentar antes de produção)
 
-Phase 5 code review identificou 4 issues que NÃO foram fixadas agora porque o ROI ou a urgência não justificavam atraso:
+Phase 5 + Phase 6+7 code reviews identificaram issues que NÃO foram fixadas agora porque o ROI ou a urgência não justificavam atraso:
 
+**Da Phase 5 (API):**
 - **C1 — `nextSenha` race condition:** dois POST /orders simultâneos no mesmo segundo podem gerar a mesma senha. Sem unique constraint no `(tenantId, DATE(criadoEm), senha)`. Cantina FIAP é low-traffic (single instance Render free tier), então o risco prático é baixo. **Fix antes de sub-projeto 2 (Cantina admin)** que aumenta concorrência. Solução: unique index + retry on 23505 OR `INSERT ... RETURNING` com sub-select.
-- **I2 — `GET /favorites` retorna items unavailable:** sem filtro `disponivel: true`. UX-ambíguo por design (mostrar item favoritado mesmo unavailable vs filtrar silenciosamente). Decisão fica pra Phase 6 quando o mobile consumir.
-- **I4 — N+1 em `GET /orders`:** `fetchOrderWithItems` re-fetch o order + itens por iteração; lista com 30 pedidos = 61 round-trips. Acceptable hoje; refator pra `inArray(orderItems.orderId, orderIds)` na Phase 6 pass quando o mobile carregar listas grandes.
+- **I2 — `GET /favorites` retorna items unavailable:** sem filtro `disponivel: true`. Mobile consome em 7.3 sem tratar — heart toggle continua funcionando, mas item unavailable aparece na seção favoritos da Home. Decisão UX se filtrar OU marcar visualmente fica pra sub-projeto 3 (customer flows v2).
+- **I4 — N+1 em `GET /orders`:** `fetchOrderWithItems` re-fetch o order + itens por iteração; lista com 30 pedidos = 61 round-trips. Acceptable hoje; refator pra `inArray(orderItems.orderId, orderIds)` quando o mobile mostrar listas grandes.
 - **M2 — `createTestItem` double-spread brittle:** o pattern `{ slug: overrides.slug ?? default, ...overrides }` permite override mas é confuso. Defer pra próxima vez que tocar fixtures.
+
+**Das Phase 6+7 (mobile):**
+- **`updateUser` e `resetSenha` STUBBED** em AuthContext com `TODO(sub-projeto-2)`. Telas `perfil-editar.tsx` e `recover-senha.tsx` exibem mensagem "Funcionalidade indisponível temporariamente". Backend precisa de `PATCH /auth/me` e `POST /auth/reset-password` em sub-projeto 2.
+- **`markPronto` / `markRetirado` REMOVIDOS** do OrdersContext. Servidor controla pendente→pronto via tickOnce. Para `retirado`, sub-projeto 2 vai precisar de endpoint `PATCH /orders/:id/status` aceitando `retirado` (operador escaneia QR no balcão).
+- **Optimistic toggle de favorites em race rara** — se POST 1 falha enquanto DELETE 2 está em flight, rollback pode acabar em estado errado. Recoverable no próximo refetch (30s ou refresh manual). Aceitável.
+- **`cart.test.mjs` ainda usa IDs numéricos legacy** — testes passam logicamente mas types divergem do `CartItem.itemId: string`. Cleanup pra Phase 9.
+- **`STORAGE_KEYS.USERS/SESSION/FAVORITES/ORDERS`** continuam em `storage-keys.ts` mas zero referências no código. Phase 9 cleanup.
+- **`lib/hash.ts`** continua existindo mas zero referências no código. Phase 9 cleanup.
 
 ### Phase 7 — Mobile migration (3 tasks)
 - 7.1 useItems + cardapio screen consome /items
 - 7.2 useOrders + OrdersContext facade
 - 7.3 useFavorites + FavoritesContext facade
 
-### Phase 8 — Dark mode B (2 tasks)
+### Phase 8 — (descrito acima) ✓ enumeração apenas
 - 8.1 Tokens novos em `theme.ts` (neutro near-black) + elevation system dual
 - 8.2 Validar shadows hardcoded fora do theme
 
@@ -280,4 +296,4 @@ fiap-mdi-cp2-cantina-app/
 
 ## 🟢 Veredicto
 
-Foundation tá com **50% executado** (5 de 10 phases). API toda de pé: auth + items + orders + favorites + auto-promote job. 35/35 testes passando, 0 regressões em todos os fixes. Próximo grande salto é Phase 6: mobile vira cliente da API via React Query (substitui AsyncStorage gradualmente via strangler pattern nos contexts). Estimo **1-2 sessões** mais pra fechar Foundation completo.
+Foundation tá com **70% executado** (7 de 10 phases). API + mobile rodam ponta-a-ponta. Smoke test ainda manual (precisa subir API local + mobile, fazer cadastro/login/criar pedido) — não rodei na sessão por falta de TTY. Phase 8 (dark mode B refresh) é puramente visual; Phase 9 (cleanup + audit + render.yaml + GitHub Actions) é a parte de devops; Phase 10 fecha docs e auditoria full. Estimo **1 sessão** pra fechar Foundation completo.
