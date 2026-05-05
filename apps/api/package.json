@@ -5,7 +5,7 @@
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
-    "dev": "tsx watch --env-file=.env src/index.ts",
+    "dev": "tsx watch --env-file-if-exists=.env src/index.ts",
     "build": "tsup",
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit",
@@ -13,11 +13,11 @@
     "test:watch": "vitest",
     "lint": "eslint src",
     "db:generate": "drizzle-kit generate",
-    "db:push": "tsx --env-file=.env node_modules/drizzle-kit/bin.cjs push",
-    "db:migrate": "tsx --env-file=.env src/db/migrate.ts",
-    "db:seed": "tsx --env-file=.env src/db/seed.ts",
+    "db:push": "tsx --env-file-if-exists=.env node_modules/drizzle-kit/bin.cjs push",
+    "db:migrate": "tsx --env-file-if-exists=.env src/db/migrate.ts",
+    "db:seed": "tsx --env-file-if-exists=.env src/db/seed.ts",
     "db:studio": "drizzle-kit studio",
-    "db:reset": "tsx --env-file=.env src/db/reset.ts"
+    "db:reset": "tsx --env-file-if-exists=.env src/db/reset.ts"
   },
   "dependencies": {
     "@cantina/shared": "workspace:*",
