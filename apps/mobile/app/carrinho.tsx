@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useMemo } from 'react';
 import {
+  ActivityIndicator,
   Animated,
   Pressable,
   ScrollView,
@@ -138,7 +139,7 @@ export default function CarrinhoScreen() {
   const { items, totalItens, totalPreco, addItem, removeItem, setQuantidade, clear } = useCart();
 
   // Resolve detalhes dos itens do carrinho via API
-  const { data: itemsData } = useItems();
+  const { data: itemsData, isPending: itemsPending } = useItems();
   const allItems = itemsData?.items ?? [];
 
   const linhasComItem = useMemo(
@@ -238,6 +239,13 @@ export default function CarrinhoScreen() {
               <Text style={styles.contadorSub}>{t('cart.ready')}</Text>
             </View>
 
+            {itemsPending && (
+              <View style={styles.loadingRow}>
+                <ActivityIndicator size="small" color={colors.primary} />
+                <Text style={styles.loadingTexto}>Carregando preços...</Text>
+              </View>
+            )}
+
             <View style={styles.lista}>
               {linhasComItem.map(({ item, quantidade }) => (
                 <LinhaItem
@@ -299,8 +307,13 @@ export default function CarrinhoScreen() {
           ]}
         >
           <Pressable
-            style={({ pressed }) => [styles.botaoConfirmar, pressed && styles.pressedSoft]}
+            style={({ pressed }) => [
+              styles.botaoConfirmar,
+              pressed && !itemsPending && styles.pressedSoft,
+              itemsPending && styles.botaoConfirmarDisabled,
+            ]}
             onPress={handleConfirmar}
+            disabled={itemsPending}
             accessibilityRole="button"
             accessibilityLabel={`${t('cta.confirm_order')}: R$ ${totalPreco.toFixed(2)}`}
           >
@@ -605,6 +618,22 @@ const createStyles = (c: ThemeColors) =>
       backgroundColor: 'rgba(255,255,255,0.18)',
       alignItems: 'center',
       justifyContent: 'center',
+    },
+    loadingRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      paddingVertical: spacing.md,
+      paddingHorizontal: spacing.xs,
+      marginBottom: spacing.sm,
+    },
+    loadingTexto: {
+      fontFamily: fontFamily.medium,
+      fontSize: fontSize.md,
+      color: c.textMuted,
+    },
+    botaoConfirmarDisabled: {
+      opacity: 0.5,
     },
     pressed: {
       opacity: 0.6,

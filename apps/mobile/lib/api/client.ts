@@ -23,7 +23,7 @@ interface RequestOptions extends Omit<RequestInit, 'body'> {
 export async function apiFetch<T = unknown>(path: string, opts: RequestOptions = {}): Promise<T> {
   const { body, auth = true, headers, ...rest } = opts;
   const finalHeaders: Record<string, string> = {
-    'Content-Type': 'application/json',
+    ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
     ...(headers as Record<string, string> ?? {}),
   };
   if (auth) {

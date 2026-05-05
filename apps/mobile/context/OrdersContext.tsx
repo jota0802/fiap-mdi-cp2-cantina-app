@@ -23,24 +23,24 @@ const OrdersContext = createContext<OrdersContextValue | undefined>(undefined);
 
 export function OrdersProvider({ children }: { children: ReactNode }) {
   const { data, isPending, refetch } = useOrdersQuery();
-  const create = useCreateOrder();
-  const cancel = useCancelOrder();
+  const { mutateAsync: createMutate } = useCreateOrder();
+  const { mutateAsync: cancelMutate } = useCancelOrder();
 
   const orders = data?.orders ?? [];
 
   const addOrder = useCallback<OrdersContextValue['addOrder']>(
     async (input) => {
-      const res = await create.mutateAsync(input);
+      const res = await createMutate(input);
       return res.order;
     },
-    [create],
+    [createMutate],
   );
 
   const markCancelado = useCallback<OrdersContextValue['markCancelado']>(
     async (orderId) => {
-      await cancel.mutateAsync(orderId);
+      await cancelMutate(orderId);
     },
-    [cancel],
+    [cancelMutate],
   );
 
   const refresh = useCallback(async () => {

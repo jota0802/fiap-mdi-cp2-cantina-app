@@ -13,7 +13,7 @@ export function useOrders() {
 
 export function useOrder(id: string | undefined) {
   return useQuery({
-    queryKey: ['orders', id],
+    queryKey: ['order', id], // singular — separado do cache de lista
     queryFn: () => {
       if (!id) throw new Error('id required');
       return getOrder(id);
@@ -28,7 +28,10 @@ export function useCreateOrder() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: createOrder,
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['orders'] }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['orders'] });
+      void qc.invalidateQueries({ queryKey: ['order'] });
+    },
   });
 }
 
@@ -36,6 +39,9 @@ export function useCancelOrder() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => cancelOrder(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['orders'] }),
+    onSuccess: (_data, id) => {
+      void qc.invalidateQueries({ queryKey: ['orders'] });
+      void qc.invalidateQueries({ queryKey: ['order', id] }); // targeted: só este
+    },
   });
 }

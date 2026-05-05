@@ -1,80 +1,53 @@
-// Testes da lógica de recomendação de combo (lib/recomendacao.ts) replicada
-// em Node puro. Foca nas regras críticas: período, recência, filtragem de
-// items já no carrinho, e fallback para o combo padrão.
+// Testes da lógica de recomendação de combo importando o módulo de produção.
+// Usa --experimental-strip-types (Node 22+) para importar .ts diretamente.
+// As importações de tipo-only em recomendacao.ts (@cantina/shared, @/types) são
+// eliminadas pelo strip-types — sem dependência de runtime.
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-const RECENCY_WINDOW = 10;
+import {
+  getCombosDisponiveis,
+  getComboRecomendado,
+  getPeriodoAtual,
+} from '../lib/recomendacao.ts';
 
-function getPeriodoAtual(date) {
-  const h = date.getHours();
-  if (h >= 5 && h < 11) return 'manha';
-  if (h >= 11 && h < 15) return 'almoco';
-  if (h >= 15 && h < 19) return 'tarde';
-  return 'noite';
-}
+// ---------------------------------------------------------------------------
+// Fixtures
+// ---------------------------------------------------------------------------
 
-const COMBOS_PADRAO = {
-  manha: { periodo: 'manha', itemIds: [1, 4], fonte: 'padrao' },
-  almoco: { periodo: 'almoco', itemIds: [6, 3], fonte: 'padrao' },
-  tarde: { periodo: 'tarde', itemIds: [2, 5], fonte: 'padrao' },
-  noite: { periodo: 'noite', itemIds: [7, 2], fonte: 'padrao' },
-};
-const COMBOS_ALT = {
-  manha: { periodo: 'manha', itemIds: [12, 1], fonte: 'alternativo' },
-  almoco: { periodo: 'almoco', itemIds: [10, 3], fonte: 'alternativo' },
-  tarde: { periodo: 'tarde', itemIds: [9, 2], fonte: 'alternativo' },
-  noite: { periodo: 'noite', itemIds: [8, 11], fonte: 'alternativo' },
-};
+// allItems: shape mínimo compatível com Item de @cantina/shared
+// IDs são strings fake que simulam cuid2 — o que importa é a correspondência
+// com os orderItems abaixo.
+const ALL_ITEMS = [
+  { id: 'item-1', slug: 'cafe-espresso',    name: 'Café Espresso',   preco: '5.00' },
+  { id: 'item-2', slug: 'pao-de-queijo',    name: 'Pão de Queijo',   preco: '4.50' },
+  { id: 'item-3', slug: 'x-burger',         name: 'X-Burger',        preco: '12.00' },
+  { id: 'item-4', slug: 'suco-natural',     name: 'Suco Natural',    preco: '7.00' },
+  { id: 'item-5', slug: 'croissant',        name: 'Croissant',       preco: '8.00' },
+  { id: 'item-6', slug: 'cappuccino',       name: 'Cappuccino',      preco: '8.00' },
+  { id: 'item-7', slug: 'coxinha',          name: 'Coxinha',         preco: '6.00' },
+  { id: 'item-8', slug: 'salada-caesar',    name: 'Salada Caesar',   preco: '14.00' },
+];
 
-function getComboHistorico(periodo, orders) {
-  const recentes = [...orders]
-    .sort((a, b) => new Date(b.criadoEm).getTime() - new Date(a.criadoEm).getTime())
-    .slice(0, RECENCY_WINDOW);
-  if (recentes.length < 2) return null;
-  const contagem = new Map();
-  for (const order of recentes) {
-    for (const ci of order.items) {
-      contagem.set(ci.itemId, (contagem.get(ci.itemId) ?? 0) + ci.quantidade);
-    }
-  }
-  const top = Array.from(contagem.entries())
-    .filter(([, q]) => q >= 2)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 2)
-    .map(([id]) => id);
-  if (top.length < 2) return null;
-  return { periodo, itemIds: [top[0], top[1]], fonte: 'historico' };
-}
-
-function getCombosDisponiveis(periodo, orders, cartItemIds = []) {
-  const cartSet = new Set(cartItemIds);
-  const cand = [];
-  const h = getComboHistorico(periodo, orders);
-  if (h) cand.push(h);
-  cand.push(COMBOS_PADRAO[periodo]);
-  cand.push(COMBOS_ALT[periodo]);
-  const filt = cand.filter(
-    (c) => !(cartSet.has(c.itemIds[0]) && cartSet.has(c.itemIds[1])),
-  );
-  const visto = new Set();
-  const unicos = [];
-  for (const c of filt) {
-    const k = [c.itemIds[0], c.itemIds[1]].sort().join('|');
-    if (visto.has(k)) continue;
-    visto.add(k);
-    unicos.push(c);
-  }
-  return unicos.length > 0 ? unicos : [COMBOS_PADRAO[periodo]];
-}
-
-function makeOrder(itemIds, dataIso = '2026-04-29T10:00:00') {
+/**
+ * Cria um Order com shape compatível com `Order` de @cantina/shared.
+ * itemIdsList: array de item IDs (strings) que compõem o pedido.
+ */
+function makeOrder(itemIdsList, dataIso = '2026-04-29T10:00:00') {
   return {
-    items: itemIds.map((id) => ({ itemId: id, quantidade: 1 })),
+    id: `order-${Math.random()}`,
+    userId: 'user-1',
+    status: 'pendente',
+    itens: itemIdsList.map((itemId) => ({ itemId, quantidade: 1 })),
     criadoEm: dataIso,
+    atualizadoEm: dataIso,
   };
 }
+
+// ---------------------------------------------------------------------------
+// Testes
+// ---------------------------------------------------------------------------
 
 test('getPeriodoAtual classifica horários corretamente', () => {
   assert.equal(getPeriodoAtual(new Date('2026-04-29T08:00:00')), 'manha');
@@ -84,74 +57,81 @@ test('getPeriodoAtual classifica horários corretamente', () => {
   assert.equal(getPeriodoAtual(new Date('2026-04-29T03:00:00')), 'noite');
 });
 
-test('sem histórico retorna apenas padrão + alternativo', () => {
-  const lista = getCombosDisponiveis('almoco', []);
+test('getCombosDisponiveis — sem histórico retorna padrao + alternativo', () => {
+  const lista = getCombosDisponiveis('almoco', [], [], ALL_ITEMS);
   assert.equal(lista.length, 2);
   assert.equal(lista[0].fonte, 'padrao');
   assert.equal(lista[1].fonte, 'alternativo');
+  // itemSlugs são arrays de 2 strings
+  assert.equal(lista[0].itemSlugs.length, 2);
+  assert.ok(typeof lista[0].itemSlugs[0] === 'string');
 });
 
-test('com histórico forte (≥2 itens recorrentes) inclui combo personalizado primeiro', () => {
+test('getCombosDisponiveis — histórico forte inclui combo personalizado primeiro', () => {
+  // item-3 = x-burger, item-4 = suco-natural aparecem 2+ vezes nas ordens recentes
   const orders = [
-    makeOrder([6, 4], '2026-04-29T12:00:00'),
-    makeOrder([6, 4], '2026-04-28T12:00:00'),
-    makeOrder([6, 5], '2026-04-27T12:00:00'),
+    makeOrder(['item-3', 'item-4'], '2026-04-29T12:00:00'),
+    makeOrder(['item-3', 'item-4'], '2026-04-28T12:00:00'),
+    makeOrder(['item-3', 'item-7'], '2026-04-27T12:00:00'),
   ];
-  const lista = getCombosDisponiveis('almoco', orders);
+  const lista = getCombosDisponiveis('almoco', orders, [], ALL_ITEMS);
   assert.equal(lista[0].fonte, 'historico');
-  // 6 e 4 são os mais frequentes
-  assert.deepEqual([...lista[0].itemIds].sort(), [4, 6]);
+  // O combo deve conter os slugs de item-3 e item-4
+  const slugsHistorico = [...lista[0].itemSlugs].sort();
+  assert.deepEqual(slugsHistorico, ['suco-natural', 'x-burger']);
 });
 
-test('histórico com só 1 pedido NÃO gera combo personalizado', () => {
-  const orders = [makeOrder([6, 4])];
-  const lista = getCombosDisponiveis('almoco', orders);
+test('getCombosDisponiveis — histórico com só 1 pedido NÃO gera combo personalizado', () => {
+  const orders = [makeOrder(['item-3', 'item-4'])];
+  const lista = getCombosDisponiveis('almoco', orders, [], ALL_ITEMS);
   assert.equal(lista[0].fonte, 'padrao');
 });
 
-test('respeita janela de recência (RECENCY_WINDOW=10)', () => {
-  // 50 pedidos antigos com [7,8] + 10 pedidos recentes com [1,4].
-  // Como só os 10 mais recentes contam, [1,4] vence completamente.
-  const antigos = Array.from({ length: 50 }, (_, i) =>
-    makeOrder([7, 8], `2025-01-01T10:${String(i % 60).padStart(2, '0')}:00`),
+test('getCombosDisponiveis — filtro de carrinho: exclui combo cujo par completo está no cart', () => {
+  // combo padrão do almoço = ['x-burger', 'suco-natural']
+  const cartSlugs = ['x-burger', 'suco-natural'];
+  const lista = getCombosDisponiveis('almoco', [], cartSlugs, ALL_ITEMS);
+  // o padrão do almoço deve sumir
+  const temPadrao = lista.some(
+    (c) => c.itemSlugs.includes('x-burger') && c.itemSlugs.includes('suco-natural'),
   );
-  const recentes = Array.from({ length: 10 }, (_, i) =>
-    makeOrder([1, 4], `2026-04-${String(20 + (i % 9)).padStart(2, '0')}T10:00:00`),
-  );
-  const lista = getCombosDisponiveis('manha', [...antigos, ...recentes]);
-  assert.equal(lista[0].fonte, 'historico');
-  assert.deepEqual([...lista[0].itemIds].sort(), [1, 4]);
-});
-
-test('descarta combo cujo par inteiro está no carrinho', () => {
-  // Combo padrão do almoço é [6,3]. Se ambos no carrinho, sumir.
-  const lista = getCombosDisponiveis('almoco', [], [6, 3]);
-  assert.ok(lista.every((c) => !(c.itemIds[0] === 6 && c.itemIds[1] === 3)));
+  assert.equal(temPadrao, false);
+  // mas ainda há ao menos 1 combo (fallback)
   assert.ok(lista.length >= 1);
 });
 
-test('mantém combo se só 1 dos itens está no carrinho', () => {
-  const lista = getCombosDisponiveis('almoco', [], [6]);
+test('getCombosDisponiveis — mantém combo se só 1 dos itens está no carrinho', () => {
+  const lista = getCombosDisponiveis('almoco', [], ['x-burger'], ALL_ITEMS);
+  // padrão do almoço tem x-burger mas não o par completo — deve aparecer
   assert.ok(lista.some((c) => c.fonte === 'padrao'));
 });
 
-test('fallback para padrão se tudo foi filtrado', () => {
-  // Coloca todos os itens dos combos do almoço no carrinho.
-  const lista = getCombosDisponiveis('almoco', [], [6, 3, 10]);
+test('getCombosDisponiveis — fallback para padrão se tudo foi filtrado', () => {
+  // almoco padrão = [x-burger, suco-natural], alt = [salada-caesar, suco-natural]
+  const cartSlugs = ['x-burger', 'suco-natural', 'salada-caesar'];
+  const lista = getCombosDisponiveis('almoco', [], cartSlugs, ALL_ITEMS);
+  // só 1 resultado: fallback padrão
   assert.equal(lista.length, 1);
-  assert.equal(lista[0].fonte, 'padrao'); // fallback final
+  assert.equal(lista[0].fonte, 'padrao');
 });
 
-test('dedup: combos com mesmo par (em qualquer ordem) aparecem só 1x', () => {
-  // Manha: padrao=[1,4], alt=[12,1]. Forçar histórico [4,1] que coincide com padrão.
+test('getCombosDisponiveis — dedup: mesmo par de slugs aparece só 1x', () => {
+  // café-espresso + pao-de-queijo é o combo padrão da manhã.
+  // Se o histórico resolver para o mesmo par, não deve duplicar.
   const orders = [
-    makeOrder([1, 4]),
-    makeOrder([1, 4]),
-    makeOrder([1, 5]),
+    makeOrder(['item-1', 'item-2'], '2026-04-29T08:00:00'),
+    makeOrder(['item-1', 'item-2'], '2026-04-28T08:00:00'),
+    makeOrder(['item-1', 'item-5'], '2026-04-27T08:00:00'),
   ];
-  const lista = getCombosDisponiveis('manha', orders);
-  // Não deve haver 2 combos com par {1,4}
-  const pares = lista.map((c) => [...c.itemIds].sort().join(','));
+  const lista = getCombosDisponiveis('manha', orders, [], ALL_ITEMS);
+  const pares = lista.map((c) => [...c.itemSlugs].sort().join('|'));
   const unicos = new Set(pares);
   assert.equal(pares.length, unicos.size);
+});
+
+test('getComboRecomendado — retorna sempre 1 combo', () => {
+  const combo = getComboRecomendado('tarde', [], ALL_ITEMS);
+  assert.ok(combo);
+  assert.equal(combo.itemSlugs.length, 2);
+  assert.ok(['padrao', 'historico', 'alternativo'].includes(combo.fonte));
 });

@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   createContext,
   useCallback,
@@ -10,6 +11,7 @@ import {
 
 import { apiLogin, apiMe, apiRegister } from '@/lib/api/auth';
 import { ApiError } from '@/lib/api/client';
+import { STORAGE_KEYS } from '@/constants/storage-keys';
 import { deleteSecureItem, getSecureItem, setSecureItem } from '@/lib/secure-store';
 import type { PublicUser } from '@cantina/shared';
 import type { User } from '@/types';
@@ -75,18 +77,36 @@ export function AuthProvider({ children }: ProviderProps) {
   useEffect(() => {
     (async () => {
       try {
-        const token = await getSecureItem(TOKEN_KEY);
-        if (token) {
+        const [token, cachedUserJson] = await Promise.all([
+          getSecureItem(TOKEN_KEY),
+          AsyncStorage.getItem(STORAGE_KEYS.LAST_USER),
+        ]);
+        if (!token) {
+          return;
+        }
+        // Hidrata do cache imediatamente para o router não redirecionar ao /login
+        if (cachedUserJson) {
           try {
-            const { user: publicUser } = await apiMe();
-            setUser(publicUserToUser(publicUser));
-          } catch (err) {
-            if (err instanceof ApiError && err.status === 401) {
-              // token expirado ou inválido — descarta
-              await deleteSecureItem(TOKEN_KEY);
-            }
-            // outros erros (rede offline) — preserva token; user fica null até próximo /me
+            const cached = JSON.parse(cachedUserJson) as User;
+            setUser(cached);
+          } catch {
+            // dado corrompido — descarta silenciosamente
           }
+        }
+        // Revalida via rede (best-effort)
+        try {
+          const { user: fresh } = await apiMe();
+          const u = publicUserToUser(fresh);
+          setUser(u);
+          await AsyncStorage.setItem(STORAGE_KEYS.LAST_USER, JSON.stringify(u));
+        } catch (err) {
+          if (err instanceof ApiError && err.status === 401) {
+            // token expirado ou forjado: limpa tudo
+            await deleteSecureItem(TOKEN_KEY);
+            await AsyncStorage.removeItem(STORAGE_KEYS.LAST_USER);
+            setUser(null);
+          }
+          // outros erros (offline) — mantém o user do cache
         }
       } finally {
         setIsHydrating(false);
@@ -99,7 +119,9 @@ export function AuthProvider({ children }: ProviderProps) {
       try {
         const res = await apiRegister({ name: nome.trim(), email, password: senha });
         await setSecureItem(TOKEN_KEY, res.token);
-        setUser(publicUserToUser(res.user));
+        const u = publicUserToUser(res.user);
+        setUser(u);
+        await AsyncStorage.setItem(STORAGE_KEYS.LAST_USER, JSON.stringify(u));
         return { success: true };
       } catch (err) {
         return {
@@ -116,7 +138,9 @@ export function AuthProvider({ children }: ProviderProps) {
       try {
         const res = await apiLogin({ email, password: senha });
         await setSecureItem(TOKEN_KEY, res.token);
-        setUser(publicUserToUser(res.user));
+        const u = publicUserToUser(res.user);
+        setUser(u);
+        await AsyncStorage.setItem(STORAGE_KEYS.LAST_USER, JSON.stringify(u));
         return { success: true };
       } catch (err) {
         return {
@@ -130,6 +154,7 @@ export function AuthProvider({ children }: ProviderProps) {
 
   const signOut = useCallback(async () => {
     await deleteSecureItem(TOKEN_KEY);
+    await AsyncStorage.removeItem(STORAGE_KEYS.LAST_USER);
     setUser(null);
   }, []);
 

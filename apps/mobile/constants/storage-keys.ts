@@ -8,6 +8,7 @@ export const STORAGE_KEYS = {
   ONBOARDED: '@cantina:onboarded',
   FAVORITES: '@cantina:favorites',
   LOCALE: '@cantina:locale',
+  LAST_USER: '@cantina:last_user',
 } as const;
 
 export const SECURE_KEYS = {
