@@ -47,3 +47,6 @@ pnpm-debug.log*
 
 # txt que não deve ser commitado
 conta-NAO-COMMITAR.txt
+
+# pglite local dev database
+apps/api/dev.db*
