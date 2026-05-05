@@ -2,9 +2,9 @@
 
 > **Para retomar em outra sessão:** este doc é o ponto de entrada. Lê isso → lê os 3 abaixo → prossegue.
 
-**Última sessão:** 2026-05-05 (sessão 3 — Phases 3-7 no mesmo dia, full strategy B)
-**Branch:** `feat/foundation` (33 commits à frente de `main`)
-**Stage:** Phases 1-7 do plano executadas; pausa antes da Phase 8 (dark mode B refresh). API + mobile já consomem ponta-a-ponta.
+**Última sessão:** 2026-05-05 (sessão 3 — Foundation completo, todas as 10 phases num dia)
+**Branch:** `feat/foundation` (38 commits à frente de `main`)
+**Stage:** **🎉 Foundation 100% completo.** Phases 1-10 executadas. API + mobile rodam ponta-a-ponta. CI configurado. Audit pipeline ativo. Próximos passos: deploy manual (`docs/DEPLOY.md`) e merge da branch.
 
 ## 📚 Docs prioritários (ler nesta ordem)
 
@@ -13,9 +13,15 @@
 3. [CLAUDE.md](../../CLAUDE.md) — convenções do projeto + autor único `jota0802`
 4. **Memória persistente** em `C:\Users\jotin\.claude\projects\c--Users-jotin-Documents-fiap-mdi-cp2-cantina-app\memory\` — feedback, project status, paths
 
-## ✅ O que está feito (33 commits em `feat/foundation`)
+## ✅ O que está feito (38 commits em `feat/foundation`)
 
 ```
+d79d319 docs: Phase 9.4 + 10 — deploy guide + READMEs por app + auditoria full
+1139758 ci: render.yaml + GitHub Actions (typecheck + test em PR/main)
+aae7723 feat(audit): pipeline de auditoria com 4 scripts + checklist em docs/AUDITORIA.md
+8523761 refactor: cleanup hash.ts + migra validation pra packages/shared + prune storage keys obsoletas
+485a41c feat(mobile): dark mode direção B (neutro near-black) + elevation system dual
+e6cedbb docs(handoff): salva estado pos-Phases 6+7 + issues deferidas mobile
 628cd5a fix(mobile): hardenings Phase 6+7 pos code-review
 0d387a3 feat(mobile): FavoritesContext vira facade sobre React Query com optimistic toggle
 a00549b feat(mobile): migracao orders para API + delete data/cardapio.ts (auto-promote server-side)
@@ -296,4 +302,8 @@ fiap-mdi-cp2-cantina-app/
 
 ## 🟢 Veredicto
 
-Foundation tá com **70% executado** (7 de 10 phases). API + mobile rodam ponta-a-ponta. Smoke test ainda manual (precisa subir API local + mobile, fazer cadastro/login/criar pedido) — não rodei na sessão por falta de TTY. Phase 8 (dark mode B refresh) é puramente visual; Phase 9 (cleanup + audit + render.yaml + GitHub Actions) é a parte de devops; Phase 10 fecha docs e auditoria full. Estimo **1 sessão** pra fechar Foundation completo.
+**Foundation 100% completo. 38 commits em `feat/foundation` em 1 dia.** API + mobile + shared workspace + CI + audit pipeline + deploy guide + per-app READMEs. Tudo typecheck verde nos 3 workspaces. 70 testes passando (35 API + 22 mobile + 13 shared).
+
+Smoke test ainda manual — precisa subir API + mobile localmente uma vez antes do merge, ou rodar tudo em prod via deploy guide. Próximo movimento real é o deploy (capítulo manual).
+
+Depois: brainstorm sub-projeto 2 (Cantina admin — multi-tenant + estoque + endpoints faltantes pra `updateUser`/`resetSenha`/`markRetirado`).
