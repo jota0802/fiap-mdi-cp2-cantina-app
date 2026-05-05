@@ -3,6 +3,35 @@
 > Backlog priorizado de UX/UI/funcionalidades para evoluir o CP2.
 > Notação: 💎 alto impacto · 🔥 médio · ✨ refinamento · 🟢 fácil · 🟡 médio · 🔴 trabalhoso
 
+## Foundation (sub-projeto 1) — CONCLUIDO
+
+Spec: [`superpowers/specs/2026-05-05-foundation-design.md`](./superpowers/specs/2026-05-05-foundation-design.md)
+Plano executado: [`superpowers/plans/2026-05-05-foundation-plan.md`](./superpowers/plans/2026-05-05-foundation-plan.md)
+
+**Entregue (10 phases, 37+ commits em `feat/foundation`):**
+
+| # | Phase | Status |
+| --- | --- | --- |
+| 1 | Monorepo skeleton (pnpm workspaces) | ok |
+| 2 | API skeleton (Hono + Drizzle + pglite/Postgres) | ok |
+| 3 | Shared schemas + auth helpers (Zod, argon2, JWT) | ok |
+| 4 | Auth endpoints (register/login/me) | ok + hardened |
+| 5 | Items + Orders + Favorites + auto-promote job | ok + hardened |
+| 6 | Mobile API client + AuthContext rewrite | ok |
+| 7 | Mobile items/orders/favorites migration (strategy B) | ok + hardened |
+| 8 | Dark mode B refresh (neutro near-black + elevation dual) | ok |
+| 9 | Cleanup + audit pipeline + render.yaml + GitHub Actions | ok |
+| 10 | Docs final + auditoria full | ok |
+
+**Deploy manual restante (`docs/DEPLOY.md`):** provisionar Neon + Render, setar secrets, primeiro deploy.
+
+**Proximos sub-projetos:**
+
+- **Sub-projeto 2 — Cantina admin** (multi-tenant, estoque, fornecedores, vitrine on/off, `PATCH /auth/me`, `POST /auth/reset-password`, `markRetirado`)
+- **Sub-projeto 3 — Customer flows v2** (calendario, filtros avancados, kitchen-flow, validacao retirada via QR, recorrentes, Stripe)
+
+---
+
 ## 🥇 Top 8 — TODOS CONCLUÍDOS ✅
 
 | # | Item | Status |

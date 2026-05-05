@@ -1,0 +1,25 @@
+import { useQuery } from '@tanstack/react-query';
+
+import type { Categoria } from '@cantina/shared';
+
+import { getItem, listItems } from '../items';
+
+export function useItems(filter?: { categoria?: Categoria }) {
+  return useQuery({
+    queryKey: ['items', filter ?? {}],
+    queryFn: () => listItems(filter),
+    staleTime: 1000 * 60 * 5,
+  });
+}
+
+export function useItem(id: string | undefined) {
+  return useQuery({
+    queryKey: ['item', id],
+    queryFn: () => {
+      if (!id) throw new Error('id required');
+      return getItem(id);
+    },
+    enabled: !!id,
+    staleTime: 1000 * 60 * 5,
+  });
+}

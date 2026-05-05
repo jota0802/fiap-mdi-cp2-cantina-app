@@ -25,13 +25,17 @@ expo-env.d.ts
 npm-debug.*
 yarn-debug.*
 yarn-error.*
+pnpm-debug.log*
 
 # macOS
 .DS_Store
 *.pem
 
 # local env files
+.env
+.env.*
 .env*.local
+!.env.example
 
 # typescript
 *.tsbuildinfo
@@ -40,3 +44,9 @@ yarn-error.*
 /ios
 /android
 .claude/settings.local.json
+
+# txt que não deve ser commitado
+conta-NAO-COMMITAR.txt
+
+# pglite local dev database
+apps/api/dev.db*
