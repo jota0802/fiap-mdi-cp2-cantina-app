@@ -39,7 +39,9 @@ function toPublicOrder(o: typeof orders.$inferSelect, itens: typeof orderItems.$
 }
 
 async function nextSenha(db: DB | TestDb, tenantId: string | null): Promise<number> {
-  // Use UTC start-of-day for deterministic per-day reset across timezones
+  // Per-day senha reset uses UTC midnight (not tenant-local timezone). Acceptable
+  // trade-off: senhas restart ~21:00 BRT in summer / 21:00 BRT year-round, but stay
+  // unique within a UTC day. Future: derive timezone from tenantId in sub-projeto 2.
   const now = new Date();
   const startOfDay = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
   const result = await db
@@ -142,7 +144,10 @@ export function createOrdersRoutes(db: DB | TestDb) {
     if (!order || order.userId !== claim.sub) throw notFound('Order not found');
     if (order.status !== 'pendente') throw badRequest('Só pedidos pendentes podem ser cancelados');
 
-    await db.update(orders).set({ status, canceladoEm: new Date() }).where(eq(orders.id, id));
+    await db.update(orders).set({
+      status,
+      ...(status === 'cancelado' ? { canceladoEm: new Date() } : {}),
+    }).where(eq(orders.id, id));
     const enriched = await fetchOrderWithItems(db, id);
     return c.json({ order: enriched }, 200);
   });

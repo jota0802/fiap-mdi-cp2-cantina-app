@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { eq, and, inArray } from 'drizzle-orm';
 import { favorites, items } from '../db/schema.js';
 import { requireAuth } from '../middleware/auth.js';
+import { notFound } from '../lib/errors.js';
 import { toPublicItem } from './items.js';
 import type { DB } from '../db/client.js';
 import type { TestDb } from '../test/db.js';
@@ -21,6 +22,8 @@ export function createFavoritesRoutes(db: DB | TestDb) {
   app.post('/:itemId', async (c) => {
     const claim = c.get('user');
     const itemId = c.req.param('itemId');
+    const [item] = await db.select({ id: items.id }).from(items).where(eq(items.id, itemId)).limit(1);
+    if (!item) throw notFound('Item not found');
     await db.insert(favorites)
       .values({ userId: claim.sub, itemId })
       .onConflictDoNothing();

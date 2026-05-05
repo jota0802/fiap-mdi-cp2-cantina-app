@@ -109,4 +109,36 @@ describe('PATCH /orders/:id/status', () => {
     expect(json.order.status).toBe('cancelado');
     expect(json.order.canceladoEm).toBeTruthy();
   });
+
+  it('rejeita cancelar pedido de outro usuario com 404 (nao 400)', async () => {
+    const item = await createTestItem(testDb);
+    const create = await app.request('/api/v1/orders', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ itens: [{ itemId: item.id, quantidade: 1 }] }) });
+    const created = await create.json() as { order: { id: string } };
+
+    const other = await createTestUser(testDb, { email: 'other@x.com' });
+    const res = await app.request(`/api/v1/orders/${created.order.id}/status`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${other.token}` },
+      body: JSON.stringify({ status: 'cancelado' }),
+    });
+    expect(res.status).toBe(404); // não 400, pra não vazar existência
+  });
+
+  it('rejeita cancelar pedido ja cancelado com 400', async () => {
+    const item = await createTestItem(testDb);
+    const create = await app.request('/api/v1/orders', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ itens: [{ itemId: item.id, quantidade: 1 }] }) });
+    const created = await create.json() as { order: { id: string } };
+
+    // primeiro cancel — sucesso
+    await app.request(`/api/v1/orders/${created.order.id}/status`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ status: 'cancelado' }),
+    });
+
+    // segundo cancel — deve dar 400
+    const res = await app.request(`/api/v1/orders/${created.order.id}/status`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ status: 'cancelado' }),
+    });
+    expect(res.status).toBe(400);
+  });
 });
