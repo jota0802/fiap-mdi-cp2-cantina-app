@@ -2,9 +2,9 @@
 
 > **Para retomar em outra sessão:** este doc é o ponto de entrada. Lê isso → lê os 3 abaixo → prossegue.
 
-**Última sessão:** 2026-05-05
-**Branch:** `feat/foundation` (10 commits à frente de `main`)
-**Stage:** Phases 1 e 2 do plano executadas; pausa antes da Phase 3.
+**Última sessão:** 2026-05-05 (sessão 3)
+**Branch:** `feat/foundation` (16 commits à frente de `main`)
+**Stage:** Phases 1, 2 e 3 do plano executadas; pausa antes da Phase 4 (auth endpoints).
 
 ## 📚 Docs prioritários (ler nesta ordem)
 
@@ -13,9 +13,15 @@
 3. [CLAUDE.md](../../CLAUDE.md) — convenções do projeto + autor único `jota0802`
 4. **Memória persistente** em `C:\Users\jotin\.claude\projects\c--Users-jotin-Documents-fiap-mdi-cp2-cantina-app\memory\` — feedback, project status, paths
 
-## ✅ O que está feito (10 commits em `feat/foundation`)
+## ✅ O que está feito (16 commits em `feat/foundation`)
 
 ```
+d9303db test(api): fixtures (createTestDb pglite, createTestUser, createTestItem)
+0c59e05 feat(api): middleware auth (Bearer JWT) + error-handler centralizado
+5234c21 fix(api): observabilidade no verifyPassword e zod parse no verifyJwt
+a33ad53 feat(api): password (argon2) + jwt (jose HS256) helpers com testes
+1cf5aba feat(shared): zod schemas (auth, user, item, order) + tipos derivados + testes
+c272113 docs(handoff): salva estado da sessao apos Phases 1-2 do Foundation
 884d1e4 fix(api): items com name/descricao raw + nameKey/descricaoKey nullable
 00f96f2 feat(api): seed inicial com 12 itens (referencia keys i18n existentes)
 96709c5 feat(api): schema drizzle (users, items, orders, order_items, favorites)
@@ -46,16 +52,19 @@ c9f680a refactor(monorepo): move Expo app pra apps/mobile e cria root package.js
 ### Fixes load-bearing (não estavam no plano)
 - **`be0599f` security CORS:** removido default `'*'` em ALLOWED_ORIGINS, fail-fast no boot prod, dev fallback é lista Expo explícita
 - **`884d1e4` schema items:** spec assumia todos com nameKey notNull, mas 6 dos 12 itens (pratos brasileiros: Cappuccino, Pão de Queijo, Coxinha, Açaí, Brigadeiro, Croissant) não têm tradução. Schema agora tem `name + descricao` raw notNull e `nameKey + descricaoKey` nullable. Seed populou conforme.
+- **`5234c21` observabilidade + segurança JWT:** code-review do Task 3.2 apontou (a) `verifyPassword` silenciava todos os erros (incluindo native binding broken → silent lockout em prod) — agora loga via pino antes de retornar false; (b) `verifyJwt` usava `as string` casts unsafe que escondiam claims ausentes — agora valida via `JwtPayloadSchema.parse(payload)` (Zod). Token com claims faltando agora throwa ZodError handled pelo errorHandler.
+
+### Phase 3 — Shared schemas + auth helpers ✅
+- Zod schemas em `packages/shared/src/schemas/` (auth, user, item, order) — `ItemSchema` ajustado pro drift do schema (nameKey/descricaoKey nullable, name/descricao raw notNull)
+- 6 testes de schema em `packages/shared/src/schemas/auth.test.ts`
+- `apps/api/src/lib/password.ts` (argon2) + `jwt.ts` (jose HS256) com TDD completo (3 + 3 testes)
+- `apps/api/src/lib/errors.ts` — `HTTPError` class + 6 factory helpers (conflict, unauthorized, forbidden, notFound, badRequest, validationError)
+- `apps/api/src/middleware/auth.ts` — `requireAuth` Bearer JWT + `ContextVariableMap` augmentation (`c.get('user'): JwtPayload`)
+- `apps/api/src/middleware/error-handler.ts` — handler centralizado tratando `HTTPError` + `ZodError` + fallback INTERNAL
+- `apps/api/src/test/db.ts` — `createTestDb` (pglite efêmero por teste) + migrate
+- `apps/api/src/test/fixtures.ts` — `createTestUser` (retorna `{user, password, token}`) + `createTestItem` (com defaults pra `name`/`descricao` notNull)
 
 ## ⏳ O que falta — começar por aqui na próxima sessão
-
-### Phase 3 — Shared schemas + auth helpers (4 tasks)
-Plano §3 a §3.4. Detalhes verbatim em [docs/superpowers/plans/2026-05-05-foundation-plan.md](plans/2026-05-05-foundation-plan.md):
-
-- **Task 3.1** Zod schemas em `packages/shared/src/schemas/` (auth, user, item, order) + tipos derivados + teste em `auth.test.ts`
-- **Task 3.2** `apps/api/src/lib/password.ts` (argon2) + `jwt.ts` (jose HS256) com TDD completo
-- **Task 3.3** Middleware `requireAuth` + `errorHandler` (refactor de `app.ts` pra usar handler centralizado)
-- **Task 3.4** Test fixtures (`apps/api/src/test/db.ts` createTestDb pglite + fixtures createTestUser/createTestItem)
 
 ### Phase 4 — Auth endpoints (1 task complex, TDD denso)
 - **Task 4.1** `/auth/register`, `/auth/login`, `/auth/me` com 9+ testes TDD. Mount em `app.ts` com DI do db.
@@ -110,9 +119,9 @@ Plano §3 a §3.4. Detalhes verbatim em [docs/superpowers/plans/2026-05-05-found
    - Tasks de cleanup → impl + spec review
 6. **NUNCA** subverter regra de autor — todo commit como `jota0802`. Se algum subagent tentar trocar autor (consultando HANDOFF.md velho), AMEND com `--reset-author` imediatamente.
 
-## ⚠️ Lições aprendidas nesta sessão (importantes)
+## ⚠️ Lições aprendidas (acumuladas das sessões 1-3)
 
-1. **Subagents leem HANDOFF.md velho** que ainda mencionava distribuição entre 4 RMs. Resultado: 1 commit foi feito como `lucksza` antes de eu pegar e amendear. **No próximo dispatch, ser MUITO explícito no prompt: "use o git config atual, NÃO use --author flag, NÃO consulte distribuição em HANDOFF.md"**.
+1. **Subagents leem HANDOFF.md velho** que ainda mencionava distribuição entre 4 RMs. Resultado: 1 commit foi feito como `lucksza` antes de eu pegar e amendear. **Em todo dispatch, ser MUITO explícito no prompt: "use o git config atual, NÃO use --author flag, NÃO consulte distribuição em HANDOFF.md"**. Funcionou bem na sessão 3 — todos os 5 commits da Phase 3 saíram como `jota0802` direto.
 
 2. **`pnpm install --frozen-lockfile`** vai falhar até atualizar a tag `packageManager` em `package.json` raiz pra `pnpm@10.30.3` (já feito; o plano dizia 9.15.0 mas implementer corrigiu).
 
@@ -124,9 +133,13 @@ Plano §3 a §3.4. Detalhes verbatim em [docs/superpowers/plans/2026-05-05-found
 
 6. **CORS security:** `ALLOWED_ORIGINS=*` é tentador como default mas é vulnerabilidade. Sempre fail-fast em prod sem allowlist explícito. (Fixado em `be0599f`).
 
-7. **Schema do plano nem sempre bate com o data real do mobile** — o plano assumiu todos os items com nameKey, realidade tem 6 sem. Sempre cross-check com `apps/mobile/data/` antes de gerar migration final.
+7. **Schema do plano nem sempre bate com o data real do mobile** — o plano assumiu todos os items com nameKey, realidade tem 6 sem. Sempre cross-check com `apps/mobile/data/` antes de gerar migration final. **Sessão 3 reconfirmou:** Task 3.1 ItemSchema (Zod) e Task 3.4 createTestItem (fixture) precisaram dos campos `name`/`descricao` adicionados manualmente — o plano só tinha `nameKey`/`descricaoKey`.
 
-8. **Subagent dispatch é caro em context** — cada um custa ~30-50K tokens. Modular por complexidade (skip reviewers em tasks triviais) é essencial pra plano de 50 tasks.
+8. **Subagent dispatch é caro em context** — cada um custa ~30-50K tokens. Modular por complexidade (skip reviewers em tasks triviais) é essencial pra plano de 50 tasks. **Aplicado na sessão 3:** Tasks 3.1 e 3.3 (schemas + middleware com exact-code) usaram spot-check direto; Task 3.2 (segurança/TDD) usou impl + spec review + code quality review formal — código ficou melhor por causa do review (2 issues importantes pegos: silenciamento de erros, cast unsafe).
+
+9. **Code review apanhou bugs reais** mesmo em código com exact-code do plano. O reviewer da Task 3.2 sugeriu logger no `verifyPassword` (silent lockout em prod) e Zod parse no `verifyJwt` (claims ausentes silently undefined). Ambos foram aceitos e implementados em `5234c21`. **Lição:** code review formal vale o custo em tasks de segurança, mesmo quando o plano traz exact-code.
+
+10. **Spec drift — `as string` cast no plano original:** o plano da Task 3.2 instruía `email: payload.email as string` (sem validação). Funcionalmente OK em greenfield, mas defesa em profundidade (Zod parse) é trivial e captura tokens forjados/incompletos. Aplicar Zod parse a qualquer dado externo (req body, JWT payload, env vars) por padrão — já é convenção em `env.ts` e `verifyJwt`.
 
 ## 🧠 Memória persistente — o que está salvo
 
@@ -219,4 +232,4 @@ fiap-mdi-cp2-cantina-app/
 
 ## 🟢 Veredicto
 
-Foundation tá com **20% executado** (2 de 10 phases). Phase 3-5 (auth + endpoints + jobs) é o coração — uma vez feito, mobile pode começar a consumir API (Phase 6+). Estimo **2-3 sessões** mais pra fechar Foundation completo.
+Foundation tá com **30% executado** (3 de 10 phases). Phase 3 (shared schemas + auth helpers + middleware + fixtures) destravou Phase 4 (auth endpoints) e Phase 5 (CRUD endpoints) — a partir daqui, é puxar exact-code do plano + tests TDD via supertest contra fixtures criadas. Mobile (Phase 6+) ainda consome AsyncStorage; troca por React Query vem após API estar de pé. Estimo **1-2 sessões** mais pra fechar Foundation completo.
