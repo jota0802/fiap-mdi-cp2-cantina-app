@@ -26,14 +26,11 @@ import { useCart } from '@/context/CartContext';
 import { useLocale } from '@/context/LocaleContext';
 import { useOrders } from '@/context/OrdersContext';
 import { useTheme } from '@/context/ThemeContext';
-import CARDAPIO from '@/data/cardapio';
 import { confirmar } from '@/lib/confirm';
 import { formatarTempoRestante } from '@/lib/estimativa';
 import { haptic } from '@/lib/haptics';
+import { useOrder } from '@/lib/api/hooks/use-orders';
 import type { ThemeColors } from '@/types';
-
-// TODO(task-7.2): tipo legado do mock local. Removido quando este arquivo migrar para API.
-type LegacyItem = (typeof CARDAPIO)[number];
 
 function formatarDataCompleta(iso: string): string {
   try {
@@ -57,28 +54,30 @@ export default function PedidoDetalhesScreen() {
   const insets = useSafeAreaInsets();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
-  const { getOrder, isHydrated, markRetirado, markCancelado } = useOrders();
-  const { clear, setQuantidade } = useCart();
+  const { data, isPending } = useOrder(id);
+  const order = data?.order;
 
-  const order = id ? getOrder(id) : undefined;
+  const { markCancelado } = useOrders();
+  const { clear, setQuantidade } = useCart();
 
   const [tempoRestante, setTempoRestante] = useState<string>('');
 
   const isPendente = order?.status === 'pendente';
-  const prontoEmIso = order?.prontoEm;
+  // Usa prontoEmEstimado para o countdown (estimativa do servidor)
+  const etaIso = order?.prontoEmEstimado ?? null;
 
   useEffect(() => {
-    if (!isPendente || !prontoEmIso) return;
+    if (!isPendente || !etaIso) return;
     const calcular = () => {
-      const remaining = (new Date(prontoEmIso).getTime() - Date.now()) / 1000;
+      const remaining = (new Date(etaIso).getTime() - Date.now()) / 1000;
       setTempoRestante(formatarTempoRestante(remaining));
     };
     calcular();
     const interval = setInterval(calcular, 10_000);
     return () => clearInterval(interval);
-  }, [isPendente, prontoEmIso]);
+  }, [isPendente, etaIso]);
 
-  if (!isHydrated) {
+  if (isPending) {
     return <LoadingScreen label={t('loading.order')} />;
   }
 
@@ -110,17 +109,8 @@ export default function PedidoDetalhesScreen() {
   }
 
   const status = statusPalette[order.status];
-  const itens = order.items.reduce((acc, ci) => acc + ci.quantidade, 0);
-
-  // TODO(task-7.2): migrar para busca por API. ci.itemId agora e string (cuid2);
-  // CARDAPIO.id e number, entao usamos parseInt para compatibilidade temporaria.
-  const linhasComItem = order.items
-    .map((ci) => {
-      const item = CARDAPIO.find((i) => i.id === parseInt(ci.itemId, 10));
-      if (!item) return null;
-      return { item, quantidade: ci.quantidade };
-    })
-    .filter((x): x is { item: LegacyItem; quantidade: number } => x !== null);
+  const totalItens = order.itens.reduce((acc, oi) => acc + oi.quantidade, 0);
+  const totalFloat = parseFloat(order.total);
 
   const handleCancelar = () => {
     confirmar({
@@ -136,15 +126,10 @@ export default function PedidoDetalhesScreen() {
     });
   };
 
-  const handleMarcarRetirado = async () => {
-    haptic.success();
-    await markRetirado(order.id);
-  };
-
   const handlePedirNovo = () => {
     clear();
-    for (const ci of order.items) {
-      setQuantidade(ci.itemId, ci.quantidade);
+    for (const oi of order.itens) {
+      setQuantidade(oi.itemId, oi.quantidade);
     }
     haptic.success();
     router.push('/carrinho');
@@ -199,50 +184,51 @@ export default function PedidoDetalhesScreen() {
           ) : null}
         </View>
 
-        {/* Lista de items */}
+        {/* Lista de itens */}
         <Text style={styles.sectionTitle}>{t('order.items_label')}</Text>
         <View style={styles.itensCard}>
-          {linhasComItem.map(({ item, quantidade }, idx) => (
-            <View key={item.id}>
-              {idx > 0 ? <View style={styles.divisor} /> : null}
-              <View style={styles.itemRow}>
-                {/* TODO(task-7.2): item.emoji ainda existe no shape legado do mock */}
-                <ItemThumbnail
-                  emoji={item.emoji}
-                  imagem={item.imagem}
-                  size={48}
-                  borderRadius={radius.md}
-                  bgColor={colors.surfaceElevated}
-                />
-                <View style={styles.itemInfo}>
-                  <Text style={styles.itemNome} numberOfLines={1}>
-                    {/* TODO(task-7.2): ainda usa shape legado do mock local */}
-                    {item.nomeKey ? t(item.nomeKey) : item.nome}
-                  </Text>
-                  <Text style={styles.itemPrecoUnit}>
-                    {quantidade} × R$ {item.preco.toFixed(2)}
+          {order.itens.map((oi, idx) => {
+            const preco = parseFloat(oi.precoSnapshot);
+            return (
+              <View key={oi.id}>
+                {idx > 0 ? <View style={styles.divisor} /> : null}
+                <View style={styles.itemRow}>
+                  <ItemThumbnail
+                    emoji="🍽️"
+                    imagem={undefined}
+                    size={48}
+                    borderRadius={radius.md}
+                    bgColor={colors.surfaceElevated}
+                  />
+                  <View style={styles.itemInfo}>
+                    <Text style={styles.itemNome} numberOfLines={1}>
+                      {oi.nameSnapshot}
+                    </Text>
+                    <Text style={styles.itemPrecoUnit}>
+                      {oi.quantidade} × R$ {preco.toFixed(2)}
+                    </Text>
+                  </View>
+                  <Text style={styles.itemSubtotal}>
+                    R$ {(preco * oi.quantidade).toFixed(2)}
                   </Text>
                 </View>
-                <Text style={styles.itemSubtotal}>
-                  R$ {(item.preco * quantidade).toFixed(2)}
-                </Text>
               </View>
-            </View>
-          ))}
+            );
+          })}
         </View>
 
         {/* Resumo */}
         <View style={styles.resumoCard}>
           <View style={styles.resumoLinha}>
             <Text style={styles.resumoLabel}>
-              {itens} {t(itens === 1 ? 'cart.item_singular' : 'cart.item_plural')}
+              {totalItens} {t(totalItens === 1 ? 'cart.item_singular' : 'cart.item_plural')}
             </Text>
-            <Text style={styles.resumoValor}>R$ {order.total.toFixed(2)}</Text>
+            <Text style={styles.resumoValor}>R$ {totalFloat.toFixed(2)}</Text>
           </View>
           <View style={styles.divisor} />
           <View style={styles.resumoLinha}>
             <Text style={styles.totalLabel}>{t('common.total')}</Text>
-            <Text style={styles.totalValor}>R$ {order.total.toFixed(2)}</Text>
+            <Text style={styles.totalValor}>R$ {totalFloat.toFixed(2)}</Text>
           </View>
         </View>
 
@@ -266,8 +252,7 @@ export default function PedidoDetalhesScreen() {
                     styles.timelineDot,
                     {
                       backgroundColor:
-                        order.status === 'pronto' ||
-                        order.status === 'retirado'
+                        order.status === 'pronto' || order.status === 'retirado'
                           ? colors.success
                           : colors.borderStrong,
                     },
@@ -285,7 +270,18 @@ export default function PedidoDetalhesScreen() {
             </>
           ) : null}
 
-          {order.status === 'retirado' ? (
+          {order.retiradoEm ? (
+            <>
+              <View style={styles.timelineConector} />
+              <View style={styles.timelineLinha}>
+                <View style={[styles.timelineDot, { backgroundColor: colors.success }]} />
+                <View style={styles.timelineInfo}>
+                  <Text style={styles.timelineLabel}>{t('order.timeline_picked')}</Text>
+                  <Text style={styles.timelineSub}>{formatarDataCompleta(order.retiradoEm)}</Text>
+                </View>
+              </View>
+            </>
+          ) : order.status === 'retirado' ? (
             <>
               <View style={styles.timelineConector} />
               <View style={styles.timelineLinha}>
@@ -298,7 +294,18 @@ export default function PedidoDetalhesScreen() {
             </>
           ) : null}
 
-          {order.status === 'cancelado' ? (
+          {order.canceladoEm ? (
+            <>
+              <View style={styles.timelineConector} />
+              <View style={styles.timelineLinha}>
+                <View style={[styles.timelineDot, { backgroundColor: colors.error }]} />
+                <View style={styles.timelineInfo}>
+                  <Text style={styles.timelineLabel}>{t('order.timeline_cancelled')}</Text>
+                  <Text style={styles.timelineSub}>{formatarDataCompleta(order.canceladoEm)}</Text>
+                </View>
+              </View>
+            </>
+          ) : order.status === 'cancelado' ? (
             <>
               <View style={styles.timelineConector} />
               <View style={styles.timelineLinha}>
@@ -313,18 +320,6 @@ export default function PedidoDetalhesScreen() {
         </View>
 
         {/* Ações por status */}
-        {order.status === 'pendente' || order.status === 'pronto' ? (
-          <Pressable
-            style={({ pressed }) => [styles.botaoPrimario, pressed && styles.pressedSoft]}
-            onPress={handleMarcarRetirado}
-            accessibilityRole="button"
-            accessibilityLabel={t('cta.mark_picked_up')}
-          >
-            <Ionicons name="checkmark-circle-outline" size={18} color={colors.primaryText} />
-            <Text style={styles.botaoPrimarioTexto}>{t('cta.mark_picked_up')}</Text>
-          </Pressable>
-        ) : null}
-
         {order.status === 'pendente' ? (
           <Pressable
             style={({ pressed }) => [styles.botaoCancelar, pressed && styles.pressedSoft]}

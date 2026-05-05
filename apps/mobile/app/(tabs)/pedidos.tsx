@@ -42,7 +42,6 @@ type CardProps = {
   order: Order;
   styles: ReturnType<typeof createStyles>;
   colors: ThemeColors;
-  onMarcarRetirado: () => void;
   onPedirNovo: () => void;
   onCancelar: () => void;
   onAbrirDetalhes: () => void;
@@ -52,7 +51,6 @@ function PedidoCard({
   order,
   styles,
   colors,
-  onMarcarRetirado,
   onPedirNovo,
   onCancelar,
   onAbrirDetalhes,
@@ -68,7 +66,7 @@ function PedidoCard({
         style={({ pressed }) => [styles.cardCabecaPressable, pressed && styles.pressedSoft]}
         onPress={onAbrirDetalhes}
         accessibilityRole="button"
-        accessibilityLabel={`Ver detalhes do pedido senha ${order.senha}, status ${statusLabel.toLowerCase()}, total R$ ${order.total.toFixed(2)}`}
+        accessibilityLabel={`Ver detalhes do pedido senha ${order.senha}, status ${statusLabel.toLowerCase()}, total R$ ${parseFloat(order.total).toFixed(2)}`}
       >
         <View style={styles.cardHeader}>
           <View style={styles.senhaBox}>
@@ -91,60 +89,31 @@ function PedidoCard({
           </View>
         </View>
 
-        <Text style={styles.resumoLinha}>{order.resumo}</Text>
+        <Text style={styles.resumoLinha}>
+          {order.itens.map((oi) => `${oi.quantidade}x ${oi.nameSnapshot}`).join(', ')}
+        </Text>
 
         <View style={styles.cardFooter}>
           <Text style={styles.totalLabel}>{t('orders.total_label')}</Text>
           <View style={styles.cardFooterDireita}>
-            <Text style={styles.totalValor}>R$ {order.total.toFixed(2)}</Text>
+            <Text style={styles.totalValor}>R$ {parseFloat(order.total).toFixed(2)}</Text>
             <Ionicons name="chevron-forward" size={14} color={colors.textSubtle} />
           </View>
         </View>
       </Pressable>
 
       {/* Botões de ação ficam FORA do Pressable principal pra evitar nested buttons */}
-      {order.status === 'pendente' || order.status === 'pronto' ? (
+      {order.status === 'pendente' ? (
         <View style={styles.acoesRow}>
           <Pressable
-            style={({ pressed }) => [
-              styles.acaoBotao,
-              styles.acaoFlex,
-              order.status === 'pronto' && {
-                backgroundColor: status.bg,
-                borderColor: status.border,
-              },
-              pressed && styles.pressedSoft,
-            ]}
-            onPress={onMarcarRetirado}
+            style={({ pressed }) => [styles.acaoCancelar, styles.acaoFlex, pressed && styles.pressedSoft]}
+            onPress={onCancelar}
             accessibilityRole="button"
-            accessibilityLabel={`Marcar pedido senha ${order.senha} como retirado`}
+            accessibilityLabel={`${t('cta.cancel_order')}: ${order.senha}`}
           >
-            <Ionicons
-              name="checkmark-circle-outline"
-              size={16}
-              color={order.status === 'pronto' ? status.color : colors.text}
-            />
-            <Text
-              style={[
-                styles.acaoBotaoTexto,
-                order.status === 'pronto' && { color: status.color },
-              ]}
-            >
-              {t('cta.picked_up_short')}
-            </Text>
+            <Ionicons name="close-outline" size={16} color={colors.error} />
+            <Text style={styles.acaoCancelarTexto}>{t('cta.cancel')}</Text>
           </Pressable>
-
-          {order.status === 'pendente' ? (
-            <Pressable
-              style={({ pressed }) => [styles.acaoCancelar, pressed && styles.pressedSoft]}
-              onPress={onCancelar}
-              accessibilityRole="button"
-              accessibilityLabel={`${t('cta.cancel_order')}: ${order.senha}`}
-            >
-              <Ionicons name="close-outline" size={16} color={colors.error} />
-              <Text style={styles.acaoCancelarTexto}>{t('cta.cancel')}</Text>
-            </Pressable>
-          ) : null}
         </View>
       ) : order.status === 'retirado' ? (
         <Pressable
@@ -168,15 +137,15 @@ export default function PedidosScreen() {
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
   const styles = useMemo(() => createStyles(colors), [colors]);
-  const { orders, isHydrated, refresh, markRetirado, markCancelado } = useOrders();
+  const { orders, isHydrated, refresh, markCancelado } = useOrders();
   const { clear, setQuantidade } = useCart();
   const [refreshing, setRefreshing] = useState(false);
 
   const handlePedirNovo = useCallback(
     (order: Order) => {
       clear();
-      for (const ci of order.items) {
-        setQuantidade(ci.itemId, ci.quantidade);
+      for (const oi of order.itens) {
+        setQuantidade(oi.itemId, oi.quantidade);
       }
       haptic.success();
       router.push('/carrinho');
@@ -249,7 +218,6 @@ export default function PedidosScreen() {
             order={item}
             styles={styles}
             colors={colors}
-            onMarcarRetirado={() => markRetirado(item.id)}
             onPedirNovo={() => handlePedirNovo(item)}
             onCancelar={() => handleCancelar(item)}
             onAbrirDetalhes={() => router.push(`/pedido/${item.id}`)}

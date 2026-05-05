@@ -1,5 +1,5 @@
 // Re-exporta tipos da API. Mobile nao define mais ItemCardapio/Categoria localmente.
-export type { Item, Categoria, OrderStatus, OrderItemDto } from '@cantina/shared';
+export type { Item, Categoria, OrderStatus, OrderItemDto, Order, CreateOrderInput } from '@cantina/shared';
 
 // Alias de retrocompatibilidade — consumers que importavam ItemCardapio continuam
 // funcionando. Phase 7.2 vai substituir os usos restantes por `Item` diretamente
@@ -34,19 +34,6 @@ export type User = {
   criadoEm: string;
 };
 
-// Order fica com shape mobile ate Task 7.2 migrar pedidos para API.
-// CartItem.itemId ja e string aqui.
-export type Order = {
-  id: string;
-  userId: string;
-  senha: number;
-  items: CartItem[];
-  total: number;
-  resumo: string;
-  criadoEm: string;
-  prontoEm?: string;
-  status: 'pendente' | 'pronto' | 'retirado' | 'cancelado';
-};
 
 export type ThemeMode = 'light' | 'dark';
 

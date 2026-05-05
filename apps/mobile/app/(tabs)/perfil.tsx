@@ -70,7 +70,7 @@ export default function PerfilScreen() {
 
   const totalPedidos = orders.length;
   const pedidosAtivos = orders.filter((o) => o.status !== 'retirado').length;
-  const totalGasto = orders.reduce((acc, o) => acc + o.total, 0);
+  const totalGasto = orders.reduce((acc, o) => acc + parseFloat(o.total), 0);
 
   const showToast = (message: string, variant: 'success' | 'error' = 'success') => {
     setToast({ visible: true, message, variant });

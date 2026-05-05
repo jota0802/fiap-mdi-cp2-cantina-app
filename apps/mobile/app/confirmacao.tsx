@@ -31,6 +31,10 @@ import { haptic } from '@/lib/haptics';
 import { notifyImmediate, scheduleNotification } from '@/lib/notifications';
 import type { Order, ThemeColors } from '@/types';
 
+function computeResumo(itens: Order['itens']): string {
+  return itens.map((oi) => `${oi.quantidade}x ${oi.nameSnapshot}`).join(', ');
+}
+
 export default function Confirmacao() {
   const router = useRouter();
   const { colors } = useTheme();
@@ -38,7 +42,7 @@ export default function Confirmacao() {
   const insets = useSafeAreaInsets();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
-  const { items, totalItens, totalPreco, buildResumo, clear } = useCart();
+  const { items, totalItens, clear } = useCart();
   const { addOrder, markCancelado } = useOrders();
   const [cancelado, setCancelado] = useState(false);
 
@@ -56,37 +60,33 @@ export default function Confirmacao() {
     hasCreatedRef.current = true;
 
     let cancelled = false;
-    const senha = Math.floor(Math.random() * 900) + 100;
     const itemsSnapshot = [...items];
-    const totalSnapshot = totalPreco;
-    const resumoSnapshot = buildResumo();
 
     (async () => {
       try {
-        const novo = await addOrder({
-          senha,
-          items: itemsSnapshot,
-          total: totalSnapshot,
-          resumo: resumoSnapshot,
-        });
+        const cartItens = itemsSnapshot.map((ci) => ({
+          itemId: ci.itemId,
+          quantidade: ci.quantidade,
+        }));
+        const novo = await addOrder({ itens: cartItens });
         if (cancelled) return;
         setOrder(novo);
         haptic.success();
 
-        const prazoSegundos = novo.prontoEm
-          ? Math.max(0, (new Date(novo.prontoEm).getTime() - Date.now()) / 1000)
+        const prazoSegundos = novo.prontoEmEstimado
+          ? Math.max(0, (new Date(novo.prontoEmEstimado).getTime() - Date.now()) / 1000)
           : 180;
 
         notifyImmediate(
-          t('confirmation.notif_title', { senha }),
+          t('confirmation.notif_title', { senha: novo.senha }),
           t('confirmation.notif_body_eta', {
             eta: formatarTempoRestante(prazoSegundos),
-            total: totalSnapshot.toFixed(2),
+            total: parseFloat(novo.total).toFixed(2),
           }),
         );
 
         scheduleNotification(
-          t('confirmation.ready_notif_title', { senha }),
+          t('confirmation.ready_notif_title', { senha: novo.senha }),
           t('confirmation.ready_notif_body'),
           prazoSegundos,
         );
@@ -100,7 +100,7 @@ export default function Confirmacao() {
     return () => {
       cancelled = true;
     };
-  }, [totalItens, items, totalPreco, buildResumo, addOrder, clear, t]);
+  }, [totalItens, items, addOrder, clear, t]);
 
   // Animações ao receber a senha
   useEffect(() => {
@@ -136,7 +136,9 @@ export default function Confirmacao() {
     return <LoadingScreen label={t('loading.processing')} subtitle={t('loading.generating_code')} />;
   }
 
-  const itensQtd = order.items.reduce((acc, ci) => acc + ci.quantidade, 0);
+  const itensQtd = order.itens.reduce((acc, oi) => acc + oi.quantidade, 0);
+  const totalFloat = parseFloat(order.total);
+  const resumo = computeResumo(order.itens);
 
   return (
     <View style={styles.container}>
@@ -202,7 +204,7 @@ export default function Confirmacao() {
               <Ionicons name="cash-outline" size={14} color="#FFFFFF" />
             </View>
             <Text style={[styles.bentoValor, { color: '#FFFFFF' }]}>
-              R$ {order.total.toFixed(2)}
+              R$ {totalFloat.toFixed(2)}
             </Text>
             <Text style={[styles.bentoLabel, { color: 'rgba(255,255,255,0.9)' }]}>{t('common.total')}</Text>
           </View>
@@ -211,7 +213,7 @@ export default function Confirmacao() {
         {/* Detalhes do pedido */}
         <View style={styles.detalheCard}>
           <Text style={styles.detalheLabel}>{t('confirmation.detail_label')}</Text>
-          <Text style={styles.detalheTexto}>{order.resumo}</Text>
+          <Text style={styles.detalheTexto}>{resumo}</Text>
         </View>
 
         {/* Aviso de notificação */}

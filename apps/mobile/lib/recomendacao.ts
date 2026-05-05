@@ -104,7 +104,7 @@ const COMBOS_ALTERNATIVOS: Record<Periodo, Combo> = {
 
 /**
  * Constroi um combo personalizado baseado no historico de pedidos recentes.
- * Usa slug dos itens resolvido via order.items[].itemId (que agora e string cuid2).
+ * Usa slug dos itens resolvido via order.itens[].itemId (string cuid2 da API).
  * Para derivar slugs, recebe a lista de items da API.
  */
 function getComboHistorico(
@@ -124,8 +124,8 @@ function getComboHistorico(
   // Contagem por itemId (string cuid2)
   const contagem = new Map<string, number>();
   for (const order of recentes) {
-    for (const ci of order.items) {
-      contagem.set(ci.itemId, (contagem.get(ci.itemId) ?? 0) + ci.quantidade);
+    for (const oi of order.itens) {
+      contagem.set(oi.itemId, (contagem.get(oi.itemId) ?? 0) + oi.quantidade);
     }
   }
 

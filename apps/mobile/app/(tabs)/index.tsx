@@ -536,7 +536,7 @@ function UltimoPedidoCard({ order, styles, onPress }: UltimoPedidoCardProps) {
       style={({ pressed }) => [styles.ultimoCard, pressed && styles.pressedSoft]}
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={`${t('orders.password_label')} ${order.senha}, ${statusLabel}, R$ ${order.total.toFixed(2)}`}
+      accessibilityLabel={`${t('orders.password_label')} ${order.senha}, ${statusLabel}, R$ ${parseFloat(order.total).toFixed(2)}`}
     >
       <View
         style={[
@@ -557,7 +557,7 @@ function UltimoPedidoCard({ order, styles, onPress }: UltimoPedidoCardProps) {
 
       <View style={styles.ultimoFooter}>
         <Text style={styles.ultimoHora}>{formatarHorario(order.criadoEm)}</Text>
-        <Text style={styles.ultimoTotal}>R$ {order.total.toFixed(2)}</Text>
+        <Text style={styles.ultimoTotal}>R$ {parseFloat(order.total).toFixed(2)}</Text>
       </View>
     </Pressable>
   );
@@ -575,14 +575,14 @@ function PedidoAtivoCard({ order, colors, styles, onPress }: PedidoAtivoCardProp
   const status = order.status === 'retirado' ? 'pronto' : order.status;
   const palette = statusPalette[status];
   const statusLabel = t(palette.labelKey);
-  const itens = order.items.reduce((acc, ci) => acc + ci.quantidade, 0);
+  const itens = order.itens.reduce((acc, oi) => acc + oi.quantidade, 0);
 
   return (
     <Pressable
       style={({ pressed }) => [styles.pedidoAtivoCard, pressed && styles.pressedSoft]}
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={`${t('home.track_order')}: ${order.senha}, ${statusLabel}`}
+      accessibilityLabel={`${t('home.track_order')}: ${order.senha}, ${statusLabel}, R$ ${parseFloat(order.total).toFixed(2)}`}
     >
       <View style={styles.pedidoAtivoTopo}>
         <View
@@ -609,7 +609,7 @@ function PedidoAtivoCard({ order, colors, styles, onPress }: PedidoAtivoCardProp
             {itens} {t(itens === 1 ? 'cart.item_singular' : 'cart.item_plural')}
           </Text>
           <Text style={styles.pedidoAtivoMetaValor}>
-            R$ {order.total.toFixed(2)}
+            R$ {parseFloat(order.total).toFixed(2)}
           </Text>
         </View>
       </View>
