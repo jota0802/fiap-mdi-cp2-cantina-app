@@ -3,6 +3,7 @@ import { cors } from 'hono/cors';
 import { secureHeaders } from 'hono/secure-headers';
 import { allowedOrigins, env } from './env.js';
 import { logger } from './lib/logger.js';
+import { errorHandler } from './middleware/error-handler.js';
 
 export function createApp() {
   const app = new Hono();
@@ -32,10 +33,7 @@ export function createApp() {
 
   app.notFound((c) => c.json({ error: { code: 'NOT_FOUND', message: 'Route not found' } }, 404));
 
-  app.onError((err, c) => {
-    logger.error({ err }, 'unhandled error');
-    return c.json({ error: { code: 'INTERNAL', message: 'Internal server error' } }, 500);
-  });
+  app.onError(errorHandler);
 
   return app;
 }
