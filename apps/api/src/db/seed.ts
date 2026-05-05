@@ -5,9 +5,11 @@ import { logger } from '../lib/logger.js';
 
 interface SeedItem {
   slug: string;
-  nameKey: string;
-  descricaoKey: string;
-  preco: string; // numeric stored as string
+  name: string; // raw display name (PT) — sempre presente
+  nameKey: string | null; // key i18n (apenas itens internacionais)
+  descricao: string; // raw display desc (PT)
+  descricaoKey: string | null; // key i18n (todos tem hoje, mas opcional pra futuro)
+  preco: string;
   categoria: 'lanches' | 'bebidas' | 'sobremesas';
   tags: string[];
   imagem: string | null;
@@ -16,13 +18,16 @@ interface SeedItem {
 const UNSPLASH_PARAMS = '?w=240&h=240&fit=crop&q=80';
 
 // Espelha apps/mobile/data/cardapio.ts. Pratos brasileiros (pao-de-queijo,
-// coxinha, brigadeiro, acai-bowl, cappuccino, croissant) nao tem nomeKey
-// dedicado no mobile, entao usamos a convencao item.<slug>.name como
-// fallback (mobile cai no nome literal quando t() nao acha a key).
+// coxinha, brigadeiro, acai-bowl, cappuccino, croissant) NAO TEM nameKey
+// dedicado no mobile (comentario no cardapio.ts: "ficam so com nome PT —
+// nao traduzem"). Mobile renderiza t(nameKey) ?? name (passthrough quando
+// nameKey nao existe).
 const SEED_ITEMS: SeedItem[] = [
   {
     slug: 'cafe-espresso',
+    name: 'Café Espresso',
     nameKey: 'item.espresso.name',
+    descricao: 'Café forte e encorpado',
     descricaoKey: 'item.espresso.desc',
     preco: '5.00',
     categoria: 'bebidas',
@@ -31,7 +36,9 @@ const SEED_ITEMS: SeedItem[] = [
   },
   {
     slug: 'cappuccino',
-    nameKey: 'item.cappuccino.name',
+    name: 'Cappuccino',
+    nameKey: null,
+    descricao: 'Com espuma cremosa',
     descricaoKey: 'item.cappuccino.desc',
     preco: '8.00',
     categoria: 'bebidas',
@@ -40,7 +47,9 @@ const SEED_ITEMS: SeedItem[] = [
   },
   {
     slug: 'suco-natural',
+    name: 'Suco Natural',
     nameKey: 'item.juice.name',
+    descricao: 'Laranja, limão ou maracujá',
     descricaoKey: 'item.juice.desc',
     preco: '7.00',
     categoria: 'bebidas',
@@ -49,7 +58,9 @@ const SEED_ITEMS: SeedItem[] = [
   },
   {
     slug: 'pao-de-queijo',
-    nameKey: 'item.paodequeijo.name',
+    name: 'Pão de Queijo',
+    nameKey: null,
+    descricao: 'Quentinho e crocante',
     descricaoKey: 'item.paodequeijo.desc',
     preco: '4.50',
     categoria: 'lanches',
@@ -58,7 +69,9 @@ const SEED_ITEMS: SeedItem[] = [
   },
   {
     slug: 'coxinha',
-    nameKey: 'item.coxinha.name',
+    name: 'Coxinha',
+    nameKey: null,
+    descricao: 'Frango com catupiry',
     descricaoKey: 'item.coxinha.desc',
     preco: '6.00',
     categoria: 'lanches',
@@ -67,7 +80,9 @@ const SEED_ITEMS: SeedItem[] = [
   },
   {
     slug: 'x-burger',
+    name: 'X-Burger',
     nameKey: 'item.burger.name',
+    descricao: 'Hambúrguer artesanal completo',
     descricaoKey: 'item.burger.desc',
     preco: '12.00',
     categoria: 'lanches',
@@ -76,7 +91,9 @@ const SEED_ITEMS: SeedItem[] = [
   },
   {
     slug: 'misto-quente',
+    name: 'Misto Quente',
     nameKey: 'item.toast.name',
+    descricao: 'Presunto e queijo na chapa',
     descricaoKey: 'item.toast.desc',
     preco: '8.50',
     categoria: 'lanches',
@@ -85,7 +102,9 @@ const SEED_ITEMS: SeedItem[] = [
   },
   {
     slug: 'acai-bowl',
-    nameKey: 'item.acai.name',
+    name: 'Açaí Bowl',
+    nameKey: null,
+    descricao: 'Com granola e banana',
     descricaoKey: 'item.acai.desc',
     preco: '15.00',
     categoria: 'sobremesas',
@@ -94,7 +113,9 @@ const SEED_ITEMS: SeedItem[] = [
   },
   {
     slug: 'brigadeiro-gourmet',
-    nameKey: 'item.brigadeiro.name',
+    name: 'Brigadeiro Gourmet',
+    nameKey: null,
+    descricao: 'Tradicional brasileiro com chocolate belga',
     descricaoKey: 'item.brigadeiro.desc',
     preco: '4.00',
     categoria: 'sobremesas',
@@ -103,7 +124,9 @@ const SEED_ITEMS: SeedItem[] = [
   },
   {
     slug: 'salada-caesar',
+    name: 'Salada Caesar',
     nameKey: 'item.caesar.name',
+    descricao: 'Folhas frescas, frango grelhado e parmesão',
     descricaoKey: 'item.caesar.desc',
     preco: '14.00',
     categoria: 'lanches',
@@ -112,7 +135,9 @@ const SEED_ITEMS: SeedItem[] = [
   },
   {
     slug: 'refrigerante-lata',
+    name: 'Refrigerante Lata',
     nameKey: 'item.soda.name',
+    descricao: 'Coca, Guaraná, Sprite ou Fanta',
     descricaoKey: 'item.soda.desc',
     preco: '5.50',
     categoria: 'bebidas',
@@ -121,7 +146,9 @@ const SEED_ITEMS: SeedItem[] = [
   },
   {
     slug: 'croissant',
-    nameKey: 'item.croissant.name',
+    name: 'Croissant',
+    nameKey: null,
+    descricao: 'Manteiga francesa, recheio de chocolate',
     descricaoKey: 'item.croissant.desc',
     preco: '7.50',
     categoria: 'lanches',

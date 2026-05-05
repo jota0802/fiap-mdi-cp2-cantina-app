@@ -20,8 +20,10 @@ export const users = pgTable('users', {
 export const items = pgTable('items', {
   id: text('id').primaryKey(),
   slug: text('slug').notNull(),
-  nameKey: text('name_key').notNull(),
-  descricaoKey: text('descricao_key').notNull(),
+  name: text('name').notNull(),
+  nameKey: text('name_key'),
+  descricao: text('descricao').notNull(),
+  descricaoKey: text('descricao_key'),
   preco: numeric('preco', { precision: 10, scale: 2 }).notNull(),
   categoria: text('categoria').notNull(),
   tags: text('tags').array().notNull().default(sql`ARRAY[]::text[]`),
