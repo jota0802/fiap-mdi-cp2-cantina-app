@@ -51,7 +51,7 @@ const TOKEN_KEY = 'auth_token';
 function publicUserToUser(pu: PublicUser): User {
   const result: User = {
     id: pu.id,
-    nome: pu.name,
+    nome: pu.name ?? '',
     email: pu.email,
     criadoEm: pu.createdAt,
   };
@@ -115,9 +115,10 @@ export function AuthProvider({ children }: ProviderProps) {
   }, []);
 
   const signUp = useCallback<AuthContextValue['signUp']>(
-    async ({ nome, email, senha }) => {
+    async ({ nome: _nome, email, senha }) => {
       try {
-        const res = await apiRegister({ name: nome.trim(), email, password: senha });
+        // nome é coletado no onboarding (PATCH /auth/me) — Fase B Task 2.
+        const res = await apiRegister({ email, password: senha });
         await setSecureItem(TOKEN_KEY, res.token);
         const u = publicUserToUser(res.user);
         setUser(u);

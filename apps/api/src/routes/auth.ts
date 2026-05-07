@@ -1,14 +1,14 @@
 import { Hono } from 'hono';
 import { eq } from 'drizzle-orm';
 import { createId } from '@paralleldrive/cuid2';
-import { RegisterSchema, LoginSchema } from '@cantina/shared';
+import { RegisterSchema, LoginSchema, UpdateMeSchema } from '@cantina/shared';
 import type { PublicUser } from '@cantina/shared';
 import { hashPassword, verifyPassword } from '../lib/password.js';
 import { signJwt } from '../lib/jwt.js';
-import { conflict, unauthorized } from '../lib/errors.js';
+import { conflict, unauthorized, notFound, badRequest } from '../lib/errors.js';
 import { requireAuth } from '../middleware/auth.js';
 import { rateLimit } from '../middleware/rate-limit.js';
-import { users } from '../db/schema.js';
+import { users, cantinas, escolas, unidades } from '../db/schema.js';
 import type { TestDb } from '../test/db.js';
 import type { DB } from '../db/client.js';
 import { validateJson } from '../lib/zod-hono.js';
@@ -26,11 +26,13 @@ function assertValidRole(role: string): ValidRole {
 function toPublicUser(u: typeof users.$inferSelect): PublicUser {
   return {
     id: u.id,
-    name: u.name ?? '',
+    name: u.name,
+    rm: u.rm,
     email: u.email,
     avatarUrl: u.avatarUrl,
     locale: u.locale,
     role: assertValidRole(u.role),
+    cantinaId: u.cantinaId,
     createdAt: u.createdAt.toISOString(),
   };
 }
@@ -44,14 +46,23 @@ export async function createAuthRoutes(db: DB | TestDb) {
   const authLimit = (scope: string) => rateLimit({ windowMs: 15 * 60 * 1000, max: 10, scope });
 
   app.post('/register', authLimit('register'), validateJson(RegisterSchema), async (c) => {
-    const { name, email, password } = c.req.valid('json');
+    const { email, password } = c.req.valid('json');
 
     const [existing] = await db.select().from(users).where(eq(users.email, email)).limit(1);
     if (existing) throw conflict('Email já cadastrado');
 
     const passwordHash = await hashPassword(password);
     const id = createId();
-    const [user] = await db.insert(users).values({ id, name, email, passwordHash, locale: 'pt' }).returning();
+    const [user] = await db.insert(users).values({
+      id,
+      email,
+      passwordHash,
+      name: null,
+      rm: null,
+      cantinaId: null,
+      role: 'customer',
+      locale: 'pt',
+    }).returning();
     if (!user) throw new Error('failed to create user');
 
     const token = await signJwt({
@@ -85,6 +96,56 @@ export async function createAuthRoutes(db: DB | TestDb) {
     const [user] = await db.select().from(users).where(eq(users.id, claim.sub)).limit(1);
     if (!user) throw unauthorized('Sessão inválida');
     return c.json({ user: toPublicUser(user) }, 200);
+  });
+
+  app.patch('/me', requireAuth, validateJson(UpdateMeSchema), async (c) => {
+    const claim = c.get('user');
+    const updates = c.req.valid('json');
+
+    const [current] = await db.select().from(users).where(eq(users.id, claim.sub)).limit(1);
+    if (!current) throw notFound('User não existe');
+
+    // Validar cantinaId quando enviado e não-null
+    if (updates.cantinaId !== undefined && updates.cantinaId !== null) {
+      const novaCantinaId = updates.cantinaId;
+
+      const [c1] = await db
+        .select({
+          cantinaId: cantinas.id,
+          ativo: cantinas.ativo,
+          unidadeId: unidades.id,
+        })
+        .from(cantinas)
+        .innerJoin(escolas, eq(cantinas.escolaId, escolas.id))
+        .innerJoin(unidades, eq(escolas.unidadeId, unidades.id))
+        .where(eq(cantinas.id, novaCantinaId))
+        .limit(1);
+      if (!c1 || !c1.ativo) throw notFound('Cantina não existe ou inativa');
+
+      if (current.cantinaId) {
+        const [c2] = await db
+          .select({ unidadeId: unidades.id })
+          .from(cantinas)
+          .innerJoin(escolas, eq(cantinas.escolaId, escolas.id))
+          .innerJoin(unidades, eq(escolas.unidadeId, unidades.id))
+          .where(eq(cantinas.id, current.cantinaId))
+          .limit(1);
+        if (c2 && c2.unidadeId !== c1.unidadeId) {
+          throw badRequest('Nova cantina deve pertencer à mesma unidade. Troque a unidade no Perfil primeiro.');
+        }
+      }
+    }
+
+    const patch: Partial<typeof users.$inferInsert> = {};
+    if (updates.name !== undefined) patch.name = updates.name;
+    if (updates.rm !== undefined) patch.rm = updates.rm;
+    if (updates.cantinaId !== undefined) patch.cantinaId = updates.cantinaId;
+    patch.updatedAt = new Date();
+
+    const [updated] = await db.update(users).set(patch).where(eq(users.id, claim.sub)).returning();
+    if (!updated) throw new Error('failed to update user');
+
+    return c.json({ user: toPublicUser(updated) }, 200);
   });
 
   return app;
