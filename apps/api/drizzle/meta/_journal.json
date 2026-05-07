@@ -15,6 +15,13 @@
       "when": 1777979097808,
       "tag": "0001_items_name_descricao_raw",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1778117782350,
+      "tag": "0002_tenants_hierarchy",
+      "breakpoints": true
     }
   ]
 }

@@ -38,17 +38,17 @@ function toPublicOrder(o: typeof orders.$inferSelect, itens: typeof orderItems.$
   };
 }
 
-async function nextSenha(db: DB | TestDb, tenantId: string | null): Promise<number> {
-  // Per-day senha reset uses UTC midnight (not tenant-local timezone). Acceptable
+async function nextSenha(db: DB | TestDb, cantinaId: string | null): Promise<number> {
+  // Per-day senha reset uses UTC midnight (not cantina-local timezone). Acceptable
   // trade-off: senhas restart ~21:00 BRT in summer / 21:00 BRT year-round, but stay
-  // unique within a UTC day. Future: derive timezone from tenantId in sub-projeto 2.
+  // unique within a UTC day. Future: derive timezone from cantinaId in Fase B.
   const now = new Date();
   const startOfDay = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
   const result = await db
     .select({ count: sql<number>`COUNT(*)` })
     .from(orders)
     .where(and(
-      tenantId ? eq(orders.tenantId, tenantId) : sql`${orders.tenantId} IS NULL`,
+      cantinaId ? eq(orders.cantinaId, cantinaId) : sql`${orders.cantinaId} IS NULL`,
       gte(orders.criadoEm, startOfDay),
     ));
   return Number(result[0]?.count ?? 0) + 1;

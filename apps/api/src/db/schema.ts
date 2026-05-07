@@ -1,5 +1,37 @@
-import { pgTable, text, integer, numeric, boolean, timestamp, primaryKey, uniqueIndex, index } from 'drizzle-orm/pg-core';
+import { pgTable, text, integer, numeric, boolean, timestamp, primaryKey, uniqueIndex, index, check } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
+
+export const unidades = pgTable('unidades', {
+  id: text('id').primaryKey(),
+  nome: text('nome').notNull(),
+  endereco: text('endereco'),
+  ativo: boolean('ativo').notNull().default(true),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const escolas = pgTable('escolas', {
+  id: text('id').primaryKey(),
+  unidadeId: text('unidade_id').notNull().references(() => unidades.id, { onDelete: 'restrict' }),
+  nome: text('nome').notNull(),
+  tipo: text('tipo'),
+  ativo: boolean('ativo').notNull().default(true),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({
+  unidadeNomeUnique: uniqueIndex('escolas_unidade_nome_unique').on(t.unidadeId, t.nome),
+  unidadeIdx: index('escolas_unidade_idx').on(t.unidadeId),
+}));
+
+export const cantinas = pgTable('cantinas', {
+  id: text('id').primaryKey(),
+  escolaId: text('escola_id').notNull().references(() => escolas.id, { onDelete: 'restrict' }),
+  nome: text('nome').notNull(),
+  andar: text('andar'),
+  ativo: boolean('ativo').notNull().default(true),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({
+  escolaNomeUnique: uniqueIndex('cantinas_escola_nome_unique').on(t.escolaId, t.nome),
+  escolaIdx: index('cantinas_escola_idx').on(t.escolaId),
+}));
 
 export const users = pgTable('users', {
   id: text('id').primaryKey(),
@@ -9,12 +41,16 @@ export const users = pgTable('users', {
   avatarUrl: text('avatar_url'),
   locale: text('locale').notNull().default('pt'),
   role: text('role').notNull().default('customer'),
-  tenantId: text('tenant_id'),
+  cantinaId: text('cantina_id').references(() => cantinas.id, { onDelete: 'restrict' }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 }, (t) => ({
   emailUnique: uniqueIndex('users_email_unique').on(t.email),
-  tenantIdx: index('users_tenant_idx').on(t.tenantId),
+  cantinaIdx: index('users_cantina_idx').on(t.cantinaId),
+  staffMustHaveCantina: check(
+    'users_staff_must_have_cantina',
+    sql`role != 'staff' OR cantina_id IS NOT NULL`,
+  ),
 }));
 
 export const items = pgTable('items', {
@@ -29,7 +65,7 @@ export const items = pgTable('items', {
   tags: text('tags').array().notNull().default(sql`ARRAY[]::text[]`),
   imagem: text('imagem'),
   disponivel: boolean('disponivel').notNull().default(true),
-  tenantId: text('tenant_id'),
+  cantinaId: text('cantina_id'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 }, (t) => ({
   slugUnique: uniqueIndex('items_slug_unique').on(t.slug),
@@ -46,12 +82,12 @@ export const orders = pgTable('orders', {
   prontoEm: timestamp('pronto_em', { withTimezone: true }),
   retiradoEm: timestamp('retirado_em', { withTimezone: true }),
   canceladoEm: timestamp('cancelado_em', { withTimezone: true }),
-  tenantId: text('tenant_id'),
+  cantinaId: text('cantina_id').references(() => cantinas.id, { onDelete: 'restrict' }),
   criadoEm: timestamp('criado_em', { withTimezone: true }).notNull().defaultNow(),
 }, (t) => ({
   userIdx: index('orders_user_idx').on(t.userId),
   statusIdx: index('orders_status_idx').on(t.status),
-  tenantDayIdx: index('orders_tenant_day_idx').on(t.tenantId, t.criadoEm),
+  cantinaDayIdx: index('orders_cantina_day_idx').on(t.cantinaId, t.criadoEm),
 }));
 
 export const orderItems = pgTable('order_items', {
@@ -69,7 +105,7 @@ export const orderItems = pgTable('order_items', {
 export const favorites = pgTable('favorites', {
   userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   itemId: text('item_id').notNull().references(() => items.id, { onDelete: 'cascade' }),
-  tenantId: text('tenant_id'),
+  cantinaId: text('cantina_id'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 }, (t) => ({
   pk: primaryKey({ columns: [t.userId, t.itemId] }),
@@ -84,3 +120,9 @@ export type NewOrder = typeof orders.$inferInsert;
 export type OrderItem = typeof orderItems.$inferSelect;
 export type NewOrderItem = typeof orderItems.$inferInsert;
 export type Favorite = typeof favorites.$inferSelect;
+export type Unidade = typeof unidades.$inferSelect;
+export type NewUnidade = typeof unidades.$inferInsert;
+export type Escola = typeof escolas.$inferSelect;
+export type NewEscola = typeof escolas.$inferInsert;
+export type Cantina = typeof cantinas.$inferSelect;
+export type NewCantina = typeof cantinas.$inferInsert;

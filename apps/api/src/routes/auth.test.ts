@@ -37,7 +37,7 @@ describe('POST /auth/register', () => {
     expect(json.user).toBeDefined();
     const userKeys = Object.keys(json.user);
     expect(userKeys).not.toContain('passwordHash'); // não vaza hash
-    expect(userKeys).not.toContain('tenantId');     // não vaza ID multi-tenant
+    expect(userKeys).not.toContain('cantinaId');    // não vaza ID multi-tenant
     expect(userKeys).not.toContain('updatedAt');    // só campos do PublicUserSchema
   });
 
