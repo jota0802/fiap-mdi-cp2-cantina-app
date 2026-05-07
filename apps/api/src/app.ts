@@ -8,6 +8,7 @@ import { createAuthRoutes } from './routes/auth.js';
 import { createItemsRoutes } from './routes/items.js';
 import { createOrdersRoutes } from './routes/orders.js';
 import { createFavoritesRoutes } from './routes/favorites.js';
+import { createTenantsRoutes } from './routes/tenants.js';
 import { getDb } from './db/client.js';
 import type { DB } from './db/client.js';
 
@@ -25,6 +26,7 @@ export async function createApp(injected?: { db?: DB }) {
 
   app.get('/api/v1/health', (c) => c.json({ status: 'ok', uptime: Math.floor(process.uptime()), version: '0.0.0', env: env.NODE_ENV }));
 
+  app.route('/api/v1/tenants', createTenantsRoutes(db));
   app.route('/api/v1/auth', await createAuthRoutes(db));
   app.route('/api/v1/items', createItemsRoutes(db));
   app.route('/api/v1/orders', createOrdersRoutes(db));
