@@ -36,6 +36,7 @@ Após Fase B, customer abre o app e vê direto o cardápio da cantina default; p
 | Items globais (catálogo base) | **Mantém `items` table como catálogo template** | Seed popula 12 items globais; `cantina_items` referencia + sobrescreve preço |
 | Cleanup Fase A | **Drop `items.cantina_id` e `favorites.cantina_id`** | Renames legados que não fazem sentido com junction. Items é catálogo, favorito é (user, item) |
 | Estoque inicial seed | **Random `[100, 350]` por linha de cantina_items** | Variedade pra teste; valores realistas pra cantina |
+| Preços iniciais seed | **Estratégia per-unidade hardcoded:** Paulista usa `items.preco` (base); Lins usa `items.preco × 0.85` (15% mais barato). **Intra-unidade: mesmo preço** (todas cantinas de Paulista têm preço idêntico entre si; idem Lins). | Match com realidade (interior costuma ser mais barato que SP capital); demonstra a capacidade per-cantina sem complicar; reproduzível |
 | `orders.cantina_id` | **Vira NOT NULL** | Toda order tem cantina; setado pelo middleware via header |
 
 ## Escopo
@@ -312,11 +313,25 @@ interface CantinaContextType {
 
 1. **12 items globais** (volta o catálogo do CP2): café, misto-quente, pão de queijo, etc. Mesmas categorias e tags.
 2. **48 rows de cantina_items** (12 items × 4 cantinas), cada uma com:
-   - `preco`: usa `items.preco` como base, varia ±10% por cantina (ex: café R$3,50 em Paulista, R$3,80 em Lins). Hardcoded no seed pra reprodutibilidade.
-   - `estoque`: `Math.floor(Math.random() * 251) + 100` — random `[100, 350]`
-   - `disponivel: true, visivel: true`
+   - **`preco`** — derivado por estratégia per-unidade. Helper interno no seed:
+     ```typescript
+     const PRICE_MULTIPLIER_BY_UNIDADE: Record<string, number> = {
+       u_paulista: 1.0,   // base (preço original do items)
+       u_lins:     0.85,  // 15% mais barato (interior)
+     };
 
-Idempotente via `onConflictDoNothing` por PK composta.
+     function precoPara(itemPreco: string, unidadeId: string): string {
+       const mult = PRICE_MULTIPLIER_BY_UNIDADE[unidadeId] ?? 1.0;
+       return (parseFloat(itemPreco) * mult).toFixed(2);
+     }
+     ```
+     Pra cada (cantina, item), busca a unidade da cantina (cantina → escola → unidade) e aplica o multiplier. **Resultado:** `c_pa_5` e `c_pa_7` têm preços idênticos entre si (mesma unidade Paulista); `c_lins_sc_1` e `c_lins_fac_1` têm preços idênticos entre si (mesma unidade Lins, mas 15% abaixo de Paulista).
+   - **`estoque`** — `Math.floor(Math.random() * 251) + 100` — random `[100, 350]` por linha
+   - **`disponivel: true, visivel: true`** — defaults; admin pode mudar via UI futura (Fase C)
+
+Idempotente via `onConflictDoNothing` por PK composta `(cantina_id, item_id)`.
+
+**Run order:** o seed insere primeiro `unidades`, `escolas`, `cantinas` (existente da Fase A), depois `items` (novo bloco), depois `cantina_items` (precisa de items + cantinas já populados).
 
 ### G. Testes
 
