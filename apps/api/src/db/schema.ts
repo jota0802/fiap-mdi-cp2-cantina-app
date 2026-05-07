@@ -35,7 +35,8 @@ export const cantinas = pgTable('cantinas', {
 
 export const users = pgTable('users', {
   id: text('id').primaryKey(),
-  name: text('name').notNull(),
+  name: text('name'),
+  rm: text('rm'),
   email: text('email').notNull(),
   passwordHash: text('password_hash').notNull(),
   avatarUrl: text('avatar_url'),
@@ -51,6 +52,14 @@ export const users = pgTable('users', {
     'users_staff_must_have_cantina',
     sql`role != 'staff' OR cantina_id IS NOT NULL`,
   ),
+  staffMustHaveName: check(
+    'users_staff_must_have_name',
+    sql`role != 'staff' OR name IS NOT NULL`,
+  ),
+  rmFormato: check(
+    'users_rm_formato',
+    sql`rm IS NULL OR rm ~ '^[0-9]{6}$'`,
+  ),
 }));
 
 export const items = pgTable('items', {
@@ -65,7 +74,6 @@ export const items = pgTable('items', {
   tags: text('tags').array().notNull().default(sql`ARRAY[]::text[]`),
   imagem: text('imagem'),
   disponivel: boolean('disponivel').notNull().default(true),
-  cantinaId: text('cantina_id'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 }, (t) => ({
   slugUnique: uniqueIndex('items_slug_unique').on(t.slug),
@@ -82,7 +90,7 @@ export const orders = pgTable('orders', {
   prontoEm: timestamp('pronto_em', { withTimezone: true }),
   retiradoEm: timestamp('retirado_em', { withTimezone: true }),
   canceladoEm: timestamp('cancelado_em', { withTimezone: true }),
-  cantinaId: text('cantina_id').references(() => cantinas.id, { onDelete: 'restrict' }),
+  cantinaId: text('cantina_id').notNull().references(() => cantinas.id, { onDelete: 'restrict' }),
   criadoEm: timestamp('criado_em', { withTimezone: true }).notNull().defaultNow(),
 }, (t) => ({
   userIdx: index('orders_user_idx').on(t.userId),
@@ -105,10 +113,23 @@ export const orderItems = pgTable('order_items', {
 export const favorites = pgTable('favorites', {
   userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   itemId: text('item_id').notNull().references(() => items.id, { onDelete: 'cascade' }),
-  cantinaId: text('cantina_id'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 }, (t) => ({
   pk: primaryKey({ columns: [t.userId, t.itemId] }),
+}));
+
+export const cantinaItems = pgTable('cantina_items', {
+  cantinaId: text('cantina_id').notNull().references(() => cantinas.id, { onDelete: 'restrict' }),
+  itemId: text('item_id').notNull().references(() => items.id, { onDelete: 'cascade' }),
+  preco: numeric('preco', { precision: 10, scale: 2 }).notNull(),
+  estoque: integer('estoque').notNull().default(0),
+  disponivel: boolean('disponivel').notNull().default(true),
+  visivel: boolean('visivel').notNull().default(true),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({
+  pk: primaryKey({ columns: [t.cantinaId, t.itemId] }),
+  cantinaIdx: index('cantina_items_cantina_idx').on(t.cantinaId),
+  estoquePositivo: check('cantina_items_estoque_positivo', sql`estoque >= 0`),
 }));
 
 export type User = typeof users.$inferSelect;
@@ -126,3 +147,5 @@ export type Escola = typeof escolas.$inferSelect;
 export type NewEscola = typeof escolas.$inferInsert;
 export type Cantina = typeof cantinas.$inferSelect;
 export type NewCantina = typeof cantinas.$inferInsert;
+export type CantinaItem = typeof cantinaItems.$inferSelect;
+export type NewCantinaItem = typeof cantinaItems.$inferInsert;

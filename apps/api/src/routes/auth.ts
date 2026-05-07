@@ -26,7 +26,7 @@ function assertValidRole(role: string): ValidRole {
 function toPublicUser(u: typeof users.$inferSelect): PublicUser {
   return {
     id: u.id,
-    name: u.name,
+    name: u.name ?? '',
     email: u.email,
     avatarUrl: u.avatarUrl,
     locale: u.locale,

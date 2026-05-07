@@ -38,7 +38,7 @@ function toPublicOrder(o: typeof orders.$inferSelect, itens: typeof orderItems.$
   };
 }
 
-async function nextSenha(db: DB | TestDb, cantinaId: string | null): Promise<number> {
+async function nextSenha(db: DB | TestDb, cantinaId: string): Promise<number> {
   // Per-day senha reset uses UTC midnight (not cantina-local timezone). Acceptable
   // trade-off: senhas restart ~21:00 BRT in summer / 21:00 BRT year-round, but stay
   // unique within a UTC day. Future: derive timezone from cantinaId in Fase B.
@@ -48,7 +48,7 @@ async function nextSenha(db: DB | TestDb, cantinaId: string | null): Promise<num
     .select({ count: sql<number>`COUNT(*)` })
     .from(orders)
     .where(and(
-      cantinaId ? eq(orders.cantinaId, cantinaId) : sql`${orders.cantinaId} IS NULL`,
+      eq(orders.cantinaId, cantinaId),
       gte(orders.criadoEm, startOfDay),
     ));
   return Number(result[0]?.count ?? 0) + 1;
@@ -119,11 +119,14 @@ export function createOrdersRoutes(db: DB | TestDb) {
     const estimadoSec = calcularEstimativa(pendingCount);
     const prontoEmEstimado = new Date(Date.now() + estimadoSec * 1000);
 
-    const senha = await nextSenha(db, null);
+    // TODO(Task 2): validate cantinaId via tenant-context middleware; reject if missing
+    const cantinaId = c.req.header('x-cantina-id') ?? 'unknown';
+    const senha = await nextSenha(db, cantinaId);
 
     await db.insert(orders).values({
       id: orderId,
       userId: claim.sub,
+      cantinaId,
       status: 'pendente',
       total: total.toFixed(2),
       senha,

@@ -22,6 +22,13 @@
       "when": 1778117782350,
       "tag": "0002_tenants_hierarchy",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1778161450579,
+      "tag": "0003_cardapio_per_cantina",
+      "breakpoints": true
     }
   ]
 }

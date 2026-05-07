@@ -4,15 +4,17 @@ import { tickOnce } from './promote-orders.js';
 import { orders } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
 import { createId } from '@paralleldrive/cuid2';
-import { createTestUser } from '../test/fixtures.js';
+import { createTestUser, createTestTenants } from '../test/fixtures.js';
 
-let testDb: TestDb; let close: () => Promise<void>; let userId: string;
+let testDb: TestDb; let close: () => Promise<void>; let userId: string; let cantinaId: string;
 
 beforeEach(async () => {
   const f = await createTestDb();
   testDb = f.db; close = f.close;
   const u = await createTestUser(testDb);
   userId = u.user.id;
+  const tenants = await createTestTenants(testDb);
+  cantinaId = tenants.cantinaId;
 });
 
 afterEach(async () => { await close(); });
@@ -23,6 +25,7 @@ async function insertOrder(prontoEmEstimadoOffsetMs: number): Promise<string> {
   await testDb.insert(orders).values({
     id,
     userId,
+    cantinaId,
     status: 'pendente',
     total: '10.00',
     senha: 1,
