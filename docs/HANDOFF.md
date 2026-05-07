@@ -8,33 +8,36 @@
 - **Pasta local:** `/Users/johnny/Downloads/cp-mobile/fiap-mdi-cp2-cantina-app/`
 - **Repo:** [github.com/jota0802/fiap-mdi-cp2-cantina-app](https://github.com/jota0802/fiap-mdi-cp2-cantina-app)
 - **Stack:** monorepo pnpm — `apps/api` (Hono + Drizzle + Postgres/Neon) + `apps/mobile` (Expo SDK 55 + RN + TanStack Query) + `packages/shared` (Zod).
-- **Status (2026-05-06):** Foundation 100% mergeado em main. Hardening de segurança aplicado (JWT_SECRET rotacionado, rate limit, SSL explícito, role check defensivo, 401 interceptor). **Mobile-only adotado** (sem build web — vetor XSS de localStorage eliminado). **Sub-projeto 2 / Fase A planejada** — spec aprovado + plano detalhado prontos pra execução (ver "🚀 Próxima ação" abaixo).
+- **Status (2026-05-07):** Foundation 100% mergeado em main. Hardening de segurança aplicado. Mobile-only adotado. **Sub-projeto 2 / Fase A entregue** — hierarquia de tenants (unidades/escolas/cantinas) populada no Neon, JWT staff carrega `cantinaId`, middleware `tenant-context` criado (não aplicado ainda), CLI `create-staff` com proteções, `db:reset` com confirmação interativa em prod. Pronto pra Fase B (estoque + cardápio per-cantina).
 
-## 🚀 Próxima ação — executar Fase A do Sub-projeto 2
+## 🏢 Hierarquia de tenants (Fase A entregue 2026-05-07)
 
-**Status:** spec aprovado + plano detalhado COMMITADOS, **execução pendente**.
+Estrutura institucional populada via `pnpm api:db:seed` (no Neon e no pglite local):
 
-- **Spec:** [`docs/superpowers/specs/2026-05-06-tenants-hierarchy-fase-a-design.md`](./superpowers/specs/2026-05-06-tenants-hierarchy-fase-a-design.md) (commit `a2e9b08`)
-- **Plano:** [`docs/superpowers/plans/2026-05-06-tenants-hierarchy-fase-a-plan.md`](./superpowers/plans/2026-05-06-tenants-hierarchy-fase-a-plan.md) (commit `5a687ff`)
+- **2 unidades:** Paulista, Lins
+- **3 escolas:** FIAP Paulista (main), FIAP School (Lins), FIAP Faculdade (Lins)
+- **6 cantinas:** `c_pa_5`, `c_pa_7`, `c_lins_sc_1`, `c_lins_sc_2`, `c_lins_fac_1`, `c_lins_fac_2`
 
-**Como executar (decisão explícita do user):** invocar `superpowers:subagent-driven-development` apontando pro plano. 7 tasks, 6 commits novos previstos. Cada task = 1 subagente fresco; review entre tasks; commit ao final de cada task. Tasks em ordem estrita (não paralelizar).
+**Endpoint público:** `GET /api/v1/tenants/tree` (cache 1h) retorna a árvore filtrada por `ativo=true` e ordenada (unidades por nome, cantinas por andar com `NULLS LAST`).
 
-**O que a Fase A entrega:** tabelas `unidades`/`escolas`/`cantinas`, JWT staff com `cantinaId`, middleware `tenant-context.ts` (criado mas **não aplicado** nas rotas — fica pra Fase B), endpoint público `GET /api/v1/tenants/tree`, CLI `pnpm api:create-staff`, proteção interativa em `db:reset`, reset+migrate+seed do Neon.
+**Pra Fase B usar:**
 
-**NÃO brainstormar de novo.** Design fechado, todas as alternativas consideradas. Se aparecer decisão genuinamente nova durante execução, perguntar ao user.
+- Tabelas `unidades`, `escolas`, `cantinas` populadas no Neon (validado via curl em 2026-05-07)
+- [`apps/api/src/middleware/tenant-context.ts`](../apps/api/src/middleware/tenant-context.ts) criado e testado, pronto pra ser aplicado nas rotas que viram per-cantina (items, orders, favorites). Reads `X-Cantina-Id`, valida cantina ativa, faz role check (staff só vê própria cantina), popula `c.var.cantina`.
+- JWT de staff já carrega `cantinaId` — middleware valida automaticamente. Customer JWT continua sem o campo.
+- CLI `pnpm api:create-staff --cantina=<id> --email=<...> --name="<...>"` disponível pra criar operadores quando Fase C ativar tela admin. Gera senha argon2 hashada, mostra plaintext UMA vez no stdout. Em prod: prompt "criar staff em prod".
+- Schema de `users` tem `cantina_id` + CHECK constraint `users_staff_must_have_cantina` forçando staff a ter cantina (validado em pglite via teste).
+- Helpers `apps/api/src/scripts/_safety.ts` reutilizáveis: `isProductionTarget` (com short-circuit em `USE_PGLITE=true`), `confirmInProd`, `gerarSenhaForte`. Próximos scripts destrutivos herdam o mesmo padrão.
+- `db:reset` pede confirmação `apagar tudo em prod` no Neon. Também dropa o schema `drizzle` (tracker de migrations) — sem isso o migrator pulava 0000/0001 num banco recém-resetado.
 
-**Após Fase A completa:** parar e aguardar user pedir Fase B (decomposição em 4 brainstorms separados foi escolha explícita do user).
+**Tests:** 63/63 (8 novos vs 35 originais: 2 jwt, 1 auth, 8 middleware+CHECK, 6 tenants/tree, 11 _safety). Mobile 22/22 inalterado.
 
-**Decisões-chave da sessão de brainstorm** (resumo pra contexto):
+**Spec:** [`docs/superpowers/specs/2026-05-06-tenants-hierarchy-fase-a-design.md`](./superpowers/specs/2026-05-06-tenants-hierarchy-fase-a-design.md)
+**Plano:** [`docs/superpowers/plans/2026-05-06-tenants-hierarchy-fase-a-plan.md`](./superpowers/plans/2026-05-06-tenants-hierarchy-fase-a-plan.md)
 
-- Modelo: 3 tabelas separadas (não recursive CTE) — profundidade fixa
-- Cliente sem vínculo fixo (escolhe cantina cada vez no app, lembra última)
-- Tenant resolution via header `X-Cantina-Id` + middleware validador (defesa em profundidade)
-- Roles mínimos (`customer` + `staff`); admin via CLI/Neon Studio
-- CLI seed sem usuários hardcoded; CLI separado `create-staff` gera senha aleatória mostrada uma vez
-- Detecção de prod por URL (`.neon.tech`/`.aws.`) ou `NODE_ENV=production` + frase exata interativa
-- Banco Neon será resetado (tem só dados de teste)
-- Middleware tenant-context **não** aplicado nas rotas existentes — fica pra Fase B junto com cardápio per-cantina (evita quebrar mobile que ainda não envia header)
+## 🚀 Próxima ação — Fase B (Sub-projeto 2)
+
+Quando o user pedir, abrir brainstorm separado pra **Fase B** (escopo: estoque + cardápio per-cantina + "ver geral" via junction `cantina_items`). Decomposição em 4 brainstorms separados foi escolha explícita do user — honrar isso.
 
 ## 🚀 Distribuição
 

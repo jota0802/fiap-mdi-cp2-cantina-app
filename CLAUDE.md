@@ -39,6 +39,9 @@ pnpm mobile:android       # primeira vez ou após mudança nativa
 # Build APK pra distribuir (precisa Android Studio + JDK 17 + EAS CLI)
 pnpm mobile:build:apk     # gera apps/mobile/build-XXX.apk
 
+# Criar staff por cantina (gera senha aleatória, mostra uma vez)
+pnpm api:create-staff --cantina=<id> --email=<email> --name="<nome>"
+
 # Adicionar dep Expo (NUNCA npm install direto)
 pnpm --filter @cantina/mobile exec npx expo install <pkg>
 ```
@@ -60,6 +63,7 @@ PowerShell equivalente: trocar `$env:VAR=...` por valores no `.env`. Setup compl
 9. **`Pressable` em vez de `TouchableOpacity`** quando precisar de feedback visual avançado.
 10. **Cart é isolado por usuário** (sufixo `:{userId}`) — apenas dados locais (Cart, Favorites no AsyncStorage). Dados server-side (orders, items) usam a API.
 11. **Mobile-only — sem `Platform.OS === 'web'`.** App não tem mais bundle web (decisão 2026-05-06 por segurança: localStorage do navegador era vetor de XSS pro JWT). Testar sempre em emulador Android ou device físico, nunca em navegador. Ao adicionar feature/lib nova, verificar que funciona em RN nativo. Detalhes: [`docs/MOBILE-DEPLOY.md`](./docs/MOBILE-DEPLOY.md).
+12. **Tenants são hierárquicos: `unidades` → `escolas` → `cantinas`** (3 tabelas separadas, FKs explícitas, nomes em PT). Cliente sem vínculo fixo (escolhe cada vez). Staff vinculado a UMA cantina (`users.cantina_id NOT NULL` quando role=staff, validado por CHECK constraint). API recebe contexto via header `X-Cantina-Id` (middleware [`apps/api/src/middleware/tenant-context.ts`](./apps/api/src/middleware/tenant-context.ts) — ainda não aplicado em items/orders/favorites; vem na Fase B). Endpoint público `GET /api/v1/tenants/tree` retorna a árvore completa com cache 1h. Scripts destrutivos (`db:reset`, `create-staff`) detectam prod via [`apps/api/src/scripts/_safety.ts`](./apps/api/src/scripts/_safety.ts) e exigem frase exata por TTY.
 
 ## Commits
 
@@ -127,6 +131,8 @@ docs/
 ## Próximos passos
 
 1. **Build APK preview e validar** — `pnpm mobile:build:apk` + instalar no celular Android (ver `docs/MOBILE-DEPLOY.md`).
-2. **Brainstorm sub-projeto 2 (Cantina admin)** — spec via `superpowers:brainstorming`.
-3. **Brainstorm sub-projeto 3 (Customer flows v2)** — calendário, Stripe, kitchen-flow.
-4. **Quando user pedir:** ativar EAS Update + Expo Go (passos secos em `docs/MOBILE-DEPLOY.md`).
+2. **Fase B do sub-projeto 2** — estoque + cardápio por cantina + "ver geral" (junction `cantina_items`). Brainstorm separado.
+3. **Fase C** — vitrine on/off + role staff aplicado nas rotas + `markRetirado`. Brainstorm separado.
+4. **Fase D** — fornecedores + housekeeping (`PATCH /auth/me`, reset-password, contador `senha`). Brainstorm separado.
+5. **Brainstorm sub-projeto 3 (Customer flows v2)** — calendário, Stripe, kitchen-flow.
+6. **Quando user pedir:** ativar EAS Update + Expo Go (passos secos em `docs/MOBILE-DEPLOY.md`).
