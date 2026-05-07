@@ -44,10 +44,14 @@ describe('GET /api/v1/tenants/tree', () => {
 
     const res = await app.request('/api/v1/tenants/tree');
     expect(res.status).toBe(200);
-    const json = await res.json() as { unidades: Array<{ id: string; escolas: Array<{ cantinas: unknown[] }> }> };
+    const json = await res.json() as { unidades: Array<{ id: string; escolas: Array<{ id: string; cantinas: Array<{ id: string }> }> }> };
     expect(json.unidades).toHaveLength(2);
+    expect(json.unidades[0]?.id).toBe('u1');
+    expect(json.unidades[0]?.escolas[0]?.id).toBe('e1');
     expect(json.unidades[0]?.escolas[0]?.cantinas).toHaveLength(2);
+    expect(json.unidades[0]?.escolas[0]?.cantinas.map((c) => c.id).sort()).toEqual(['c1', 'c2']);
     expect(json.unidades[1]?.escolas[0]?.cantinas).toHaveLength(1);
+    expect(json.unidades[1]?.escolas[0]?.cantinas[0]?.id).toBe('c3');
   });
 
   it('exclui unidades inativas', async () => {

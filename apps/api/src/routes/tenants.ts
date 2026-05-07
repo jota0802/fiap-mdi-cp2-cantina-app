@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { eq, asc } from 'drizzle-orm';
+import { eq, asc, sql } from 'drizzle-orm';
 import { unidades, escolas, cantinas } from '../db/schema.js';
 import type { TenantTree } from '@cantina/shared';
 import type { DB } from '../db/client.js';
@@ -17,7 +17,7 @@ export function createTenantsRoutes(db: DB | TestDb) {
       .orderBy(asc(escolas.nome));
     const cs = await db.select().from(cantinas)
       .where(eq(cantinas.ativo, true))
-      .orderBy(asc(cantinas.andar));
+      .orderBy(sql`${cantinas.andar} ASC NULLS LAST`, asc(cantinas.nome));
 
     const tree: TenantTree = {
       unidades: us.map((u) => ({
