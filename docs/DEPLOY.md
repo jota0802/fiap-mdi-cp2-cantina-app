@@ -1,5 +1,7 @@
 # Deploy — Neon + Render (manual provisioning)
 
+📱 Pra deploy do app mobile (APK Android via EAS Build), ver [`MOBILE-DEPLOY.md`](./MOBILE-DEPLOY.md). Este arquivo cobre só o backend.
+
 > Executar quando estiver pronto pra subir o backend pela primeira vez.
 > O `render.yaml` na raiz do repo automatiza a maior parte; só falta provisionar Neon + setar secrets.
 

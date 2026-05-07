@@ -1,13 +1,14 @@
 # Cantina FIAP — monorepo cliente-servidor (Expo + Hono + Postgres)
 
-Aplicativo mobile para pedidos na cantina da FIAP, evoluído para monorepo pnpm com backend próprio.
+📱 **App mobile (Android via Expo, sem build web)** para pedidos na cantina da FIAP, com backend Hono + Postgres em monorepo pnpm.
 
 ---
 
 ## Status atual
 
-**Foundation concluído** — 37+ commits no branch `feat/foundation` desde a entrega do CP2.
-Deploy ainda manual (aguarda provisioning Neon + Render — ver `docs/DEPLOY.md`).
+**Foundation concluído + hardening de segurança + decisão mobile-only adotada (2026-05-06).**
+
+Backend rodando em produção no Render (Postgres no Neon). App distribuído via APK Android local — ver [`docs/MOBILE-DEPLOY.md`](./docs/MOBILE-DEPLOY.md).
 
 ---
 
@@ -18,37 +19,33 @@ Monorepo pnpm com 3 workspaces:
 | Package | Tecnologia | Responsabilidade |
 | --- | --- | --- |
 | `apps/api` | Hono 4 · Drizzle ORM · Postgres/pglite | API REST + auth + jobs |
-| `apps/mobile` | Expo SDK 55 · React Native 0.83 · TanStack Query v5 | App iOS/Android/web |
+| `apps/mobile` | Expo SDK 55 · React Native 0.83 · TanStack Query v5 | App Android (iOS opcional) |
 | `packages/shared` | Zod | Schemas de validação + tipos compartilhados |
 
 ---
 
 ## Como rodar (dev)
 
-```powershell
+```bash
 pnpm install
 
-# API local (pglite — sem Postgres real)
-$env:USE_PGLITE="true"; $env:JWT_SECRET="local-dev-secret-min-32-chars-please-rotate"
+# Configura .env (ver apps/api/.env.example) com JWT_SECRET e DATABASE_URL ou USE_PGLITE=true
 pnpm --filter @cantina/api db:migrate
 pnpm --filter @cantina/api db:seed
-pnpm --filter @cantina/api dev    # http://localhost:8787
+pnpm dev                          # API + Metro juntos
 
-# Mobile (em outro terminal)
-pnpm --filter @cantina/mobile start
+# Em outro terminal — abre app no emulador Android
+emulator -avd <nome_avd>          # precisa Android Studio + AVD criado
+pnpm mobile:android               # primeira vez ou após mudança nativa
 ```
 
-Ou, para subir os dois juntos:
-
-```powershell
-pnpm dev
-```
+Ver guia completo em [`docs/MOBILE-DEPLOY.md`](./docs/MOBILE-DEPLOY.md) (Android Studio, JDK 17, EAS CLI, etc).
 
 ---
 
 ## Verificar
 
-```powershell
+```bash
 pnpm -r typecheck    # TypeScript strict nos 3 workspaces
 pnpm -r test         # todos os testes (vitest + Node)
 pnpm audit:run       # pipeline de auditoria (commit stats, stale strings, ROADMAP cross-ref)
@@ -58,7 +55,8 @@ pnpm audit:run       # pipeline de auditoria (commit stats, stale strings, ROADM
 
 ## Deploy
 
-Ver [`docs/DEPLOY.md`](./docs/DEPLOY.md) — Neon (Postgres) + Render (API), passo a passo manual.
+- **Backend:** [`docs/DEPLOY.md`](./docs/DEPLOY.md) — Neon (Postgres) + Render (API)
+- **Mobile (APK Android):** [`docs/MOBILE-DEPLOY.md`](./docs/MOBILE-DEPLOY.md) — EAS Build local + Android Studio
 
 ---
 

@@ -4,42 +4,46 @@
 
 **CP2 (Checkpoint 2)** da matéria Mobile Development & IoT da FIAP — aplicativo Expo + TypeScript de pedidos da cantina.
 
-**Status:** CP2 entregue. Foundation (sub-projeto 1) **concluído** — monorepo pnpm + Hono + Neon + dark mode premium + pipeline de auditoria. Em fase de portfolio, próximo passo: deploy manual + sub-projeto 2.
+**Status:** CP2 entregue. Foundation (sub-projeto 1) **concluído** + hardening de segurança aplicado + **mobile-only adotado em 2026-05-06** (sem build web). Em fase de portfolio.
 
 Decomposição completa (3 sub-projetos sequenciais):
 
-1. **Foundation** ← CONCLUÍDO (37+ commits, branch `feat/foundation`)
+1. **Foundation** ← CONCLUÍDO (37+ commits, branch `feat/foundation`, mergeado em main)
 2. **Cantina admin** (multi-tenant, estoque, fornecedores, vitrine on/off)
 3. **Customer flows v2** (calendário, filtros, kitchen-flow, validação retirada, recorrentes, Stripe)
 
 📖 **Antes de qualquer ação no projeto, ler:**
 
 - [docs/superpowers/specs/2026-05-05-foundation-design.md](./docs/superpowers/specs/2026-05-05-foundation-design.md) — spec do Foundation
+- [docs/superpowers/specs/2026-05-06-mobile-only-distribution-design.md](./docs/superpowers/specs/2026-05-06-mobile-only-distribution-design.md) — spec mobile-only + distribuição APK
 - [docs/ROADMAP.md](./docs/ROADMAP.md) — backlog histórico + status Foundation
-- [docs/DEPLOY.md](./docs/DEPLOY.md) — guia de deploy Neon + Render
+- [docs/DEPLOY.md](./docs/DEPLOY.md) — backend (Neon + Render)
+- [docs/MOBILE-DEPLOY.md](./docs/MOBILE-DEPLOY.md) — mobile (APK Android via EAS Build local)
 
 ## Comandos críticos
 
-```powershell
+```bash
 pnpm -r typecheck         # TypeScript strict nos 3 workspaces (deve sair com exit 0)
 pnpm -r test              # todos os testes (vitest + Node)
 pnpm audit:run            # pipeline de auditoria (4 scripts)
 
-# API local (pglite — sem Postgres real)
-$env:USE_PGLITE="true"; $env:JWT_SECRET="local-dev-secret-min-32-chars-please-rotate"
+# Setup .env (apps/api/.env) com USE_PGLITE=true ou DATABASE_URL+sslmode
 pnpm --filter @cantina/api db:migrate
 pnpm --filter @cantina/api db:seed
-pnpm --filter @cantina/api dev          # http://localhost:8787
+pnpm dev                  # API + Metro juntos (concurrently)
 
-# Mobile (em outro terminal)
-pnpm --filter @cantina/mobile start
+# Dev mobile no emulador Android
+emulator -avd <nome_avd>  # roda emulador headless (sem Android Studio aberto)
+pnpm mobile:android       # primeira vez ou após mudança nativa
 
-# Ou ambos juntos
-pnpm dev
+# Build APK pra distribuir (precisa Android Studio + JDK 17 + EAS CLI)
+pnpm mobile:build:apk     # gera apps/mobile/build-XXX.apk
 
 # Adicionar dep Expo (NUNCA npm install direto)
 pnpm --filter @cantina/mobile exec npx expo install <pkg>
 ```
+
+PowerShell equivalente: trocar `$env:VAR=...` por valores no `.env`. Setup completo do mobile em [docs/MOBILE-DEPLOY.md](./docs/MOBILE-DEPLOY.md).
 
 **Roda typecheck + test antes de cada commit.** Se algum quebrar, conserta antes de seguir.
 
@@ -55,6 +59,7 @@ pnpm --filter @cantina/mobile exec npx expo install <pkg>
 8. **`useSafeAreaInsets()`** nos headers (notch/Dynamic Island).
 9. **`Pressable` em vez de `TouchableOpacity`** quando precisar de feedback visual avançado.
 10. **Cart é isolado por usuário** (sufixo `:{userId}`) — apenas dados locais (Cart, Favorites no AsyncStorage). Dados server-side (orders, items) usam a API.
+11. **Mobile-only — sem `Platform.OS === 'web'`.** App não tem mais bundle web (decisão 2026-05-06 por segurança: localStorage do navegador era vetor de XSS pro JWT). Testar sempre em emulador Android ou device físico, nunca em navegador. Ao adicionar feature/lib nova, verificar que funciona em RN nativo. Detalhes: [`docs/MOBILE-DEPLOY.md`](./docs/MOBILE-DEPLOY.md).
 
 ## Commits
 
@@ -72,14 +77,15 @@ pnpm --filter @cantina/mobile exec npx expo install <pkg>
 
 ## Pegadinhas
 
-- **Plataforma: Windows + PowerShell.** Use sintaxe PS (`$null` não `/dev/null`, `$env:VAR` não `$VAR`, `\` em paths). Bash do Git/WSL disponível mas evita misturar.
+- **Plataforma:** Mac/zsh ou Windows/PowerShell. Use sintaxe da sua shell. `cd` não persiste entre comandos Bash — sempre caminho absoluto ou use Edit/Write/Read direto.
 - **Path com parêntese** (`(auth)`, `(tabs)`) precisa de aspas em comando de shell: `"app/(tabs)/x.tsx"` ou escape `app/\(tabs\)/x.tsx`.
-- **`cd` não persiste entre comandos Bash** — sempre prefixar caminho absoluto ou usar Edit/Write/Read direto.
-- **SecureStore não funciona no web** — fallback automático pro AsyncStorage com prefix `__secure__:` ([lib/secure-store.ts](./lib/secure-store.ts)).
-- **Notifications no Expo Go iOS** pedem permissão na hora. Simulador iOS pode não disparar agendadas — testar em device real.
-- **Background `expo start` não imprime QR** (sem TTY). Use `--tunnel` + `curl http://localhost:4040/api/tunnels`.
-- **Emulador Android não enxerga `localhost`** do host — usar `10.0.2.2:8787` em `EXPO_PUBLIC_API_URL` no Android (`.env.development`).
+- **EAS Build local** exige Android Studio + JDK 17 + `ANDROID_HOME`/`JAVA_HOME` setados. Detalhes em [docs/MOBILE-DEPLOY.md](./docs/MOBILE-DEPLOY.md).
+- **Mac com pouca RAM:** rodar emulador Android headless via CLI (`emulator -avd <nome>`) em vez de Android Studio aberto — economiza ~3GB de RAM.
+- **Notifications no iOS Simulator** podem não disparar agendadas — testar em device real.
+- **Emulador Android não enxerga `localhost`** do host — usar `10.0.2.2:8787` em `EXPO_PUBLIC_API_URL` em dev.
 - **`EXPO_PUBLIC_*` é baked-in no bundle** no build time — trocar API URL exige rebuild via EAS profile.
+- **APK distribuído aponta sempre pro Render** ([apps/mobile/eas.json](./apps/mobile/eas.json)) — primeira request depois de hibernar (free tier) demora ~30s.
+- **`ALLOWED_ORIGINS` em prod** precisa de placeholder não-vazio (mobile native não usa CORS, mas o validator do `env.ts` faz fail-fast). Ver [docs/MOBILE-DEPLOY.md](./docs/MOBILE-DEPLOY.md#allowed_origins-em-prod-com-placeholder).
 
 ## Stack
 
@@ -120,7 +126,7 @@ docs/
 
 ## Próximos passos
 
-1. **Deploy manual** — seguir `docs/DEPLOY.md` (provisionar Neon + Render, setar secrets).
-2. **Merge `feat/foundation` → `main`** após smoke test do deploy.
-3. **Brainstorm sub-projeto 2 (Cantina admin)** — spec via `superpowers:brainstorming`.
-4. **Brainstorm sub-projeto 3 (Customer flows v2)** — calendário, Stripe, kitchen-flow.
+1. **Build APK preview e validar** — `pnpm mobile:build:apk` + instalar no celular Android (ver `docs/MOBILE-DEPLOY.md`).
+2. **Brainstorm sub-projeto 2 (Cantina admin)** — spec via `superpowers:brainstorming`.
+3. **Brainstorm sub-projeto 3 (Customer flows v2)** — calendário, Stripe, kitchen-flow.
+4. **Quando user pedir:** ativar EAS Update + Expo Go (passos secos em `docs/MOBILE-DEPLOY.md`).

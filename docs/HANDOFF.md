@@ -4,11 +4,18 @@
 
 ## 🎯 Contexto rápido
 
-- **Projeto:** App Cantina FIAP — CP2 (Checkpoint 2) da matéria Mobile Development & IoT (FIAP, ES, 3º ano).
-- **Operação:** evolução direta do CP1 (`fiap-mdi-cp1-cantina-app`) com auth, persistência funcional, Context API, validação inline e diferenciais.
-- **Pasta local:** `/Users/johnny/Downloads/cp-mobile/app-cantina/`
-- **Stack:** Expo SDK 55 · TypeScript strict · Expo Router 55 · 4 Contexts (Theme/Auth/Cart/Orders) · AsyncStorage + SecureStore + Notifications + ImagePicker + Haptics
-- **Status:** funcional ponta a ponta. CP2 já atende todos os requisitos obrigatórios + 6 diferenciais + 1 bônus.
+- **Projeto:** App Cantina FIAP — CP2 entregue, agora portfolio. Mobile Development & IoT (FIAP, ES, 3º ano).
+- **Pasta local:** `/Users/johnny/Downloads/cp-mobile/fiap-mdi-cp2-cantina-app/`
+- **Repo:** [github.com/jota0802/fiap-mdi-cp2-cantina-app](https://github.com/jota0802/fiap-mdi-cp2-cantina-app)
+- **Stack:** monorepo pnpm — `apps/api` (Hono + Drizzle + Postgres/Neon) + `apps/mobile` (Expo SDK 55 + RN + TanStack Query) + `packages/shared` (Zod).
+- **Status (2026-05-06):** Foundation 100% mergeado em main. Hardening de segurança aplicado (JWT_SECRET rotacionado, rate limit, SSL explícito, role check defensivo, 401 interceptor). **Mobile-only adotado** (sem build web — vetor XSS de localStorage eliminado).
+
+## 🚀 Distribuição
+
+- **Backend:** Render (cantina-api.onrender.com) + Neon Postgres. Setup em [`docs/DEPLOY.md`](./DEPLOY.md).
+- **Mobile:** APK Android via EAS Build local. Setup em [`docs/MOBILE-DEPLOY.md`](./MOBILE-DEPLOY.md).
+- **APK aponta sempre pro Render** ([`apps/mobile/eas.json`](../apps/mobile/eas.json)) — funciona em qualquer rede.
+- **Futuro (quando user pedir):** EAS Update + Expo Go — passos secos no MOBILE-DEPLOY.md sob "📌 Quando ativar".
 
 ## 📂 Estrutura
 
@@ -40,20 +47,26 @@ app-cantina/
 ## 🚀 Comandos essenciais
 
 ```bash
-cd /Users/johnny/Downloads/cp-mobile/app-cantina
+cd /Users/johnny/Downloads/cp-mobile/fiap-mdi-cp2-cantina-app
 
-# Validar que está tudo verde antes de tocar em qualquer coisa:
-npx tsc --noEmit          # TypeScript strict (deve sair com exit 0)
-npm test                  # 26 testes Node (validation + hash + cart)
-npx expo-doctor           # Config Expo (deve dar 18/18)
+# Validar baseline:
+pnpm -r typecheck         # TypeScript strict nos 3 workspaces
+pnpm -r test              # todos os testes (vitest API + Node mobile)
+pnpm audit:run            # pipeline de auditoria
 
-# Rodar o app:
-npx expo start            # Dev server, escaneia QR no Expo Go
-npx expo start --tunnel   # Acesso de qualquer rede (precisa @expo/ngrok global)
-npx expo start --web      # Bundle web no http://localhost:8081
+# Dev (API + Metro juntos):
+pnpm dev
 
-# Testar bundle de produção:
-npx expo export --platform web --output-dir /tmp/test-export
+# Mobile no emulador Android (precisa AVD criado no Android Studio):
+emulator -avd <nome_avd>
+pnpm mobile:android
+
+# Build APK pra distribuir (precisa Android Studio + JDK 17 + EAS CLI):
+pnpm mobile:build:apk     # gera apps/mobile/build-XXX.apk
+pnpm mobile:build:aab     # variante: AAB pra Play Store
+
+# Setup completo do mobile (Android Studio, JDK, EAS):
+# ver docs/MOBILE-DEPLOY.md
 ```
 
 ## 👥 Integrantes do grupo (autores Git)
