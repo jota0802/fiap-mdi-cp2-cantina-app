@@ -3,9 +3,16 @@ import { isProductionTarget, gerarSenhaForte } from './_safety.js';
 
 describe('isProductionTarget', () => {
   const originalNodeEnv = process.env.NODE_ENV;
+  const originalUsePglite = process.env.USE_PGLITE;
 
-  beforeEach(() => { delete process.env.NODE_ENV; });
-  afterEach(() => { if (originalNodeEnv) process.env.NODE_ENV = originalNodeEnv; });
+  beforeEach(() => {
+    delete process.env.NODE_ENV;
+    delete process.env.USE_PGLITE;
+  });
+  afterEach(() => {
+    if (originalNodeEnv) process.env.NODE_ENV = originalNodeEnv; else delete process.env.NODE_ENV;
+    if (originalUsePglite) process.env.USE_PGLITE = originalUsePglite; else delete process.env.USE_PGLITE;
+  });
 
   it('retorna true quando NODE_ENV=production (independente de URL)', () => {
     process.env.NODE_ENV = 'production';
@@ -32,6 +39,13 @@ describe('isProductionTarget', () => {
 
   it('retorna false pra URL vazia', () => {
     expect(isProductionTarget('')).toBe(false);
+  });
+
+  it('retorna false quando USE_PGLITE=true mesmo com URL prod ou NODE_ENV=production', () => {
+    process.env.USE_PGLITE = 'true';
+    expect(isProductionTarget('postgresql://x:y@ep-foo.neon.tech/db')).toBe(false);
+    process.env.NODE_ENV = 'production';
+    expect(isProductionTarget('postgresql://x:y@ep-foo.neon.tech/db')).toBe(false);
   });
 });
 

@@ -3,10 +3,14 @@ import { createInterface } from 'node:readline/promises';
 import { stdin as input, stdout as output } from 'node:process';
 
 /**
- * Detecta se DATABASE_URL aponta pra ambiente de produção.
- * Heurística: presença de '.neon.tech', '.aws.', ou NODE_ENV=production.
+ * Detecta se a operação atual vai tocar produção.
+ * Heurística: NODE_ENV=production, ou URL contendo '.neon.tech' / '.aws.'.
+ * Curto-circuito quando USE_PGLITE=true: nesse modo createDb() ignora
+ * DATABASE_URL e escreve em pglite local — mesmo que a URL pareça prod, o
+ * write fisicamente não chega lá.
  */
 export function isProductionTarget(databaseUrl: string | undefined): boolean {
+  if (process.env.USE_PGLITE === 'true') return false;
   if (process.env.NODE_ENV === 'production') return true;
   if (!databaseUrl) return false;
   return databaseUrl.includes('.neon.tech') || databaseUrl.includes('.aws.');

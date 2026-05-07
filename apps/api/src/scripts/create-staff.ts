@@ -68,9 +68,8 @@ async function main() {
     process.exit(1);
   }
 
-  // 3. Confirmação interativa em prod (pula se USE_PGLITE — banco local, não pode ser prod)
-  const usingPglite = process.env.USE_PGLITE === 'true';
-  if (!usingPglite && isProductionTarget(process.env.DATABASE_URL)) {
+  // 3. Confirmação interativa em prod (isProductionTarget já curto-circuita em USE_PGLITE)
+  if (isProductionTarget(process.env.DATABASE_URL)) {
     const message = `\n⚠️  ATENÇÃO: você vai criar staff em PRODUÇÃO.\n` +
       `   Banco:    ${process.env.DATABASE_URL?.replace(/:[^@]+@/, ':****@')}\n` +
       `   Cantina:  ${row.cantinaNome} (${row.escolaNome}, ${row.unidadeNome})\n` +
