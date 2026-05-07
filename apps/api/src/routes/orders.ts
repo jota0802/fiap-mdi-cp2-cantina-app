@@ -1,10 +1,11 @@
 import { Hono } from 'hono';
-import { eq, and, sql, gte, desc, inArray } from 'drizzle-orm';
+import { eq, and, sql, gte, desc } from 'drizzle-orm';
 import { createId } from '@paralleldrive/cuid2';
 import { CreateOrderSchema, UpdateOrderStatusSchema, type Order as OrderDto, type OrderItemDto } from '@cantina/shared';
-import { orders, orderItems, items } from '../db/schema.js';
+import { orders, orderItems, items, cantinaItems } from '../db/schema.js';
 import { requireAuth } from '../middleware/auth.js';
-import { notFound, badRequest, forbidden } from '../lib/errors.js';
+import { tenantContext } from '../middleware/tenant-context.js';
+import { notFound, badRequest, forbidden, conflict } from '../lib/errors.js';
 import { calcularEstimativa } from '../lib/estimativa.js';
 import { validateJson } from '../lib/zod-hono.js';
 import type { DB } from '../db/client.js';
@@ -38,7 +39,10 @@ function toPublicOrder(o: typeof orders.$inferSelect, itens: typeof orderItems.$
   };
 }
 
-async function nextSenha(db: DB | TestDb, cantinaId: string): Promise<number> {
+// Aceita DB outer ou tx de transação (estruturalmente compatíveis em drizzle).
+type DbOrTx = Pick<DB | TestDb, 'select' | 'insert' | 'update' | 'delete'>;
+
+async function nextSenha(db: DbOrTx, cantinaId: string): Promise<number> {
   // Per-day senha reset uses UTC midnight (not cantina-local timezone). Acceptable
   // trade-off: senhas restart ~21:00 BRT in summer / 21:00 BRT year-round, but stay
   // unique within a UTC day. Future: derive timezone from cantinaId in Fase B.
@@ -64,6 +68,7 @@ async function fetchOrderWithItems(db: DB | TestDb, orderId: string): Promise<Or
 export function createOrdersRoutes(db: DB | TestDb) {
   const app = new Hono();
   app.use('*', requireAuth);
+  app.use('*', tenantContext(db));
 
   app.get('/', async (c) => {
     const claim = c.get('user');
@@ -83,56 +88,88 @@ export function createOrdersRoutes(db: DB | TestDb) {
 
   app.post('/', validateJson(CreateOrderSchema), async (c) => {
     const claim = c.get('user');
+    const cantinaId = c.var.cantina.id;
     const { itens } = c.req.valid('json');
 
-    const itemIds = itens.map((i) => i.itemId);
-    const dbItems = await db.select().from(items).where(inArray(items.id, itemIds));
-    if (dbItems.length !== new Set(itemIds).size) throw notFound('Item(s) not found');
+    if (itens.length === 0) throw badRequest('Carrinho vazio');
 
-    const itemMap = new Map(dbItems.map((i) => [i.id, i]));
-    let total = 0;
-    const orderItemRows: typeof orderItems.$inferInsert[] = [];
     const orderId = createId();
+    const orderItemRows: typeof orderItems.$inferInsert[] = [];
+    let total = 0;
+    let senha = 0;
+    let prontoEmEstimado = new Date();
 
-    for (const reqItem of itens) {
-      const item = itemMap.get(reqItem.itemId);
-      if (!item) throw notFound('Item not found');
-      if (!item.disponivel) throw badRequest(`Item indisponivel: ${item.slug}`);
-      const subtotal = parseFloat(item.preco) * reqItem.quantidade;
-      total += subtotal;
-      orderItemRows.push({
-        id: createId(),
-        orderId,
-        itemId: item.id,
-        // nameSnapshot uses `item.name` (raw, always notNull) — nameKey is nullable
-        // post-commit 884d1e4. Future i18n on order history reuses `name` directly (PT).
-        nameSnapshot: item.name,
-        precoSnapshot: item.preco,
-        quantidade: reqItem.quantidade,
-        observacoes: reqItem.observacoes ?? null,
+    await db.transaction(async (tx) => {
+      // 1. Decrementa estoque atomicamente pra cada item
+      for (const reqItem of itens) {
+        // Busca cantina_item (preço + checks)
+        const [ci] = await tx.select()
+          .from(cantinaItems)
+          .where(and(
+            eq(cantinaItems.cantinaId, cantinaId),
+            eq(cantinaItems.itemId, reqItem.itemId),
+          )).limit(1);
+
+        if (!ci) throw notFound(`Item não disponível nesta cantina: ${reqItem.itemId}`);
+        if (!ci.disponivel || !ci.visivel) throw badRequest(`Item indisponível: ${reqItem.itemId}`);
+
+        // Decrementa atomicamente — race-safe (UPDATE ... WHERE estoque >= qtd)
+        const result = await tx.update(cantinaItems)
+          .set({ estoque: sql`${cantinaItems.estoque} - ${reqItem.quantidade}` })
+          .where(and(
+            eq(cantinaItems.cantinaId, cantinaId),
+            eq(cantinaItems.itemId, reqItem.itemId),
+            gte(cantinaItems.estoque, reqItem.quantidade),
+          ))
+          .returning();
+
+        if (result.length === 0) {
+          throw conflict(`Estoque insuficiente para ${reqItem.itemId}`);
+        }
+
+        // Busca item details pro snapshot
+        const [item] = await tx.select().from(items).where(eq(items.id, reqItem.itemId)).limit(1);
+        if (!item) throw notFound('Item not found');
+
+        const subtotal = parseFloat(ci.preco) * reqItem.quantidade;
+        total += subtotal;
+
+        orderItemRows.push({
+          id: createId(),
+          orderId,
+          itemId: item.id,
+          nameSnapshot: item.name,
+          precoSnapshot: ci.preco, // cantina_items.preco — NÃO items.preco
+          quantidade: reqItem.quantidade,
+          observacoes: reqItem.observacoes ?? null,
+        });
+      }
+
+      // 2. Calcular estimativa baseada em pendentes da cantina
+      const pendingResult = await tx.select({ count: sql<number>`COUNT(*)` })
+        .from(orders)
+        .where(and(eq(orders.cantinaId, cantinaId), eq(orders.status, 'pendente')));
+      const pendingCount = Number(pendingResult[0]?.count ?? 0);
+      const estimadoSec = calcularEstimativa(pendingCount);
+      prontoEmEstimado = new Date(Date.now() + estimadoSec * 1000);
+
+      // 3. Senha real (per-cantina, per-day)
+      senha = await nextSenha(tx, cantinaId);
+
+      // 4. Insert order (cantina_id real)
+      await tx.insert(orders).values({
+        id: orderId,
+        userId: claim.sub,
+        cantinaId,
+        status: 'pendente',
+        total: total.toFixed(2),
+        senha,
+        prontoEmEstimado,
       });
-    }
 
-    // count pendentes pra estimativa
-    const pendingResult = await db.select({ count: sql<number>`COUNT(*)` }).from(orders).where(eq(orders.status, 'pendente'));
-    const pendingCount = Number(pendingResult[0]?.count ?? 0);
-    const estimadoSec = calcularEstimativa(pendingCount);
-    const prontoEmEstimado = new Date(Date.now() + estimadoSec * 1000);
-
-    // TODO(Task 2): validate cantinaId via tenant-context middleware; reject if missing
-    const cantinaId = c.req.header('x-cantina-id') ?? 'unknown';
-    const senha = await nextSenha(db, cantinaId);
-
-    await db.insert(orders).values({
-      id: orderId,
-      userId: claim.sub,
-      cantinaId,
-      status: 'pendente',
-      total: total.toFixed(2),
-      senha,
-      prontoEmEstimado,
+      // 5. Insert order_items
+      await tx.insert(orderItems).values(orderItemRows);
     });
-    await db.insert(orderItems).values(orderItemRows);
 
     const enriched = await fetchOrderWithItems(db, orderId);
     return c.json({ order: enriched }, 201);
