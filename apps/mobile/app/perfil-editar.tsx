@@ -61,7 +61,7 @@ export default function PerfilEditarScreen() {
   const tErr = (e: ValidationError | undefined) =>
     e ? t(e.key, e.vars) : undefined;
 
-  const [nome, setNome] = useState(user?.nome ?? '');
+  const [nome, setNome] = useState(user?.name ?? '');
   const [email, setEmail] = useState(user?.email ?? '');
   const [submitted, setSubmitted] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
@@ -76,7 +76,7 @@ export default function PerfilEditarScreen() {
     ? { ...errors, ...(serverError ? { geral: serverError } : {}) }
     : {};
   const hasErrors = Object.keys(errors).length > 0;
-  const semMudancas = nome.trim() === user?.nome && email.trim() === user?.email;
+  const semMudancas = nome.trim() === (user?.name ?? '') && email.trim() === user?.email;
   const buttonDisabled = (submitted && hasErrors) || semMudancas;
 
   const handleSalvar = async () => {
@@ -89,7 +89,7 @@ export default function PerfilEditarScreen() {
     }
     setLoading(true);
     try {
-      await updateUser({ nome: nome.trim(), email: email.trim() });
+      await updateUser({ name: nome.trim() });
       haptic.success();
       setToast({ visible: true, message: t('toast.profile_saved') });
       setTimeout(() => router.back(), 700);

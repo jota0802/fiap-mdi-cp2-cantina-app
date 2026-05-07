@@ -15,6 +15,7 @@ import LoadingScreen from '@/components/LoadingScreen';
 import Onboarding from '@/components/Onboarding';
 import { STORAGE_KEYS } from '@/constants/storage-keys';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
+import { CantinaProvider } from '@/context/CantinaContext';
 import { CartProvider } from '@/context/CartContext';
 import { FavoritesProvider } from '@/context/FavoritesContext';
 import { LocaleProvider } from '@/context/LocaleContext';
@@ -106,13 +107,15 @@ export default function RootLayout() {
       <ThemeProvider>
         <LocaleProvider>
           <AuthProvider>
-            <CartProvider>
-              <OrdersProvider>
-                <FavoritesProvider>
-                  {fontsLoaded ? <RootStack /> : <LoadingScreen />}
-                </FavoritesProvider>
-              </OrdersProvider>
-            </CartProvider>
+            <CantinaProvider>
+              <CartProvider>
+                <OrdersProvider>
+                  <FavoritesProvider>
+                    {fontsLoaded ? <RootStack /> : <LoadingScreen />}
+                  </FavoritesProvider>
+                </OrdersProvider>
+              </CartProvider>
+            </CantinaProvider>
           </AuthProvider>
         </LocaleProvider>
       </ThemeProvider>

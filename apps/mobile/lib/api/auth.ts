@@ -13,3 +13,9 @@ export async function apiLogin(input: LoginInput): Promise<AuthResponse> {
 export async function apiMe(): Promise<{ user: PublicUser }> {
   return apiFetch<{ user: PublicUser }>('/auth/me');
 }
+
+export async function apiUpdateMe(
+  input: { name?: string; rm?: string; cantinaId?: string | null },
+): Promise<{ user: PublicUser }> {
+  return apiFetch<{ user: PublicUser }>('/auth/me', { method: 'PATCH', body: input });
+}

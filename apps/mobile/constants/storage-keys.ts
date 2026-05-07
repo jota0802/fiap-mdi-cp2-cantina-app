@@ -5,4 +5,5 @@ export const STORAGE_KEYS = {
   ONBOARDED: '@cantina:onboarded',
   LOCALE: '@cantina:locale',
   LAST_USER: '@cantina:last_user',
+  CURRENT_CANTINA_ID: '@cantina:current_cantina_id',
 } as const;

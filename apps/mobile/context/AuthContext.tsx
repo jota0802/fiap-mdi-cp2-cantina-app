@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from 'react';
 
-import { apiLogin, apiMe, apiRegister } from '@/lib/api/auth';
+import { apiLogin, apiMe, apiRegister, apiUpdateMe } from '@/lib/api/auth';
 import { ApiError, setUnauthorizedHandler } from '@/lib/api/client';
 import { STORAGE_KEYS } from '@/constants/storage-keys';
 import { deleteSecureItem, getSecureItem, setSecureItem } from '@/lib/secure-store';
@@ -17,7 +17,6 @@ import type { PublicUser } from '@cantina/shared';
 import type { User } from '@/types';
 
 type SignUpData = {
-  nome: string;
   email: string;
   senha: string;
 };
@@ -41,6 +40,7 @@ type AuthContextValue = {
   signIn: (data: SignInData) => Promise<AuthResult>;
   signOut: () => Promise<void>;
   updateUser: (patch: Partial<User>) => Promise<void>;
+  updateMe: (input: { name?: string; rm?: string; cantinaId?: string | null }) => Promise<void>;
   resetSenha: (data: ResetSenhaData) => Promise<AuthResult>;
 };
 
@@ -51,8 +51,12 @@ const TOKEN_KEY = 'auth_token';
 function publicUserToUser(pu: PublicUser): User {
   const result: User = {
     id: pu.id,
-    nome: pu.name ?? '',
+    name: pu.name,
+    rm: pu.rm,
     email: pu.email,
+    role: pu.role,
+    locale: pu.locale,
+    cantinaId: pu.cantinaId,
     criadoEm: pu.createdAt,
   };
   if (pu.avatarUrl) result.fotoUri = pu.avatarUrl;
@@ -115,9 +119,9 @@ export function AuthProvider({ children }: ProviderProps) {
   }, []);
 
   const signUp = useCallback<AuthContextValue['signUp']>(
-    async ({ nome: _nome, email, senha }) => {
+    async ({ email, senha }) => {
       try {
-        // nome é coletado no onboarding (PATCH /auth/me) — Fase B Task 2.
+        // nome/rm são coletados no onboarding (PATCH /auth/me) — Fase B Task 5.
         const res = await apiRegister({ email, password: senha });
         await setSecureItem(TOKEN_KEY, res.token);
         const u = publicUserToUser(res.user);
@@ -168,12 +172,27 @@ export function AuthProvider({ children }: ProviderProps) {
     return () => setUnauthorizedHandler(null);
   }, [signOut]);
 
-  // TODO(sub-projeto-2): backend ainda nao tem PATCH /auth/me. Stub temporario.
-  const updateUser = useCallback<AuthContextValue['updateUser']>(async () => {
-    throw new Error(
-      'Atualização de perfil indisponível temporariamente — backend endpoint pendente para sub-projeto 2.',
-    );
-  }, []);
+  const updateMe = useCallback<AuthContextValue['updateMe']>(
+    async (input) => {
+      const { user: fresh } = await apiUpdateMe(input);
+      const u = publicUserToUser(fresh);
+      setUser(u);
+      await AsyncStorage.setItem(STORAGE_KEYS.LAST_USER, JSON.stringify(u));
+    },
+    [],
+  );
+
+  // updateUser: compat shim para telas existentes (perfil-editar, etc).
+  // Mantém a assinatura antiga (Partial<User>) delegando para updateMe.
+  const updateUser = useCallback<AuthContextValue['updateUser']>(
+    async (patch) => {
+      await updateMe({
+        name: patch.name ?? undefined,
+        cantinaId: patch.cantinaId,
+      });
+    },
+    [updateMe],
+  );
 
   // TODO(sub-projeto-2): backend ainda nao tem POST /auth/reset-password. Stub temporario.
   const resetSenha = useCallback<AuthContextValue['resetSenha']>(async () => {
@@ -185,8 +204,8 @@ export function AuthProvider({ children }: ProviderProps) {
   }, []);
 
   const value = useMemo<AuthContextValue>(
-    () => ({ user, isHydrating, signUp, signIn, signOut, updateUser, resetSenha }),
-    [user, isHydrating, signUp, signIn, signOut, updateUser, resetSenha],
+    () => ({ user, isHydrating, signUp, signIn, signOut, updateUser, updateMe, resetSenha }),
+    [user, isHydrating, signUp, signIn, signOut, updateUser, updateMe, resetSenha],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

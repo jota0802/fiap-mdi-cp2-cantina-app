@@ -51,7 +51,8 @@ function getSaudacaoKey(): 'greeting.morning' | 'greeting.afternoon' | 'greeting
   return 'greeting.evening';
 }
 
-function primeiroNome(nome: string): string {
+function primeiroNome(nome: string | null): string {
+  if (!nome) return '';
   return nome.trim().split(' ')[0] ?? nome;
 }
 
@@ -149,7 +150,7 @@ export default function Home() {
   );
 
   const saudacao = t(getSaudacaoKey());
-  const nome = user ? primeiroNome(user.nome) : t('greeting.guest');
+  const nome = user ? primeiroNome(user.name) : t('greeting.guest');
 
   const handleAdicionarCombo = () => {
     if (!comboAtual) return;

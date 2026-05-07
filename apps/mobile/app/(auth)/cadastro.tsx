@@ -25,14 +25,12 @@ import { haptic } from '@/lib/haptics';
 import {
   validateConfirmaSenha,
   validateEmail,
-  validateNome,
   validateSenha,
   type ValidationError,
 } from '@/lib/validation';
 import type { ThemeColors } from '@/types';
 
 type FormValues = {
-  nome: string;
   email: string;
   senha: string;
   confirmaSenha: string;
@@ -43,8 +41,6 @@ type Errors = FieldErrors & { geral?: string };
 
 function validar(values: FormValues): FieldErrors {
   const errors: FieldErrors = {};
-  const nome = validateNome(values.nome);
-  if (nome) errors.nome = nome;
   const email = validateEmail(values.email);
   if (email) errors.email = email;
   const senha = validateSenha(values.senha);
@@ -68,7 +64,6 @@ export default function CadastroScreen() {
     e ? t(e.key, e.vars) : undefined;
 
   const [values, setValues] = useState<FormValues>({
-    nome: '',
     email: '',
     senha: '',
     confirmaSenha: '',
@@ -98,7 +93,6 @@ export default function CadastroScreen() {
     }
     setLoading(true);
     const result = await signUp({
-      nome: values.nome,
       email: values.email,
       senha: values.senha,
     });
@@ -110,7 +104,7 @@ export default function CadastroScreen() {
       return;
     }
     haptic.success();
-    router.replace('/');
+    router.replace('/(onboarding)/welcome');
   };
 
   return (
@@ -133,16 +127,6 @@ export default function CadastroScreen() {
         </Animated.View>
 
         <Animated.View style={[styles.form, { transform: [{ translateX }] }]}>
-          <Input
-            label={t('auth.name')}
-            placeholder={t('auth.name_placeholder')}
-            icon="person-outline"
-            value={values.nome}
-            onChangeText={(v) => setField('nome', v)}
-            autoCapitalize="words"
-            autoComplete="name"
-            error={tErr(visibleErrors.nome)}
-          />
           <Input
             label={t('auth.email')}
             placeholder={t('auth.email_placeholder')}

@@ -25,11 +25,15 @@ export type CartItem = {
   quantidade: number;
 };
 
-// User fica com shape mobile (traduzido na fronteira do AuthContext — Task 6.2).
+// User fica com shape mobile (traduzido na fronteira do AuthContext).
 export type User = {
   id: string;
-  nome: string;
+  name: string | null;     // null durante signup→onboarding; preenchido depois
+  rm: string | null;       // RM FIAP do aluno; null até onboarding
   email: string;
+  role: 'customer' | 'staff';
+  locale: string;
+  cantinaId: string | null;
   fotoUri?: string;
   criadoEm: string;
 };

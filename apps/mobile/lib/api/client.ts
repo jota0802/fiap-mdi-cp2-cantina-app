@@ -1,3 +1,6 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+import { STORAGE_KEYS } from '@/constants/storage-keys';
 import { getSecureItem } from '../secure-store';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:8787';
@@ -27,6 +30,13 @@ interface RequestOptions extends Omit<RequestInit, 'body'> {
   auth?: boolean;
 }
 
+// Rotas que exigem o header X-Cantina-Id para acesso tenant-scoped
+const TENANT_REQUIRED_PATTERNS = ['/items', '/orders', '/favorites'];
+
+function needsTenantHeader(path: string): boolean {
+  return TENANT_REQUIRED_PATTERNS.some((p) => path.includes(p));
+}
+
 // Handler global de 401 — AuthContext registra no boot pra fazer logout
 // centralizado quando token expira/invalida. Evita que cada hook precise tratar.
 let unauthorizedHandler: (() => void) | null = null;
@@ -43,6 +53,13 @@ export async function apiFetch<T = unknown>(path: string, opts: RequestOptions =
   if (auth) {
     const token = await getSecureItem('auth_token');
     if (token) finalHeaders['Authorization'] = `Bearer ${token}`;
+  }
+  // Injecta X-Cantina-Id automaticamente em rotas tenant-scoped
+  if (needsTenantHeader(path)) {
+    const cantinaId = await AsyncStorage.getItem(STORAGE_KEYS.CURRENT_CANTINA_ID);
+    if (cantinaId) finalHeaders['X-Cantina-Id'] = cantinaId;
+    // Se cantinaId é null, a request segue — backend retorna 400 e o
+    // frontend (onboarding gate, Task 5) impede acesso sem cantina selecionada.
   }
   const res = await fetch(`${API_BASE}${path}`, {
     ...rest,

@@ -41,7 +41,8 @@ function formatarDataMembro(iso: string): string {
   }
 }
 
-function primeiroNome(nome: string): string {
+function primeiroNome(nome: string | null): string {
+  if (!nome) return '';
   return nome.trim().split(' ')[0] ?? nome;
 }
 
@@ -138,7 +139,7 @@ export default function PerfilScreen() {
           <Text style={styles.tituloPagina}>{t('tab.profile')}</Text>
           <Text style={styles.subtitulo}>
             {t('profile.member_since', {
-              nome: primeiroNome(user.nome),
+              nome: primeiroNome(user.name),
               data: formatarDataMembro(user.criadoEm),
             })}
           </Text>
@@ -153,14 +154,14 @@ export default function PerfilScreen() {
             accessibilityRole="button"
             accessibilityLabel={t('profile.photo')}
           >
-            <ProfileAvatar uri={user.fotoUri} nome={user.nome} size={64} />
+            <ProfileAvatar uri={user.fotoUri} nome={user.name ?? ''} size={64} />
             <View style={styles.avatarBadge}>
               <Ionicons name="camera" size={12} color={colors.primaryText} />
             </View>
           </Pressable>
           <View style={styles.userInfo}>
             <Text style={styles.userNome} numberOfLines={1}>
-              {user.nome}
+              {user.name ?? ''}
             </Text>
             <Text style={styles.userEmail} numberOfLines={1}>
               {user.email}
