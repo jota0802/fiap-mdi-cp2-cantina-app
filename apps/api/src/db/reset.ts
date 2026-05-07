@@ -18,6 +18,9 @@ async function main() {
   const db = await createDb();
   logger.warn('⚠️  DROPPING all tables...');
   await db.execute(sql`DROP SCHEMA public CASCADE`);
+  // Drizzle guarda o historico de migrations em schema separado (drizzle.__drizzle_migrations).
+  // Sem dropar isso, o migrator pula 0000/0001 e tenta aplicar so o resto, quebrando.
+  await db.execute(sql`DROP SCHEMA IF EXISTS drizzle CASCADE`);
   await db.execute(sql`CREATE SCHEMA public`);
   logger.info('Schema reset. Run db:push or db:migrate next, then db:seed.');
   process.exit(0);
