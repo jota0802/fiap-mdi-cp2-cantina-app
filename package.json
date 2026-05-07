@@ -19,6 +19,7 @@
     "api:db:seed": "pnpm --filter @cantina/api db:seed",
     "api:db:studio": "pnpm --filter @cantina/api db:studio",
     "api:db:reset": "pnpm --filter @cantina/api db:reset",
+    "api:create-staff": "pnpm --filter @cantina/api create-staff",
     "dev": "concurrently -n api,mobile -c yellow,cyan \"pnpm api:dev\" \"pnpm mobile:start\"",
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test",
