@@ -9,6 +9,7 @@ const JwtPayloadSchema = z.object({
   email: z.string().email(),
   role: z.enum(['customer', 'staff']),
   locale: z.string(),
+  cantinaId: z.string().optional(), // presente só pra staff
 });
 
 export type JwtPayload = z.infer<typeof JwtPayloadSchema>;

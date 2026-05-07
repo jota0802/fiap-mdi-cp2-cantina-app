@@ -30,3 +30,23 @@ describe('jwt', () => {
     await expect(verifyJwt('')).rejects.toThrow();
   });
 });
+
+describe('JWT cantinaId claim', () => {
+  it('inclui cantinaId quando passado (staff)', async () => {
+    const token = await signJwt({
+      sub: 'u_test', email: 't@t.com', role: 'staff', locale: 'pt', cantinaId: 'c_pa_5',
+    });
+    const payload = await verifyJwt(token);
+    expect(payload.cantinaId).toBe('c_pa_5');
+    expect(payload.role).toBe('staff');
+  });
+
+  it('omite cantinaId quando não passado (customer)', async () => {
+    const token = await signJwt({
+      sub: 'u_test', email: 't@t.com', role: 'customer', locale: 'pt',
+    });
+    const payload = await verifyJwt(token);
+    expect(payload.cantinaId).toBeUndefined();
+    expect(payload.role).toBe('customer');
+  });
+});

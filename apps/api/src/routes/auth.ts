@@ -54,7 +54,13 @@ export async function createAuthRoutes(db: DB | TestDb) {
     const [user] = await db.insert(users).values({ id, name, email, passwordHash, locale: 'pt' }).returning();
     if (!user) throw new Error('failed to create user');
 
-    const token = await signJwt({ sub: user.id, email: user.email, role: assertValidRole(user.role), locale: user.locale });
+    const token = await signJwt({
+      sub: user.id,
+      email: user.email,
+      role: assertValidRole(user.role),
+      locale: user.locale,
+      cantinaId: user.cantinaId ?? undefined,
+    });
     return c.json({ user: toPublicUser(user), token }, 201);
   });
 
@@ -64,7 +70,13 @@ export async function createAuthRoutes(db: DB | TestDb) {
     const hashToVerify = user?.passwordHash ?? DUMMY_HASH;
     const ok = await verifyPassword(password, hashToVerify);
     if (!user || !ok) throw unauthorized('Credenciais inválidas');
-    const token = await signJwt({ sub: user.id, email: user.email, role: assertValidRole(user.role), locale: user.locale });
+    const token = await signJwt({
+      sub: user.id,
+      email: user.email,
+      role: assertValidRole(user.role),
+      locale: user.locale,
+      cantinaId: user.cantinaId ?? undefined,
+    });
     return c.json({ user: toPublicUser(user), token }, 200);
   });
 

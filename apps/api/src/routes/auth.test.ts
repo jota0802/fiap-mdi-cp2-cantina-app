@@ -1,9 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { createTestDb, type TestDb } from '../test/db.js';
-import { createTestUser } from '../test/fixtures.js';
+import { createTestUser, createTestTenants, createTestStaff } from '../test/fixtures.js';
 import { createAuthRoutes } from './auth.js';
 import { Hono } from 'hono';
 import { errorHandler } from '../middleware/error-handler.js';
+import { verifyJwt } from '../lib/jwt.js';
 
 let testDb: TestDb;
 let close: () => Promise<void>;
@@ -89,6 +90,22 @@ describe('POST /auth/login', () => {
       body: JSON.stringify({ email: 'nao-existe@x.com', password: 'qualquer' }),
     });
     expect(res.status).toBe(401);
+  });
+
+  it('login de staff retorna token com cantinaId', async () => {
+    const { cantinaId } = await createTestTenants(testDb);
+    await createTestStaff(testDb, cantinaId, { email: 'staff@t.com', password: 'pass123' });
+
+    const res = await app.request('/api/v1/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'staff@t.com', password: 'pass123' }),
+    });
+    expect(res.status).toBe(200);
+    const json = await res.json() as { token: string };
+    const payload = await verifyJwt(json.token);
+    expect(payload.cantinaId).toBe(cantinaId);
+    expect(payload.role).toBe('staff');
   });
 });
 
