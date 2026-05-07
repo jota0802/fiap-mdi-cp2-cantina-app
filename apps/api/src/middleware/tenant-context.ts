@@ -25,7 +25,7 @@ export function tenantContext(db: DB | TestDb): MiddlewareHandler {
     if (!cantina) throw notFound('Cantina não existe ou inativa');
 
     const claim = c.get('user');
-    if (claim?.role === 'staff' && claim.cantinaId !== cantinaId) {
+    if (claim.role === 'staff' && claim.cantinaId !== cantinaId) {
       throw forbidden('Staff só pode acessar a própria cantina');
     }
 

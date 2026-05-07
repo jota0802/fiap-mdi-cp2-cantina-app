@@ -80,6 +80,8 @@ describe('tenantContext middleware', () => {
       headers: { Authorization: `Bearer ${s.token}`, 'X-Cantina-Id': 'c_outra' },
     });
     expect(res.status).toBe(403);
+    const json = await res.json() as { error: { code: string } };
+    expect(json.error.code).toBe('FORBIDDEN');
   });
 });
 
