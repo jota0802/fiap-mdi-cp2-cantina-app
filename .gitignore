@@ -50,3 +50,7 @@ conta-NAO-COMMITAR.txt
 
 # pglite local dev database
 apps/api/dev.db*
+
+# brainstorming visual companion artifacts
+.superpowers/
+
