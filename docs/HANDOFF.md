@@ -8,7 +8,33 @@
 - **Pasta local:** `/Users/johnny/Downloads/cp-mobile/fiap-mdi-cp2-cantina-app/`
 - **Repo:** [github.com/jota0802/fiap-mdi-cp2-cantina-app](https://github.com/jota0802/fiap-mdi-cp2-cantina-app)
 - **Stack:** monorepo pnpm — `apps/api` (Hono + Drizzle + Postgres/Neon) + `apps/mobile` (Expo SDK 55 + RN + TanStack Query) + `packages/shared` (Zod).
-- **Status (2026-05-06):** Foundation 100% mergeado em main. Hardening de segurança aplicado (JWT_SECRET rotacionado, rate limit, SSL explícito, role check defensivo, 401 interceptor). **Mobile-only adotado** (sem build web — vetor XSS de localStorage eliminado).
+- **Status (2026-05-06):** Foundation 100% mergeado em main. Hardening de segurança aplicado (JWT_SECRET rotacionado, rate limit, SSL explícito, role check defensivo, 401 interceptor). **Mobile-only adotado** (sem build web — vetor XSS de localStorage eliminado). **Sub-projeto 2 / Fase A planejada** — spec aprovado + plano detalhado prontos pra execução (ver "🚀 Próxima ação" abaixo).
+
+## 🚀 Próxima ação — executar Fase A do Sub-projeto 2
+
+**Status:** spec aprovado + plano detalhado COMMITADOS, **execução pendente**.
+
+- **Spec:** [`docs/superpowers/specs/2026-05-06-tenants-hierarchy-fase-a-design.md`](./superpowers/specs/2026-05-06-tenants-hierarchy-fase-a-design.md) (commit `a2e9b08`)
+- **Plano:** [`docs/superpowers/plans/2026-05-06-tenants-hierarchy-fase-a-plan.md`](./superpowers/plans/2026-05-06-tenants-hierarchy-fase-a-plan.md) (commit `5a687ff`)
+
+**Como executar (decisão explícita do user):** invocar `superpowers:subagent-driven-development` apontando pro plano. 7 tasks, 6 commits novos previstos. Cada task = 1 subagente fresco; review entre tasks; commit ao final de cada task. Tasks em ordem estrita (não paralelizar).
+
+**O que a Fase A entrega:** tabelas `unidades`/`escolas`/`cantinas`, JWT staff com `cantinaId`, middleware `tenant-context.ts` (criado mas **não aplicado** nas rotas — fica pra Fase B), endpoint público `GET /api/v1/tenants/tree`, CLI `pnpm api:create-staff`, proteção interativa em `db:reset`, reset+migrate+seed do Neon.
+
+**NÃO brainstormar de novo.** Design fechado, todas as alternativas consideradas. Se aparecer decisão genuinamente nova durante execução, perguntar ao user.
+
+**Após Fase A completa:** parar e aguardar user pedir Fase B (decomposição em 4 brainstorms separados foi escolha explícita do user).
+
+**Decisões-chave da sessão de brainstorm** (resumo pra contexto):
+
+- Modelo: 3 tabelas separadas (não recursive CTE) — profundidade fixa
+- Cliente sem vínculo fixo (escolhe cantina cada vez no app, lembra última)
+- Tenant resolution via header `X-Cantina-Id` + middleware validador (defesa em profundidade)
+- Roles mínimos (`customer` + `staff`); admin via CLI/Neon Studio
+- CLI seed sem usuários hardcoded; CLI separado `create-staff` gera senha aleatória mostrada uma vez
+- Detecção de prod por URL (`.neon.tech`/`.aws.`) ou `NODE_ENV=production` + frase exata interativa
+- Banco Neon será resetado (tem só dados de teste)
+- Middleware tenant-context **não** aplicado nas rotas existentes — fica pra Fase B junto com cardápio per-cantina (evita quebrar mobile que ainda não envia header)
 
 ## 🚀 Distribuição
 
