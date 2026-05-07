@@ -8,39 +8,63 @@
 - **Pasta local:** `/Users/johnny/Downloads/cp-mobile/fiap-mdi-cp2-cantina-app/`
 - **Repo:** [github.com/jota0802/fiap-mdi-cp2-cantina-app](https://github.com/jota0802/fiap-mdi-cp2-cantina-app)
 - **Stack:** monorepo pnpm — `apps/api` (Hono + Drizzle + Postgres/Neon) + `apps/mobile` (Expo SDK 55 + RN + TanStack Query) + `packages/shared` (Zod).
-- **Status (2026-05-07):** Foundation 100% mergeado em main. Hardening de segurança aplicado. Mobile-only adotado. **Sub-projeto 2 / Fase A entregue** — hierarquia de tenants (unidades/escolas/cantinas) populada no Neon, JWT staff carrega `cantinaId`, middleware `tenant-context` criado (não aplicado ainda), CLI `create-staff` com proteções, `db:reset` com confirmação interativa em prod. Pronto pra Fase B (estoque + cardápio per-cantina).
+- **Status (2026-05-07):** Foundation + hardening + mobile-only + **Sub-projeto 2 / Fase A + Fase B entregues**. Cantina_items populado no Neon (4 cantinas × 12 items = 48 rows), middleware tenant-context wired em items/orders/favorites, decremento atômico de estoque com race detection (409), onboarding mobile 3 telas funcional, PATCH /auth/me coleta nome+RM+cantinaId. Próxima: Fase C (vitrine on/off + tela admin staff + markRetirado).
 
-## 🏢 Hierarquia de tenants (Fase A entregue 2026-05-07)
+## 🏢 Cardápio per-cantina (Fase B entregue 2026-05-07)
 
-Estrutura institucional populada via `pnpm api:db:seed` (no Neon e no pglite local):
+**Estado do banco no Neon:**
 
-- **2 unidades:** Paulista, Lins
-- **3 escolas:** FIAP Paulista (main), FIAP School (Lins), FIAP Faculdade (Lins)
-- **4 cantinas:**
-  - Paulista: `c_pa_5` (5º andar), `c_pa_7` (7º andar)
-  - Lins School: `c_lins_sc_1` (Térreo) — única cantina dessa escola
-  - Lins Faculdade: `c_lins_fac_1` (Térreo) — única cantina dessa escola
+- 2 unidades: Paulista, Lins
+- 3 escolas: FIAP Paulista (main), FIAP School (Lins), FIAP Faculdade (Lins)
+- 4 cantinas: `c_pa_5`, `c_pa_7` (Paulista); `c_lins_sc_1` (Lins School Térreo); `c_lins_fac_1` (Lins Faculdade Térreo)
+- 12 items globais (catálogo template — café, misto-quente, pão de queijo, etc)
+- 48 cantina_items (4 × 12) com:
+  - **Preços:** Paulista usa `items.preco` base; Lins usa `items.preco × 0.85` (15% mais barato — interior). Intra-unidade: mesmo preço.
+  - **Estoque inicial:** random `[100, 350]` por linha
+  - **Defaults:** `disponivel=true, visivel=true`
 
-**Endpoint público:** `GET /api/v1/tenants/tree` (cache 1h) retorna a árvore filtrada por `ativo=true` e ordenada (unidades por nome, cantinas por andar com `NULLS LAST`).
+**Endpoints novos da Fase B:**
 
-**Pra Fase B usar:**
+- `PATCH /api/v1/auth/me` — atualiza `name?/rm?/cantinaId?` do user logado. Valida cantina existe + ativa. Quando `users.cantina_id` atual é não-null, valida que a nova cantina pertence à mesma unidade (consistência hierárquica). Se atual é null (onboarding ou pós-clear de unidade), aceita qualquer cantina ativa.
+- `GET /api/v1/items` — agora exige header `X-Cantina-Id` via `tenantContext`. JOIN com cantina_items, filtra `disponivel=true AND visivel=true`. Retorna `estoque` no DTO. Items com `estoque=0` ainda aparecem (frontend renderiza "esgotado").
+- `POST /api/v1/orders` — exige header. Em transação Drizzle: SELECT cantina_item, valida disponivel+visivel, UPDATE atômico `SET estoque = estoque - X WHERE estoque >= X`. Se 0 rows → 409 Conflict (race detected). `precoSnapshot` vem de `cantina_items.preco`. `nextSenha(tx, cantinaId)` real (resolveu TODO da Fase A).
+- `GET /api/v1/favorites`, etc. — header obrigatório agora; lógica continua user-based.
 
-- Tabelas `unidades`, `escolas`, `cantinas` populadas no Neon (validado via curl em 2026-05-07)
-- [`apps/api/src/middleware/tenant-context.ts`](../apps/api/src/middleware/tenant-context.ts) criado e testado, pronto pra ser aplicado nas rotas que viram per-cantina (items, orders, favorites). Reads `X-Cantina-Id`, valida cantina ativa, faz role check (staff só vê própria cantina), popula `c.var.cantina`.
-- JWT de staff já carrega `cantinaId` — middleware valida automaticamente. Customer JWT continua sem o campo.
-- CLI `pnpm api:create-staff --cantina=<id> --email=<...> --name="<...>"` disponível pra criar operadores quando Fase C ativar tela admin. Gera senha argon2 hashada, mostra plaintext UMA vez no stdout. Em prod: prompt "criar staff em prod".
-- Schema de `users` tem `cantina_id` + CHECK constraint `users_staff_must_have_cantina` forçando staff a ter cantina (validado em pglite via teste).
-- Helpers `apps/api/src/scripts/_safety.ts` reutilizáveis: `isProductionTarget` (com short-circuit em `USE_PGLITE=true`), `confirmInProd`, `gerarSenhaForte`. Próximos scripts destrutivos herdam o mesmo padrão.
-- `db:reset` pede confirmação `apagar tudo em prod` no Neon. Também dropa o schema `drizzle` (tracker de migrations) — sem isso o migrator pulava 0000/0001 num banco recém-resetado.
+**Schema novo:**
 
-**Tests:** 63/63 (8 novos vs 35 originais: 2 jwt, 1 auth, 8 middleware+CHECK, 6 tenants/tree, 11 _safety). Mobile 22/22 inalterado.
+- `cantina_items(cantina_id, item_id, preco numeric NOT NULL, estoque integer DEFAULT 0, disponivel boolean DEFAULT true, visivel boolean DEFAULT true, updated_at timestamp)`. PK composta + FK em ambas + CHECK `estoque >= 0`.
+- `users.name` virou nullable + CHECK `users_staff_must_have_name`. `users.rm` text nullable + CHECK regex `^[0-9]{6}$`.
+- `orders.cantina_id` agora NOT NULL.
+- Drop `items.cantina_id` e `favorites.cantina_id` (legados Fase A — items é catálogo global, favorito é (user, item)).
 
-**Spec:** [`docs/superpowers/specs/2026-05-06-tenants-hierarchy-fase-a-design.md`](./superpowers/specs/2026-05-06-tenants-hierarchy-fase-a-design.md)
-**Plano:** [`docs/superpowers/plans/2026-05-06-tenants-hierarchy-fase-a-plan.md`](./superpowers/plans/2026-05-06-tenants-hierarchy-fase-a-plan.md)
+**Mobile (Fase B):**
 
-## 🚀 Próxima ação — Fase B (Sub-projeto 2)
+- Signup só email + senha + confirma — `(auth)/cadastro.tsx`
+- Onboarding em `app/(onboarding)/` (welcome, dados, cantina) → chama `updateMe` no fim
+- Gate em `(tabs)/_layout` redireciona pra onboarding se name/rm/cantinaId incompleto
+- `CantinaContext` gerencia `currentCantinaId` em AsyncStorage (separado do default em `users.cantina_id`)
+- `apiFetch` injeta `X-Cantina-Id` automaticamente em rotas tenant-scoped
+- `CantinaPickerHeader` no topo da home: link "Mudar unidade" + dropdown cantinas-da-unidade
+- Perfil: edita nome (`/perfil/editar-nome`), unidade (`/perfil/unidade` com Alert + cleanup de cantina), cantina default (`/perfil/cantina-default`). RM display-only.
+- `ItemCardapio`: badge "Esgotado" + opacity reduzida + botão disabled quando `estoque === 0`
 
-Quando o user pedir, abrir brainstorm separado pra **Fase B** (escopo: estoque + cardápio per-cantina + "ver geral" via junction `cantina_items`). Decomposição em 4 brainstorms separados foi escolha explícita do user — honrar isso.
+**Pra Fase C usar:**
+
+- `cantina_items.disponivel` e `cantina_items.visivel` prontos pra UI staff (toggle de vitrine on/off + descontinuar item)
+- Helper `createTestCantinaItems(db, cantinaId, items)` em fixtures pra setup de tests futuros
+- `nextSenha(db, cantinaId)` real — senhas resetam por dia POR cantina
+- CantinaContext mobile reusável; `apiFetch` já gerencia header automaticamente
+- Items globais voltaram (12 no seed); staff Fase C pode editar/criar/excluir via tela admin
+- Validation custom de "cantina pertence à unidade do user" em PATCH /auth/me — pode virar helper compartilhado quando admin precisar
+
+**Tests:** 85/85 API + 22/22 mobile (era 63 + 22 pós-Fase A). Adicionados: PATCH /me coverage (~7), CHECK constraints (cantina_items + users.name + users.rm), race condition em POST /orders, items filtra cantina+disponivel+visivel, esgotado ainda aparece.
+
+**Spec:** [`docs/superpowers/specs/2026-05-07-cardapio-per-cantina-fase-b-design.md`](./superpowers/specs/2026-05-07-cardapio-per-cantina-fase-b-design.md)
+**Plano:** [`docs/superpowers/plans/2026-05-07-cardapio-per-cantina-fase-b-plan.md`](./superpowers/plans/2026-05-07-cardapio-per-cantina-fase-b-plan.md)
+
+## 🚀 Próxima ação — Fase C (Sub-projeto 2)
+
+Quando o user pedir, abrir brainstorm separado pra **Fase C** (escopo: vitrine on/off via UI staff editando `cantina_items.visivel`; tela admin pra editar `estoque` + `disponivel`; `markRetirado` pelo staff em `PATCH /orders/:id/status`). Backend já está 80% pronto (campos existem, só falta UI staff + endpoints de write). Decomposição em 4 brainstorms separados foi escolha explícita do user — honrar isso.
 
 ## 🚀 Distribuição
 
