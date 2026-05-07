@@ -6,7 +6,10 @@
   "packageManager": "pnpm@10.30.3",
   "scripts": {
     "mobile:start": "pnpm --filter @cantina/mobile start",
-    "mobile:web": "pnpm --filter @cantina/mobile web",
+    "mobile:android": "pnpm --filter @cantina/mobile android",
+    "mobile:ios": "pnpm --filter @cantina/mobile ios",
+    "mobile:build:apk": "cd apps/mobile && eas build --local --profile preview --platform android",
+    "mobile:build:aab": "cd apps/mobile && eas build --local --profile production --platform android",
     "api:dev": "pnpm --filter @cantina/api dev",
     "api:build": "pnpm --filter @cantina/api build",
     "api:start": "pnpm --filter @cantina/api start",

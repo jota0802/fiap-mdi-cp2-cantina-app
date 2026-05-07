@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Image, Platform, StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet, Text, View } from 'react-native';
 
 import { fontFamily, letterSpacing } from '@/constants/theme';
 import { useTheme } from '@/context/ThemeContext';
@@ -23,15 +23,8 @@ function getIniciais(nome: string): string {
   return `${first}${last}`.toUpperCase();
 }
 
-/**
- * Blob URLs são session-scoped no web — uma foto escolhida via picker e
- * persistida no AsyncStorage como `blob:http://...` expira no reload e dá
- * ERR_FILE_NOT_FOUND. Evita render dessa URI no web e cai no fallback.
- */
 function uriUtilizavel(uri: string | null | undefined): boolean {
-  if (!uri) return false;
-  if (Platform.OS === 'web' && uri.startsWith('blob:')) return false;
-  return true;
+  return !!uri;
 }
 
 export default function ProfileAvatar({ uri, nome, size = 96 }: Props) {

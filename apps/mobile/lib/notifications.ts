@@ -1,5 +1,4 @@
 import * as Notifications from 'expo-notifications';
-import { Platform } from 'react-native';
 
 let permissionRequested = false;
 
@@ -14,8 +13,6 @@ Notifications.setNotificationHandler({
 });
 
 export async function ensureNotificationPermissions(): Promise<boolean> {
-  if (Platform.OS === 'web') return false;
-
   const settings = await Notifications.getPermissionsAsync();
   if (settings.status === 'granted') return true;
 

@@ -2,15 +2,29 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "jsx": "react-native",
-    "lib": ["DOM", "ESNext"],
+    "lib": [
+      "DOM",
+      "ESNext"
+    ],
     "moduleResolution": "Bundler",
     "allowSyntheticDefaultImports": true,
     "paths": {
-      "@/*": ["./*"],
-      "@cantina/shared": ["../../packages/shared/src/index.ts"],
-      "@cantina/shared/*": ["../../packages/shared/src/*"]
+      "@/*": [
+        "./*"
+      ],
+      "@cantina/shared": [
+        "../../packages/shared/src/index.ts"
+      ],
+      "@cantina/shared/*": [
+        "../../packages/shared/src/*"
+      ]
     }
   },
-  "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"],
-  "exclude": ["node_modules"]
+  "include": [
+    "**/*.ts",
+    "**/*.tsx"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
 }

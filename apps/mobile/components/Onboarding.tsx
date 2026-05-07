@@ -3,7 +3,6 @@ import { Image } from 'expo-image';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -222,8 +221,7 @@ export default function Onboarding({ onComplete }: Props) {
   const { width, height } = useWindowDimensions();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
-  // Cap a largura no web — em desktop o slide ficaria gigante
-  const slideWidth = Platform.OS === 'web' ? Math.min(width, MAX_CONTENT_WIDTH) : width;
+  const slideWidth = width;
   const heroHeight = Math.min(Math.round(height * 0.5), 460);
 
   const scrollRef = useRef<ScrollView>(null);
@@ -269,6 +267,10 @@ export default function Onboarding({ onComplete }: Props) {
 
   const irPara = (i: number) => {
     scrollRef.current?.scrollTo({ x: i * slideWidth, animated: true });
+    // Web: onMomentumScrollEnd nao dispara consistentemente em scroll programatico,
+    // entao atualizamos o indice aqui pra nao travar o "Avancar".
+    indiceRef.current = i;
+    setIndice(i);
   };
 
   const handleProximo = () => {

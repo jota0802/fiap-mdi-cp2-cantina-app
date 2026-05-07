@@ -16,9 +16,11 @@ const EnvSchema = z.object({
 
 export type Env = z.infer<typeof EnvSchema>;
 
+// Mobile-only: app nao roda em browser, mas Metro/dev tools usam essas origens
+// quando o device fala via tunnel/local. Production native nao usa CORS — em
+// prod usamos um placeholder so pra satisfazer o validator fail-fast.
 const DEV_DEFAULT_ORIGINS = [
   'http://localhost:8081',
-  'http://localhost:19006',
   'http://localhost:8082',
   'http://10.0.2.2:8081',
 ];
@@ -31,6 +33,15 @@ function parseEnv(): Env {
   }
   if (!result.data.USE_PGLITE && !result.data.DATABASE_URL) {
     console.error('❌ DATABASE_URL is required when USE_PGLITE=false');
+    process.exit(1);
+  }
+  if (
+    result.data.NODE_ENV === 'production' &&
+    !result.data.USE_PGLITE &&
+    result.data.DATABASE_URL &&
+    !/[?&]sslmode=(require|verify-ca|verify-full)/.test(result.data.DATABASE_URL)
+  ) {
+    console.error('❌ DATABASE_URL must include sslmode=verify-full (or require/verify-ca) in production');
     process.exit(1);
   }
   return result.data;
