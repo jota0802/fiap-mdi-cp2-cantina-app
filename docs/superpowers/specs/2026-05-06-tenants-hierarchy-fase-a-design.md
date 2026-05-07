@@ -2,9 +2,11 @@
 
 **Data:** 2026-05-06
 **Autor:** João Victor (jota0802) com Claude Opus 4.7 (1M context)
-**Status:** Aprovado em brainstorming, pronto pra implementação
+**Status:** Implementado 2026-05-07
 **Sub-projeto:** 2 (Cantina admin / multi-tenant)
 **Fase:** A — Hierarquia + Tenant Context + CLI seed (1ª de 4)
+
+> **Correção pós-implementação (2026-05-07):** seed reduzido de **6 → 4 cantinas** após user verificar com a realidade que cada escola da unidade Lins tem só uma cantina (Térreo). Removidos `c_lins_sc_2` (2º andar) e `c_lins_fac_2` (3º andar). Estado atual: 2 unidades + 3 escolas + 4 cantinas. Ver [`apps/api/src/db/seed.ts`](../../../apps/api/src/db/seed.ts) e [`docs/HANDOFF.md`](../../HANDOFF.md). Decisões de design abaixo permanecem válidas — só a contagem do seed mudou.
 
 ## Contexto
 

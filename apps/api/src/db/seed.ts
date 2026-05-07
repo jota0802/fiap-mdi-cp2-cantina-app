@@ -14,12 +14,13 @@ const SEED_ESCOLAS = [
 ] as const;
 
 const SEED_CANTINAS = [
+  // Paulista: 2 cantinas (5º e 7º andar)
   { id: 'c_pa_5',       escolaId: 'e_paulista_main',  nome: '5º andar', andar: '5' },
   { id: 'c_pa_7',       escolaId: 'e_paulista_main',  nome: '7º andar', andar: '7' },
+  // Lins School: só 1 cantina (Térreo)
   { id: 'c_lins_sc_1',  escolaId: 'e_lins_school',    nome: 'Térreo',   andar: 'T' },
-  { id: 'c_lins_sc_2',  escolaId: 'e_lins_school',    nome: '2º andar', andar: '2' },
+  // Lins Faculdade: só 1 cantina (Térreo)
   { id: 'c_lins_fac_1', escolaId: 'e_lins_faculdade', nome: 'Térreo',   andar: 'T' },
-  { id: 'c_lins_fac_2', escolaId: 'e_lins_faculdade', nome: '3º andar', andar: '3' },
 ] as const;
 
 async function main() {

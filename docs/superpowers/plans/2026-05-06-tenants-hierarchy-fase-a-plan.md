@@ -1,5 +1,9 @@
 # Sub-projeto 2 / Fase A — Hierarquia de Tenants — Implementation Plan
 
+> **Status:** Implementado 2026-05-07. Plano abaixo é histórico — descreve a execução tal como ocorreu.
+>
+> **Correção pós-implementação (2026-05-07):** seed reduzido de **6 → 4 cantinas** após user verificar com a realidade que cada escola da unidade Lins tem só uma cantina (Térreo). `c_lins_sc_2` e `c_lins_fac_2` removidos do seed e do Neon. Onde o plano diz "6 cantinas" abaixo, leia "4". Estado atual em [`apps/api/src/db/seed.ts`](../../../apps/api/src/db/seed.ts).
+>
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Adicionar hierarquia institucional (Unidade → Escola → Cantina), tenant context middleware (criado mas não aplicado nas rotas existentes), endpoint público `/tenants/tree`, CLI `create-staff` com proteções, e proteção em `db:reset`. Deixa o terreno pronto pra Fase B (estoque por cantina) sem quebrar nada existente.

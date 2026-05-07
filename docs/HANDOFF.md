@@ -16,7 +16,10 @@ Estrutura institucional populada via `pnpm api:db:seed` (no Neon e no pglite loc
 
 - **2 unidades:** Paulista, Lins
 - **3 escolas:** FIAP Paulista (main), FIAP School (Lins), FIAP Faculdade (Lins)
-- **6 cantinas:** `c_pa_5`, `c_pa_7`, `c_lins_sc_1`, `c_lins_sc_2`, `c_lins_fac_1`, `c_lins_fac_2`
+- **4 cantinas:**
+  - Paulista: `c_pa_5` (5º andar), `c_pa_7` (7º andar)
+  - Lins School: `c_lins_sc_1` (Térreo) — única cantina dessa escola
+  - Lins Faculdade: `c_lins_fac_1` (Térreo) — única cantina dessa escola
 
 **Endpoint público:** `GET /api/v1/tenants/tree` (cache 1h) retorna a árvore filtrada por `ativo=true` e ordenada (unidades por nome, cantinas por andar com `NULLS LAST`).
 
