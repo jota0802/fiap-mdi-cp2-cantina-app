@@ -15,6 +15,7 @@ export const ItemSchema = z.object({
   tags: z.array(z.string()),
   imagem: z.string().nullable(),
   disponivel: z.boolean(),
+  estoque: z.number().int().nonnegative().optional(),
 });
 
 export type Item = z.infer<typeof ItemSchema>;

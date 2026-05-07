@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Modal,
   Pressable,
@@ -30,7 +30,9 @@ import { useTheme } from '@/context/ThemeContext';
 import { haptic } from '@/lib/haptics';
 import { LOCALES, LOCALE_LABEL, LOCALE_SHORT, type Locale } from '@/lib/i18n';
 import { pickFromCamera, pickFromLibrary } from '@/lib/image-picker';
+import { apiFetch } from '@/lib/api/client';
 import type { ThemeColors } from '@/types';
+import type { TenantTree } from '@cantina/shared';
 
 function formatarDataMembro(iso: string): string {
   try {
@@ -57,6 +59,7 @@ export default function PerfilScreen() {
   const { user, signOut, updateUser } = useAuth();
   const { orders } = useOrders();
 
+  const [tree, setTree] = useState<TenantTree | null>(null);
   const [updatingPhoto, setUpdatingPhoto] = useState(false);
   const [localeAberto, setLocaleAberto] = useState(false);
   const [toast, setToast] = useState<{
@@ -64,6 +67,26 @@ export default function PerfilScreen() {
     message: string;
     variant: 'success' | 'error';
   }>({ visible: false, message: '', variant: 'success' });
+
+  // Carrega árvore de tenants pra exibir nome da unidade e cantina default
+  useEffect(() => {
+    void (async () => {
+      const data = await apiFetch<TenantTree>('/tenants/tree', { auth: false }).catch(() => null);
+      if (data) setTree(data);
+    })();
+  }, []);
+
+  // Derivar nome da unidade e cantina default do user
+  const { unidadeNome, cantinaNome } = useMemo(() => {
+    if (!tree || !user?.cantinaId) return { unidadeNome: null, cantinaNome: null };
+    for (const u of tree.unidades) {
+      for (const e of u.escolas) {
+        const c = e.cantinas.find((cn) => cn.id === user.cantinaId);
+        if (c) return { unidadeNome: u.nome, cantinaNome: `${e.nome} — ${c.nome}` };
+      }
+    }
+    return { unidadeNome: null, cantinaNome: null };
+  }, [tree, user?.cantinaId]);
 
   if (!user) {
     return <LoadingScreen label={t('loading.profile')} />;
@@ -193,6 +216,96 @@ export default function PerfilScreen() {
             colors={colors}
             styles={styles}
           />
+        </View>
+
+        {/* Dados da conta */}
+        <Text style={styles.sectionTitle}>Dados da conta</Text>
+        <View style={styles.acoesCard}>
+          <Pressable
+            style={({ pressed }) => [styles.linhaAcao, pressed && styles.pressedSoft]}
+            onPress={() => router.push('/perfil/editar-nome')}
+            accessibilityRole="button"
+            accessibilityLabel="Editar nome"
+          >
+            <View style={styles.linhaAcaoEsquerda}>
+              <View style={[styles.linhaAcaoIconWrap, { backgroundColor: colors.primarySoft }]}>
+                <Ionicons name="person-outline" size={18} color={colors.primary} />
+              </View>
+              <View>
+                <Text style={styles.linhaAcaoLabel}>Nome</Text>
+                <Text style={styles.linhaAcaoSub}>{user.name ?? 'Não informado'}</Text>
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={colors.textSubtle} />
+          </Pressable>
+
+          <View style={styles.divisor} />
+
+          <View style={styles.linhaAcao}>
+            <View style={styles.linhaAcaoEsquerda}>
+              <View style={styles.linhaAcaoIconWrap}>
+                <Ionicons name="mail-outline" size={18} color={colors.text} />
+              </View>
+              <View>
+                <Text style={styles.linhaAcaoLabel}>Email</Text>
+                <Text style={styles.linhaAcaoSub}>{user.email}</Text>
+              </View>
+            </View>
+          </View>
+
+          <View style={styles.divisor} />
+
+          <View style={styles.linhaAcao}>
+            <View style={styles.linhaAcaoEsquerda}>
+              <View style={styles.linhaAcaoIconWrap}>
+                <Ionicons name="id-card-outline" size={18} color={colors.text} />
+              </View>
+              <View>
+                <Text style={styles.linhaAcaoLabel}>RM</Text>
+                <Text style={styles.linhaAcaoSub}>{user.rm ?? '—'}</Text>
+              </View>
+            </View>
+          </View>
+
+          <View style={styles.divisor} />
+
+          <Pressable
+            style={({ pressed }) => [styles.linhaAcao, pressed && styles.pressedSoft]}
+            onPress={() => router.push('/perfil/unidade')}
+            accessibilityRole="button"
+            accessibilityLabel="Trocar unidade"
+          >
+            <View style={styles.linhaAcaoEsquerda}>
+              <View style={styles.linhaAcaoIconWrap}>
+                <Ionicons name="business-outline" size={18} color={colors.text} />
+              </View>
+              <View>
+                <Text style={styles.linhaAcaoLabel}>Unidade</Text>
+                <Text style={styles.linhaAcaoSub}>{unidadeNome ?? 'Selecione'}</Text>
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={colors.textSubtle} />
+          </Pressable>
+
+          <View style={styles.divisor} />
+
+          <Pressable
+            style={({ pressed }) => [styles.linhaAcao, pressed && styles.pressedSoft]}
+            onPress={() => router.push('/perfil/cantina-default')}
+            accessibilityRole="button"
+            accessibilityLabel="Cantina default"
+          >
+            <View style={styles.linhaAcaoEsquerda}>
+              <View style={styles.linhaAcaoIconWrap}>
+                <Ionicons name="storefront-outline" size={18} color={colors.text} />
+              </View>
+              <View>
+                <Text style={styles.linhaAcaoLabel}>Cantina default</Text>
+                <Text style={styles.linhaAcaoSub} numberOfLines={1}>{cantinaNome ?? 'Selecione'}</Text>
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={colors.textSubtle} />
+          </Pressable>
         </View>
 
         {/* Foto de perfil — apenas botões secundários */}

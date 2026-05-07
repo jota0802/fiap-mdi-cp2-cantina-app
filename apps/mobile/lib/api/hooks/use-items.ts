@@ -3,16 +3,18 @@ import { useQuery } from '@tanstack/react-query';
 import type { Categoria } from '@cantina/shared';
 
 import { useAuth } from '@/context/AuthContext';
+import { useCantina } from '@/context/CantinaContext';
 
 import { getItem, listItems } from '../items';
 
 export function useItems(filter?: { categoria?: Categoria }) {
   const { user } = useAuth();
+  const { currentCantinaId } = useCantina();
   return useQuery({
-    queryKey: ['items', filter ?? {}],
+    queryKey: ['items', filter ?? {}, currentCantinaId],
     queryFn: () => listItems(filter),
     staleTime: 1000 * 60 * 5,
-    enabled: !!user,
+    enabled: !!user && !!currentCantinaId,
   });
 }
 

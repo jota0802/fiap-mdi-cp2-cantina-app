@@ -31,6 +31,7 @@ export default function ItemCardapio({ item, quantidade, onAdicionar, onRemover 
   const { t } = useLocale();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const { isFavorito, toggleFavorito } = useFavorites();
+  const esgotado = item.estoque !== undefined && item.estoque === 0;
   const ativo = quantidade > 0;
   const favorito = isFavorito(item.id);
 
@@ -67,7 +68,7 @@ export default function ItemCardapio({ item, quantidade, onAdicionar, onRemover 
   const descricao = item.descricaoKey ? t(item.descricaoKey) : item.descricao;
 
   return (
-    <View style={[styles.container, ativo && styles.containerAtivo]}>
+    <View style={[styles.container, ativo && styles.containerAtivo, esgotado && styles.containerEsgotado]}>
       <ItemThumbnail
         emoji={emojiForSlug(item.slug)}
         imagem={item.imagem ?? undefined}
@@ -117,7 +118,13 @@ export default function ItemCardapio({ item, quantidade, onAdicionar, onRemover 
             })}
           </View>
         ) : null}
-        <Text style={styles.preco}>R$ {parseFloat(item.preco).toFixed(2)}</Text>
+        {esgotado ? (
+          <View style={styles.esgotadoBadge}>
+            <Text style={styles.esgotadoTexto}>ESGOTADO</Text>
+          </View>
+        ) : (
+          <Text style={styles.preco}>R$ {parseFloat(item.preco).toFixed(2)}</Text>
+        )}
       </View>
 
       <View style={styles.controles}>
@@ -144,15 +151,18 @@ export default function ItemCardapio({ item, quantidade, onAdicionar, onRemover 
         ) : null}
 
         <Pressable
-          style={({ pressed }) => [styles.botaoMais, pressed && styles.pressed]}
+          style={({ pressed }) => [styles.botaoMais, pressed && styles.pressed, esgotado && styles.botaoMaisEsgotado]}
           onPress={() => {
+            if (esgotado) return;
             haptic.light();
             onAdicionar(item.id);
             animatePop();
           }}
+          disabled={esgotado}
           hitSlop={8}
           accessibilityRole="button"
-          accessibilityLabel={ativo ? `${nome}: +1` : `${nome}: ${t('cta.add_to_cart')}`}
+          accessibilityLabel={esgotado ? `${nome}: esgotado` : ativo ? `${nome}: +1` : `${nome}: ${t('cta.add_to_cart')}`}
+          accessibilityState={{ disabled: esgotado }}
         >
           <Text style={styles.botaoMaisTexto}>+</Text>
         </Pressable>
@@ -177,6 +187,26 @@ const createStyles = (c: ThemeColors) =>
     containerAtivo: {
       borderColor: c.primary,
       backgroundColor: c.primarySoft,
+    },
+    containerEsgotado: {
+      opacity: 0.5,
+    },
+    esgotadoBadge: {
+      alignSelf: 'flex-start',
+      backgroundColor: c.errorSoft,
+      borderRadius: radius.sm,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 2,
+      marginTop: spacing.xs,
+    },
+    esgotadoTexto: {
+      fontFamily: fontFamily.bold,
+      fontSize: 10,
+      color: c.error,
+      letterSpacing: 0.5,
+    },
+    botaoMaisEsgotado: {
+      backgroundColor: c.surfaceElevated,
     },
     info: {
       flex: 1,

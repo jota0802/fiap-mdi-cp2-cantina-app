@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { CantinaPickerHeader } from '@/components/CantinaPickerHeader';
 import ItemThumbnail from '@/components/ItemThumbnail';
 import {
   fontFamily,
@@ -81,7 +82,8 @@ export default function Home() {
   const { items: cartItems, totalItens, addItem } = useCart();
   const { favoritos } = useFavorites();
 
-  // Carrega todos os items da API
+  // Carrega todos os items da API; inclui currentCantinaId na queryKey
+  // para que o react-query refetch automaticamente ao trocar cantina.
   const { data: itemsData } = useItems();
   const allItems = itemsData?.items ?? [];
 
@@ -171,10 +173,14 @@ export default function Home() {
 
   return (
     <View style={styles.container}>
+      {/* Header fixo: "Mudar unidade" (esq) + picker de cantina (dir) */}
+      <View style={{ paddingTop: insets.top }}>
+        <CantinaPickerHeader />
+      </View>
       <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingTop: insets.top + spacing.lg, paddingBottom: tabBarHeight + spacing.lg },
+          { paddingBottom: tabBarHeight + spacing.lg },
         ]}
         showsVerticalScrollIndicator={false}
       >
