@@ -17,6 +17,11 @@ export default function TabsLayout() {
     return <Redirect href="/login" />;
   }
 
+  const onboardingComplete = !!(user.name && user.rm && user.cantinaId);
+  if (!onboardingComplete) {
+    return <Redirect href="/(onboarding)/welcome" />;
+  }
+
   return (
     <Tabs
       screenOptions={{
