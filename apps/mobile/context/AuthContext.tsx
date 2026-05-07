@@ -10,7 +10,7 @@ import {
 } from 'react';
 
 import { apiLogin, apiMe, apiRegister } from '@/lib/api/auth';
-import { ApiError } from '@/lib/api/client';
+import { ApiError, setUnauthorizedHandler } from '@/lib/api/client';
 import { STORAGE_KEYS } from '@/constants/storage-keys';
 import { deleteSecureItem, getSecureItem, setSecureItem } from '@/lib/secure-store';
 import type { PublicUser } from '@cantina/shared';
@@ -157,6 +157,15 @@ export function AuthProvider({ children }: ProviderProps) {
     await AsyncStorage.removeItem(STORAGE_KEYS.LAST_USER);
     setUser(null);
   }, []);
+
+  // Registra handler global pra 401 — apiFetch chama isso quando token expira
+  // ou e invalido. Centralizar evita que cada hook precise tratar.
+  useEffect(() => {
+    setUnauthorizedHandler(() => {
+      void signOut();
+    });
+    return () => setUnauthorizedHandler(null);
+  }, [signOut]);
 
   // TODO(sub-projeto-2): backend ainda nao tem PATCH /auth/me. Stub temporario.
   const updateUser = useCallback<AuthContextValue['updateUser']>(async () => {

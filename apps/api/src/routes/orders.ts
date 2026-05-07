@@ -4,7 +4,7 @@ import { createId } from '@paralleldrive/cuid2';
 import { CreateOrderSchema, UpdateOrderStatusSchema, type Order as OrderDto, type OrderItemDto } from '@cantina/shared';
 import { orders, orderItems, items } from '../db/schema.js';
 import { requireAuth } from '../middleware/auth.js';
-import { notFound, badRequest } from '../lib/errors.js';
+import { notFound, badRequest, forbidden } from '../lib/errors.js';
 import { calcularEstimativa } from '../lib/estimativa.js';
 import { validateJson } from '../lib/zod-hono.js';
 import type { DB } from '../db/client.js';
@@ -139,6 +139,11 @@ export function createOrdersRoutes(db: DB | TestDb) {
     const claim = c.get('user');
     const id = c.req.param('id');
     const { status } = c.req.valid('json');
+
+    // Defense-in-depth: customer so pode cancelar. Quando o sub-projeto 2 (admin)
+    // ampliar UpdateOrderStatusSchema pra aceitar 'pronto'/'retirado', staff usa
+    // outro endpoint protegido por requireRole — esse aqui continua so cancel.
+    if (status !== 'cancelado') throw forbidden('Customer só pode cancelar o próprio pedido');
 
     const [order] = await db.select().from(orders).where(eq(orders.id, id)).limit(1);
     if (!order || order.userId !== claim.sub) throw notFound('Order not found');

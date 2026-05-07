@@ -7,6 +7,7 @@ import { hashPassword, verifyPassword } from '../lib/password.js';
 import { signJwt } from '../lib/jwt.js';
 import { conflict, unauthorized } from '../lib/errors.js';
 import { requireAuth } from '../middleware/auth.js';
+import { rateLimit } from '../middleware/rate-limit.js';
 import { users } from '../db/schema.js';
 import type { TestDb } from '../test/db.js';
 import type { DB } from '../db/client.js';
@@ -39,7 +40,10 @@ export async function createAuthRoutes(db: DB | TestDb) {
 
   const app = new Hono();
 
-  app.post('/register', validateJson(RegisterSchema), async (c) => {
+  // Rate limit: 10 tentativas / 15min por IP em cada rota de auth.
+  const authLimit = (scope: string) => rateLimit({ windowMs: 15 * 60 * 1000, max: 10, scope });
+
+  app.post('/register', authLimit('register'), validateJson(RegisterSchema), async (c) => {
     const { name, email, password } = c.req.valid('json');
 
     const [existing] = await db.select().from(users).where(eq(users.email, email)).limit(1);
@@ -54,7 +58,7 @@ export async function createAuthRoutes(db: DB | TestDb) {
     return c.json({ user: toPublicUser(user), token }, 201);
   });
 
-  app.post('/login', validateJson(LoginSchema), async (c) => {
+  app.post('/login', authLimit('login'), validateJson(LoginSchema), async (c) => {
     const { email, password } = c.req.valid('json');
     const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
     const hashToVerify = user?.passwordHash ?? DUMMY_HASH;

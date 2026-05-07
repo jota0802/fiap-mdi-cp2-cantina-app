@@ -3,6 +3,13 @@ import { getSecureItem } from '../secure-store';
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:8787';
 const API_BASE = `${API_URL}/api/v1`;
 
+// Boot-time guard: app eh mobile-only — qualquer build com URL non-HTTPS
+// fora de DEV vaza JWT em transito. EXPO_PUBLIC_* eh baked no build, entao
+// isso falha o app no startup pra forcar correcao do EAS profile.
+if (!__DEV__ && !API_URL.startsWith('https://')) {
+  throw new Error(`EXPO_PUBLIC_API_URL must be HTTPS in production (got: ${API_URL})`);
+}
+
 export class ApiError extends Error {
   status: number;
   code: string;
@@ -18,6 +25,13 @@ export class ApiError extends Error {
 interface RequestOptions extends Omit<RequestInit, 'body'> {
   body?: unknown;
   auth?: boolean;
+}
+
+// Handler global de 401 — AuthContext registra no boot pra fazer logout
+// centralizado quando token expira/invalida. Evita que cada hook precise tratar.
+let unauthorizedHandler: (() => void) | null = null;
+export function setUnauthorizedHandler(handler: (() => void) | null): void {
+  unauthorizedHandler = handler;
 }
 
 export async function apiFetch<T = unknown>(path: string, opts: RequestOptions = {}): Promise<T> {
@@ -40,6 +54,9 @@ export async function apiFetch<T = unknown>(path: string, opts: RequestOptions =
   if (!res.ok) {
     const err = (json as { error?: { code: string; message: string; details?: unknown } } | null)?.error
       ?? { code: 'UNKNOWN', message: `HTTP ${res.status}` };
+    // Disparo so quando havia tentativa de auth — 401 em rota publica
+    // (login/register com senha errada) nao deve deslogar o user.
+    if (res.status === 401 && auth) unauthorizedHandler?.();
     throw new ApiError(res.status, err.code, err.message, err.details);
   }
   return json as T;

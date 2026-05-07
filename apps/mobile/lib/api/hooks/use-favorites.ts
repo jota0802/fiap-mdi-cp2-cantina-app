@@ -2,13 +2,17 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import type { Item } from '@cantina/shared';
 
+import { useAuth } from '@/context/AuthContext';
+
 import { addFavorite, listFavorites, removeFavorite } from '../favorites';
 
 export function useFavorites() {
+  const { user } = useAuth();
   return useQuery({
     queryKey: ['favorites'],
     queryFn: listFavorites,
     staleTime: 1000 * 60,
+    enabled: !!user,
   });
 }
 

@@ -1,7 +1,7 @@
 import { drizzle as drizzlePg } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 import type { drizzle as drizzlePgliteType } from 'drizzle-orm/pglite';
-import { env } from '../env.js';
+import { env, isProd } from '../env.js';
 import * as schema from './schema.js';
 
 export type DB =
@@ -19,7 +19,13 @@ export async function createDb(opts: { pglitePath?: string; databaseUrl?: string
     return drizzlePglite(client, { schema });
   }
   const url = opts.databaseUrl ?? env.DATABASE_URL!;
-  const pool = new Pool({ connectionString: url, max: 10 });
+  // SSL explicito em prod: garante TLS mesmo se a URL nao trouxer sslmode.
+  // Em dev (Neon via tethering, etc), respeitamos a URL — pglite ja tratado acima.
+  const pool = new Pool({
+    connectionString: url,
+    max: 10,
+    ssl: isProd ? { rejectUnauthorized: true } : undefined,
+  });
   return drizzlePg(pool, { schema });
 }
 
