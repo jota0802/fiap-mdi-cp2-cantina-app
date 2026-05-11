@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
-import { eq, and, sql, gte, desc } from 'drizzle-orm';
+import { eq, and, sql, gte, desc, inArray } from 'drizzle-orm';
 import { createId } from '@paralleldrive/cuid2';
-import { CreateOrderSchema, UpdateOrderStatusByStaffSchema, type Order as OrderDto, type OrderItemDto } from '@cantina/shared';
+import { CreateOrderSchema, UpdateOrderStatusByStaffSchema, BulkUpdateStatusSchema, type Order as OrderDto, type OrderItemDto } from '@cantina/shared';
 import { orders, orderItems, items, cantinaItems } from '../db/schema.js';
 import { requireAuth } from '../middleware/auth.js';
 import { requireRole } from '../middleware/require-role.js';
@@ -223,6 +223,30 @@ export function createOrdersRoutes(db: DB | TestDb) {
 
     const enriched = await fetchOrderWithItems(db, id);
     return c.json({ order: enriched }, 200);
+  });
+
+  app.patch('/bulk-status', requireRole('staff'), validateJson(BulkUpdateStatusSchema), async (c) => {
+    const cantina = c.var.cantina;
+    const { ids } = c.req.valid('json');
+
+    await db.transaction(async (tx) => {
+      const rows = await tx.select().from(orders).where(inArray(orders.id, ids));
+      const failedIds: string[] = [];
+      for (const id of ids) {
+        const row = rows.find((r) => r.id === id);
+        if (!row || row.cantinaId !== cantina.id || row.status !== 'pedido') {
+          failedIds.push(id);
+        }
+      }
+      if (failedIds.length > 0) {
+        throw conflict('Bulk rejeitado — pelo menos 1 pedido não está em estado pedido', { failedIds });
+      }
+      await tx.update(orders)
+        .set({ status: 'pronto', prontoEm: new Date() })
+        .where(inArray(orders.id, ids));
+    });
+
+    return c.json({ updated: ids }, 200);
   });
 
   return app;

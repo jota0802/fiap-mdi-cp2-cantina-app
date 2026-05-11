@@ -460,3 +460,111 @@ describe('PATCH /orders/:id/status (staff)', () => {
     expect(res.status).toBe(403);
   });
 });
+
+describe('PATCH /orders/bulk-status (staff)', () => {
+  let staffToken: string;
+  let customerToken: string;
+
+  beforeEach(async () => {
+    const staff = await createTestUser(testDb, { role: 'staff', cantinaId, name: 'Staff', email: `staff-bulk-${Date.now()}@x.com` });
+    staffToken = staff.token;
+    customerToken = token;
+  });
+
+  async function createPedido(itemId: string): Promise<string> {
+    const create = await app.request('/api/v1/orders', {
+      method: 'POST',
+      headers: headers(customerToken),
+      body: JSON.stringify({ itens: [{ itemId, quantidade: 1 }] }),
+    });
+    const co = await create.json() as { order: { id: string } };
+    return co.order.id;
+  }
+
+  it('marca 3 pedidos pendentes como pronto numa só chamada', async () => {
+    const cis = await createTestCantinaItems(testDb, cantinaId, [
+      { slug: 'b1', name: 'B1', preco: '5.00', estoque: 10 },
+    ]);
+    const id1 = await createPedido(cis.itemId);
+    const id2 = await createPedido(cis.itemId);
+    const id3 = await createPedido(cis.itemId);
+
+    const res = await app.request('/api/v1/orders/bulk-status', {
+      method: 'PATCH',
+      headers: headers(staffToken),
+      body: JSON.stringify({ ids: [id1, id2, id3], status: 'pronto' }),
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json() as { updated: string[] };
+    expect(body.updated).toEqual(expect.arrayContaining([id1, id2, id3]));
+  });
+
+  it('rejeita tudo se ao menos 1 id já não está em pedido (409 com failedIds)', async () => {
+    const cis = await createTestCantinaItems(testDb, cantinaId, [
+      { slug: 'b2', name: 'B2', preco: '5.00', estoque: 10 },
+    ]);
+    const id1 = await createPedido(cis.itemId);
+    const id2 = await createPedido(cis.itemId);
+    // Marca id2 como pronto antes
+    await app.request(`/api/v1/orders/${id2}/status`, {
+      method: 'PATCH',
+      headers: headers(staffToken),
+      body: JSON.stringify({ status: 'pronto' }),
+    });
+
+    const res = await app.request('/api/v1/orders/bulk-status', {
+      method: 'PATCH',
+      headers: headers(staffToken),
+      body: JSON.stringify({ ids: [id1, id2], status: 'pronto' }),
+    });
+    expect(res.status).toBe(409);
+    const body = await res.json() as { error: { details?: { failedIds?: string[] } } };
+    expect(body.error.details?.failedIds).toContain(id2);
+
+    const { orders } = await import('../db/schema.js');
+    const { eq } = await import('drizzle-orm');
+    const [r1] = await testDb.select().from(orders).where(eq(orders.id, id1));
+    expect(r1!.status).toBe('pedido');
+  });
+
+  it('rejeita customer (403)', async () => {
+    const res = await app.request('/api/v1/orders/bulk-status', {
+      method: 'PATCH',
+      headers: headers(customerToken),
+      body: JSON.stringify({ ids: ['x'], status: 'pronto' }),
+    });
+    expect(res.status).toBe(403);
+  });
+
+  it('valida body — array vazio retorna 422', async () => {
+    const res = await app.request('/api/v1/orders/bulk-status', {
+      method: 'PATCH',
+      headers: headers(staffToken),
+      body: JSON.stringify({ ids: [], status: 'pronto' }),
+    });
+    expect(res.status).toBe(422);
+  });
+
+  it('rejeita ids de outra cantina', async () => {
+    await createTestTenants(testDb, { unidadeId: 'u3', escolaId: 'e3', cantinaId: 'cZ' });
+    const cisLocal = await createTestCantinaItems(testDb, cantinaId, [
+      { slug: 'b3', name: 'B3', preco: '5.00', estoque: 10 },
+    ]);
+    const id1 = await createPedido(cisLocal.itemId);
+
+    // Cria pedido na cantina Z (insert direto pra não usar tenant context customer)
+    const { createTestOrder } = await import('../test/fixtures.js');
+    const { orderId: foreignId } = await createTestOrder(testDb, {
+      userId, cantinaId: 'cZ', status: 'pedido',
+    });
+
+    const res = await app.request('/api/v1/orders/bulk-status', {
+      method: 'PATCH',
+      headers: headers(staffToken),
+      body: JSON.stringify({ ids: [id1, foreignId], status: 'pronto' }),
+    });
+    expect(res.status).toBe(409);
+    const body = await res.json() as { error: { details?: { failedIds?: string[] } } };
+    expect(body.error.details?.failedIds).toContain(foreignId);
+  });
+});
