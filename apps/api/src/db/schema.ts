@@ -90,12 +90,27 @@ export const orders = pgTable('orders', {
   prontoEm: timestamp('pronto_em', { withTimezone: true }),
   retiradoEm: timestamp('retirado_em', { withTimezone: true }),
   canceladoEm: timestamp('cancelado_em', { withTimezone: true }),
+  canceledBy: text('canceled_by'),
+  cancelReason: text('cancel_reason'),
   cantinaId: text('cantina_id').notNull().references(() => cantinas.id, { onDelete: 'restrict' }),
   criadoEm: timestamp('criado_em', { withTimezone: true }).notNull().defaultNow(),
 }, (t) => ({
   userIdx: index('orders_user_idx').on(t.userId),
   statusIdx: index('orders_status_idx').on(t.status),
   cantinaDayIdx: index('orders_cantina_day_idx').on(t.cantinaId, t.criadoEm),
+  canceledByCheck: check(
+    'orders_canceled_by_check',
+    sql`canceled_by IS NULL OR canceled_by IN ('customer','staff')`,
+  ),
+  cancelConsistency: check(
+    'orders_cancel_consistency',
+    sql`(status = 'cancelado' AND cancelado_em IS NOT NULL AND canceled_by IS NOT NULL)
+       OR (status != 'cancelado' AND canceled_by IS NULL)`,
+  ),
+  statusValidos: check(
+    'orders_status_validos',
+    sql`status IN ('pedido','pronto','cancelado')`,
+  ),
 }));
 
 export const orderItems = pgTable('order_items', {

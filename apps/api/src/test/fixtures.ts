@@ -1,7 +1,7 @@
 import { createId } from '@paralleldrive/cuid2';
 import { hashPassword } from '../lib/password.js';
 import { signJwt } from '../lib/jwt.js';
-import { users, items, cantinaItems, unidades, escolas, cantinas } from '../db/schema.js';
+import { users, items, cantinaItems, unidades, escolas, cantinas, orders, orderItems } from '../db/schema.js';
 import type { TestDb } from './db.js';
 
 export async function createTestUser(
@@ -60,11 +60,17 @@ export async function createTestItem(db: TestDb, overrides: Partial<typeof items
   return item;
 }
 
-export async function createTestTenants(db: TestDb) {
-  await db.insert(unidades).values({ id: 'u_test', nome: 'Test Unidade' });
-  await db.insert(escolas).values({ id: 'e_test', unidadeId: 'u_test', nome: 'Test Escola', tipo: 'main' });
-  await db.insert(cantinas).values({ id: 'c_test', escolaId: 'e_test', nome: 'Test Cantina', andar: '1' });
-  return { unidadeId: 'u_test', escolaId: 'e_test', cantinaId: 'c_test' };
+export async function createTestTenants(
+  db: TestDb,
+  opts: Partial<{ unidadeId: string; escolaId: string; cantinaId: string }> = {},
+) {
+  const unidadeId = opts.unidadeId ?? 'u_test';
+  const escolaId = opts.escolaId ?? 'e_test';
+  const cantinaId = opts.cantinaId ?? 'c_test';
+  await db.insert(unidades).values({ id: unidadeId, nome: `Unidade ${unidadeId}` }).onConflictDoNothing({ target: unidades.id });
+  await db.insert(escolas).values({ id: escolaId, unidadeId, nome: `Escola ${escolaId}`, tipo: 'main' }).onConflictDoNothing({ target: escolas.id });
+  await db.insert(cantinas).values({ id: cantinaId, escolaId, nome: `Cantina ${cantinaId}`, andar: '1' }).onConflictDoNothing({ target: cantinas.id });
+  return { unidadeId, escolaId, cantinaId };
 }
 
 export async function createTestStaff(
@@ -111,6 +117,7 @@ export async function createTestCantinaItems(
     item: typeof items.$inferSelect;
     cantinaItem: typeof cantinaItems.$inferSelect;
   }> = [];
+  const itemIds: string[] = [];
   for (const it of itemsData) {
     const itemId = createId();
     const [item] = await db
@@ -141,6 +148,64 @@ export async function createTestCantinaItems(
       .returning();
     if (!ci) throw new Error('failed to insert cantina_item');
     inserted.push({ item, cantinaItem: ci });
+    itemIds.push(itemId);
   }
-  return inserted;
+  return Object.assign(inserted, {
+    itemId: itemIds[0]!,
+    itemIds,
+  }) as typeof inserted & { itemId: string; itemIds: string[] };
+}
+
+export async function createTestOrder(
+  db: TestDb,
+  opts: {
+    userId: string;
+    cantinaId: string;
+    status?: 'pedido' | 'pronto' | 'cancelado';
+    senha?: number;
+    total?: string;
+    prontoEm?: Date | null;
+    items?: Array<{
+      itemId: string;
+      quantidade: number;
+      precoSnapshot: string;
+      nameSnapshot: string;
+    }>;
+  },
+) {
+  const orderId = createId();
+  const status = opts.status ?? 'pedido';
+  const cancelFields = status === 'cancelado'
+    ? { canceladoEm: new Date(), canceledBy: 'staff' as const }
+    : {};
+  const prontoFields = status === 'pronto'
+    ? { prontoEm: opts.prontoEm ?? new Date() }
+    : {};
+
+  await db.insert(orders).values({
+    id: orderId,
+    userId: opts.userId,
+    cantinaId: opts.cantinaId,
+    status,
+    total: opts.total ?? '10.00',
+    senha: opts.senha ?? 1,
+    ...prontoFields,
+    ...cancelFields,
+  });
+
+  if (opts.items && opts.items.length > 0) {
+    await db.insert(orderItems).values(
+      opts.items.map((it) => ({
+        id: createId(),
+        orderId,
+        itemId: it.itemId,
+        nameSnapshot: it.nameSnapshot,
+        precoSnapshot: it.precoSnapshot,
+        quantidade: it.quantidade,
+        observacoes: null,
+      })),
+    );
+  }
+
+  return { orderId };
 }
