@@ -63,7 +63,7 @@ describe('POST /orders', () => {
     });
     expect(res.status).toBe(201);
     const json = await res.json() as { order: { status: string; total: string; itens: Array<{ quantidade: number; observacoes: string | null }>; senha: number } };
-    expect(json.order.status).toBe('pendente');
+    expect(json.order.status).toBe('pedido');
     expect(parseFloat(json.order.total)).toBe(25.50);
     expect(json.order.itens).toHaveLength(2);
     expect(json.order.senha).toBeGreaterThan(0);

@@ -26,7 +26,7 @@ function toPublicOrder(o: typeof orders.$inferSelect, itens: typeof orderItems.$
   return {
     id: o.id,
     userId: o.userId,
-    // Trust DB writes: no CHECK constraint on status, but writers are typed via CreateOrderSchema/UpdateOrderStatusSchema
+    // Trust DB writes: CHECK orders_status_validos garante valores válidos.
     status: o.status as OrderDto['status'],
     total: o.total,
     senha: o.senha,
@@ -34,6 +34,8 @@ function toPublicOrder(o: typeof orders.$inferSelect, itens: typeof orderItems.$
     prontoEm: o.prontoEm?.toISOString() ?? null,
     retiradoEm: o.retiradoEm?.toISOString() ?? null,
     canceladoEm: o.canceladoEm?.toISOString() ?? null,
+    canceledBy: (o.canceledBy as 'customer' | 'staff' | null) ?? null,
+    cancelReason: o.cancelReason ?? null,
     criadoEm: o.criadoEm.toISOString(),
     itens: itens.map(toPublicOrderItem),
   };
@@ -148,7 +150,7 @@ export function createOrdersRoutes(db: DB | TestDb) {
       // 2. Calcular estimativa baseada em pendentes da cantina
       const pendingResult = await tx.select({ count: sql<number>`COUNT(*)` })
         .from(orders)
-        .where(and(eq(orders.cantinaId, cantinaId), eq(orders.status, 'pendente')));
+        .where(and(eq(orders.cantinaId, cantinaId), eq(orders.status, 'pedido')));
       const pendingCount = Number(pendingResult[0]?.count ?? 0);
       const estimadoSec = calcularEstimativa(pendingCount);
       prontoEmEstimado = new Date(Date.now() + estimadoSec * 1000);
@@ -161,7 +163,7 @@ export function createOrdersRoutes(db: DB | TestDb) {
         id: orderId,
         userId: claim.sub,
         cantinaId,
-        status: 'pendente',
+        status: 'pedido',
         total: total.toFixed(2),
         senha,
         prontoEmEstimado,
@@ -187,11 +189,11 @@ export function createOrdersRoutes(db: DB | TestDb) {
 
     const [order] = await db.select().from(orders).where(eq(orders.id, id)).limit(1);
     if (!order || order.userId !== claim.sub) throw notFound('Order not found');
-    if (order.status !== 'pendente') throw badRequest('Só pedidos pendentes podem ser cancelados');
+    if (order.status !== 'pedido') throw badRequest('Só pedidos pendentes podem ser cancelados');
 
     await db.update(orders).set({
       status,
-      ...(status === 'cancelado' ? { canceladoEm: new Date() } : {}),
+      ...(status === 'cancelado' ? { canceladoEm: new Date(), canceledBy: 'customer' } : {}),
     }).where(eq(orders.id, id));
     const enriched = await fetchOrderWithItems(db, id);
     return c.json({ order: enriched }, 200);
