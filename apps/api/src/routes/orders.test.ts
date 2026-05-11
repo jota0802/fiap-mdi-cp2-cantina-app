@@ -212,7 +212,10 @@ describe('GET /orders/:id', () => {
   });
 });
 
-describe('PATCH /orders/:id/status', () => {
+// Legacy: customer cancelava via PATCH /orders/:id/status. Na Fase C, esse
+// endpoint virou staff-only (Task 5) e customer ganhou POST /orders/:id/cancel
+// (Task 7). Tests legados ficam skipped pra documentação.
+describe.skip('PATCH /orders/:id/status — customer (legacy, substituído por POST /:id/cancel)', () => {
   it('cliente cancela pedido pendente', async () => {
     const created = await createTestCantinaItems(testDb, cantinaId, [
       { slug: 'a', name: 'A', preco: '5.00', estoque: 10 },
@@ -286,5 +289,174 @@ describe('PATCH /orders/:id/status', () => {
       body: JSON.stringify({ status: 'cancelado' }),
     });
     expect(res.status).toBe(400);
+  });
+});
+
+describe('PATCH /orders/:id/status (staff)', () => {
+  let staffToken: string;
+  let customerToken: string;
+  let customerId: string;
+
+  beforeEach(async () => {
+    const staff = await createTestUser(testDb, { role: 'staff', cantinaId, name: 'Staff', email: `staff-${Date.now()}@x.com` });
+    staffToken = staff.token;
+    customerToken = token;
+    customerId = userId;
+  });
+
+  it('staff marca pedido → pronto', async () => {
+    const created = await createTestCantinaItems(testDb, cantinaId, [
+      { slug: 'sa', name: 'SA', preco: '5.00', estoque: 10 },
+    ]);
+    const create = await app.request('/api/v1/orders', {
+      method: 'POST',
+      headers: headers(customerToken),
+      body: JSON.stringify({ itens: [{ itemId: created.itemId, quantidade: 1 }] }),
+    });
+    const co = await create.json() as { order: { id: string } };
+
+    const res = await app.request(`/api/v1/orders/${co.order.id}/status`, {
+      method: 'PATCH',
+      headers: headers(staffToken),
+      body: JSON.stringify({ status: 'pronto' }),
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json() as { order: { status: string; prontoEm: string | null } };
+    expect(body.order.status).toBe('pronto');
+    expect(body.order.prontoEm).toBeTruthy();
+  });
+
+  it('staff cancela pedido → estoque devolvido', async () => {
+    const created = await createTestCantinaItems(testDb, cantinaId, [
+      { slug: 'sb', name: 'SB', preco: '5.00', estoque: 10 },
+    ]);
+    const itemId = created.itemId;
+    const cantinaItem = created[0]!.cantinaItem;
+
+    const create = await app.request('/api/v1/orders', {
+      method: 'POST',
+      headers: headers(customerToken),
+      body: JSON.stringify({ itens: [{ itemId, quantidade: 3 }] }),
+    });
+    expect(create.status).toBe(201);
+
+    // Estoque foi de 10 → 7 após o POST
+    const { cantinaItems } = await import('../db/schema.js');
+    const { and, eq } = await import('drizzle-orm');
+    const [postPost] = await testDb.select().from(cantinaItems)
+      .where(and(eq(cantinaItems.cantinaId, cantinaId), eq(cantinaItems.itemId, itemId)));
+    expect(postPost!.estoque).toBe(7);
+
+    const co = await create.json() as { order: { id: string } };
+    const res = await app.request(`/api/v1/orders/${co.order.id}/status`, {
+      method: 'PATCH',
+      headers: headers(staffToken),
+      body: JSON.stringify({ status: 'cancelado', reason: 'teste' }),
+    });
+    expect(res.status).toBe(200);
+
+    const [postCancel] = await testDb.select().from(cantinaItems)
+      .where(and(eq(cantinaItems.cantinaId, cantinaId), eq(cantinaItems.itemId, itemId)));
+    expect(postCancel!.estoque).toBe(10);
+  });
+
+  it('staff faz rollback pronto → pedido', async () => {
+    const created = await createTestCantinaItems(testDb, cantinaId, [
+      { slug: 'sc', name: 'SC', preco: '5.00', estoque: 10 },
+    ]);
+    const create = await app.request('/api/v1/orders', {
+      method: 'POST',
+      headers: headers(customerToken),
+      body: JSON.stringify({ itens: [{ itemId: created.itemId, quantidade: 1 }] }),
+    });
+    const co = await create.json() as { order: { id: string } };
+
+    await app.request(`/api/v1/orders/${co.order.id}/status`, {
+      method: 'PATCH',
+      headers: headers(staffToken),
+      body: JSON.stringify({ status: 'pronto' }),
+    });
+
+    const res = await app.request(`/api/v1/orders/${co.order.id}/status`, {
+      method: 'PATCH',
+      headers: headers(staffToken),
+      body: JSON.stringify({ status: 'pedido' }),
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json() as { order: { status: string; prontoEm: string | null } };
+    expect(body.order.status).toBe('pedido');
+    expect(body.order.prontoEm).toBeNull();
+  });
+
+  it('rejeita customer (403)', async () => {
+    const created = await createTestCantinaItems(testDb, cantinaId, [
+      { slug: 'sd', name: 'SD', preco: '5.00', estoque: 10 },
+    ]);
+    const create = await app.request('/api/v1/orders', {
+      method: 'POST',
+      headers: headers(customerToken),
+      body: JSON.stringify({ itens: [{ itemId: created.itemId, quantidade: 1 }] }),
+    });
+    const co = await create.json() as { order: { id: string } };
+
+    const res = await app.request(`/api/v1/orders/${co.order.id}/status`, {
+      method: 'PATCH',
+      headers: headers(customerToken),
+      body: JSON.stringify({ status: 'pronto' }),
+    });
+    expect(res.status).toBe(403);
+  });
+
+  it('rejeita transição inválida cancelado → pronto (409)', async () => {
+    const created = await createTestCantinaItems(testDb, cantinaId, [
+      { slug: 'se', name: 'SE', preco: '5.00', estoque: 10 },
+    ]);
+    const create = await app.request('/api/v1/orders', {
+      method: 'POST',
+      headers: headers(customerToken),
+      body: JSON.stringify({ itens: [{ itemId: created.itemId, quantidade: 1 }] }),
+    });
+    const co = await create.json() as { order: { id: string } };
+
+    await app.request(`/api/v1/orders/${co.order.id}/status`, {
+      method: 'PATCH',
+      headers: headers(staffToken),
+      body: JSON.stringify({ status: 'cancelado' }),
+    });
+
+    const res = await app.request(`/api/v1/orders/${co.order.id}/status`, {
+      method: 'PATCH',
+      headers: headers(staffToken),
+      body: JSON.stringify({ status: 'pronto' }),
+    });
+    expect(res.status).toBe(409);
+  });
+
+  it('staff de outra cantina nao pode mudar pedido (403)', async () => {
+    const otherTenants = await createTestTenants(testDb, { unidadeId: 'u2', escolaId: 'e2', cantinaId: 'cB' });
+    const otherStaff = await createTestUser(testDb, {
+      role: 'staff', cantinaId: 'cB', name: 'Staff B', email: `staffb-${Date.now()}@x.com`,
+    });
+
+    const created = await createTestCantinaItems(testDb, cantinaId, [
+      { slug: 'sf', name: 'SF', preco: '5.00', estoque: 10 },
+    ]);
+    const create = await app.request('/api/v1/orders', {
+      method: 'POST',
+      headers: headers(customerToken),
+      body: JSON.stringify({ itens: [{ itemId: created.itemId, quantidade: 1 }] }),
+    });
+    const co = await create.json() as { order: { id: string } };
+
+    const res = await app.request(`/api/v1/orders/${co.order.id}/status`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${otherStaff.token}`,
+        'X-Cantina-Id': 'cB',
+      },
+      body: JSON.stringify({ status: 'pronto' }),
+    });
+    expect(res.status).toBe(403);
   });
 });

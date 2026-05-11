@@ -1,9 +1,10 @@
 import { Hono } from 'hono';
 import { eq, and, sql, gte, desc } from 'drizzle-orm';
 import { createId } from '@paralleldrive/cuid2';
-import { CreateOrderSchema, UpdateOrderStatusSchema, type Order as OrderDto, type OrderItemDto } from '@cantina/shared';
+import { CreateOrderSchema, UpdateOrderStatusByStaffSchema, type Order as OrderDto, type OrderItemDto } from '@cantina/shared';
 import { orders, orderItems, items, cantinaItems } from '../db/schema.js';
 import { requireAuth } from '../middleware/auth.js';
+import { requireRole } from '../middleware/require-role.js';
 import { tenantContext } from '../middleware/tenant-context.js';
 import { notFound, badRequest, forbidden, conflict } from '../lib/errors.js';
 import { calcularEstimativa } from '../lib/estimativa.js';
@@ -177,24 +178,49 @@ export function createOrdersRoutes(db: DB | TestDb) {
     return c.json({ order: enriched }, 201);
   });
 
-  app.patch('/:id/status', validateJson(UpdateOrderStatusSchema), async (c) => {
-    const claim = c.get('user');
+  app.patch('/:id/status', requireRole('staff'), validateJson(UpdateOrderStatusByStaffSchema), async (c) => {
+    const cantina = c.var.cantina;
     const id = c.req.param('id');
-    const { status } = c.req.valid('json');
+    const { status: newStatus, reason } = c.req.valid('json');
 
-    // Defense-in-depth: customer so pode cancelar. Quando o sub-projeto 2 (admin)
-    // ampliar UpdateOrderStatusSchema pra aceitar 'pronto'/'retirado', staff usa
-    // outro endpoint protegido por requireRole — esse aqui continua so cancel.
-    if (status !== 'cancelado') throw forbidden('Customer só pode cancelar o próprio pedido');
+    await db.transaction(async (tx) => {
+      const [order] = await tx.select().from(orders).where(eq(orders.id, id)).limit(1);
+      if (!order) throw notFound('Order not found');
+      if (order.cantinaId !== cantina.id) throw forbidden('Pedido pertence a outra cantina');
 
-    const [order] = await db.select().from(orders).where(eq(orders.id, id)).limit(1);
-    if (!order || order.userId !== claim.sub) throw notFound('Order not found');
-    if (order.status !== 'pedido') throw badRequest('Só pedidos pendentes podem ser cancelados');
+      const allowedTransitions: Record<string, string[]> = {
+        pedido: ['pronto', 'cancelado'],
+        pronto: ['pedido'],
+        cancelado: [],
+      };
+      if (!allowedTransitions[order.status]?.includes(newStatus)) {
+        throw conflict(`Transição inválida: ${order.status} → ${newStatus}`);
+      }
 
-    await db.update(orders).set({
-      status,
-      ...(status === 'cancelado' ? { canceladoEm: new Date(), canceledBy: 'customer' } : {}),
-    }).where(eq(orders.id, id));
+      if (newStatus === 'cancelado') {
+        const oitems = await tx.select().from(orderItems).where(eq(orderItems.orderId, id));
+        for (const oi of oitems) {
+          await tx.update(cantinaItems)
+            .set({ estoque: sql`${cantinaItems.estoque} + ${oi.quantidade}` })
+            .where(and(
+              eq(cantinaItems.cantinaId, order.cantinaId),
+              eq(cantinaItems.itemId, oi.itemId),
+            ));
+        }
+        await tx.update(orders).set({
+          status: 'cancelado',
+          canceladoEm: new Date(),
+          canceledBy: 'staff',
+          cancelReason: reason ?? null,
+        }).where(eq(orders.id, id));
+      } else if (newStatus === 'pronto') {
+        await tx.update(orders).set({ status: 'pronto', prontoEm: new Date() }).where(eq(orders.id, id));
+      } else if (newStatus === 'pedido') {
+        // Rollback de pronto: limpa prontoEm
+        await tx.update(orders).set({ status: 'pedido', prontoEm: null }).where(eq(orders.id, id));
+      }
+    });
+
     const enriched = await fetchOrderWithItems(db, id);
     return c.json({ order: enriched }, 200);
   });
