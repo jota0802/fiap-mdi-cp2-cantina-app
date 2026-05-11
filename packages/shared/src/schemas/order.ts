@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const OrderStatusSchema = z.enum(['pendente', 'pronto', 'retirado', 'cancelado']);
+export const OrderStatusSchema = z.enum(['pedido', 'pronto', 'cancelado']);
 export type OrderStatus = z.infer<typeof OrderStatusSchema>;
 
 export const OrderItemSchema = z.object({
@@ -22,6 +22,8 @@ export const OrderSchema = z.object({
   prontoEm: z.string().nullable(),
   retiradoEm: z.string().nullable(),
   canceladoEm: z.string().nullable(),
+  canceledBy: z.enum(['customer', 'staff']).nullable(),
+  cancelReason: z.string().nullable(),
   criadoEm: z.string(),
   itens: z.array(OrderItemSchema),
 });
@@ -34,10 +36,29 @@ export const CreateOrderSchema = z.object({
   })).min(1, 'order.create.empty_cart'),
 });
 
+// Legacy: customer cancel via PATCH (kept for backwards compat during migration).
+// New flow uses POST /orders/:id/cancel.
 export const UpdateOrderStatusSchema = z.object({
   status: z.literal('cancelado'),
 });
 
+// Staff: marca pronto, cancela com motivo, ou faz rollback pronto→pedido
+export const UpdateOrderStatusByStaffSchema = z.object({
+  status: OrderStatusSchema,
+  reason: z.string().max(200).optional(),
+});
+
+// Staff: bulk markPronto — só marca como pronto em massa
+export const BulkUpdateStatusSchema = z.object({
+  ids: z.array(z.string().min(1)).min(1).max(50),
+  status: z.literal('pronto'),
+});
+
+// Customer: cancel (body vazio; transição implícita pedido→cancelado)
+export const CancelOrderSchema = z.object({}).strict();
+
 export type Order = z.infer<typeof OrderSchema>;
 export type OrderItemDto = z.infer<typeof OrderItemSchema>;
 export type CreateOrderInput = z.infer<typeof CreateOrderSchema>;
+export type UpdateOrderStatusByStaffInput = z.infer<typeof UpdateOrderStatusByStaffSchema>;
+export type BulkUpdateStatusInput = z.infer<typeof BulkUpdateStatusSchema>;

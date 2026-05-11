@@ -23,3 +23,16 @@ export type Item = z.infer<typeof ItemSchema>;
 export const ItemListResponseSchema = z.object({
   items: z.array(ItemSchema),
 });
+
+export const UpdateCantinaItemSchema = z
+  .object({
+    visivel: z.boolean().optional(),
+    disponivel: z.boolean().optional(),
+    estoque: z.number().int().nonnegative().optional(),
+    preco: z.number().positive().multipleOf(0.01).optional(),
+  })
+  .refine((d) => Object.values(d).some((v) => v !== undefined), {
+    message: 'Pelo menos um campo deve ser informado',
+  });
+
+export type UpdateCantinaItemInput = z.infer<typeof UpdateCantinaItemSchema>;
